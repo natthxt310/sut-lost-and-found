@@ -1,5 +1,13 @@
 import { PostItem, User, FavoriteItem, MatchNotification } from '../types';
 
+/**
+ * =========================================================================
+ * 📦 ข้อมูลเริ่มต้นแบบคลีน (Clean Initial Mock Data)
+ * =========================================================================
+ * 💡 ข้อมูลเริ่มต้นแบบโล่ง ไม่มีโพสต์หรือแชทค้างเก่า พร้อมให้เริ่มใช้งานใหม่
+ * =========================================================================
+ */
+
 export const INITIAL_USER: User = {
   id: 'usr-001',
   studentId: 'B6802189',
@@ -9,121 +17,8 @@ export const INITIAL_USER: User = {
   role: 'student',
 };
 
-export const INITIAL_POSTS: PostItem[] = [
-  {
-    id: 'post-001',
-    type: 'lost',
-    title: 'กุญแจรถมอเตอร์ไซค์ Honda Wave พร้อมพวงกุญแจตุ๊กตาหมีสีน้ำตาล',
-    category: 'กุญแจรถ / พวงกุญแจ',
-    color: 'ดำ',
-    location: 'อาคารเรียนรวม 1 (B1)',
-    dateTime: '2026-08-23 09:30',
-    description: 'ทำตกไว้แถวบันไดหน้าห้อง B1125 มีกุญแจบ้านพ่วงอยู่ 2 ดอก ใครพบเห็นรบกวนติดต่อด่วนครับ มีความจำเป็นต้องใช้รถกลับหอ',
-    imageUrl: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
-    status: 'lost',
-    userId: 'usr-001',
-    userName: 'ศิวะพร ภูดินทราย',
-    userContact: 'Line: siwaporn_sut / 089-123-4567',
-    userEmail: 'b6802189@g.sut.ac.th',
-    securityQuestion: 'ตุ๊กตาหมีที่ห้อยอยู่ใส่เสื้อสีอะไร?',
-    createdAt: '2026-08-23T09:45:00.000Z',
-  },
-  {
-    id: 'post-002',
-    type: 'found',
-    title: 'พวงกุญแจรถฮอนด้า ตกอยู่ใต้โต๊ะม้าหินอ่อน B1',
-    category: 'กุญแจรถ / พวงกุญแจ',
-    color: 'ดำ',
-    location: 'อาคารเรียนรวม 1 (B1)',
-    dateTime: '2026-08-23 10:15',
-    description: 'พบพวงกุญแจรถสีดำ มีกุญแจ 3 ดอก ฝากไว้ที่ป้อมยามหน้าอาคารเรียนรวม 1 แล้วนะครับ',
-    imageUrl: 'https://images.unsplash.com/photo-1616763355603-9755a640a287?w=600&auto=format&fit=crop&q=80',
-    status: 'found',
-    userId: 'usr-002',
-    userName: 'นัฐภัทร์ กตัญวิญญู',
-    userContact: '081-999-8888',
-    userEmail: 'b6803100@g.sut.ac.th',
-    createdAt: '2026-08-23T10:20:00.000Z',
-  },
-  {
-    id: 'post-003',
-    type: 'lost',
-    title: 'บัตรนักศึกษา มทส. นายภัทรเวท กุลปัทมานนท์',
-    category: 'เอกสาร / บัตรนักศึกษา / กระเป๋าสตางค์',
-    color: 'ส้ม (สีแสด มทส.)',
-    location: 'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
-    dateTime: '2026-08-22 12:40',
-    description: 'ลืมไว้ตอนซื้อข้าวแถวร้านข้าวมันไก่ โรงอาหารกาสะลอง รหัส B6802240',
-    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
-    status: 'found',
-    userId: 'usr-003',
-    userName: 'ภัทรเวท กุลปัทมานนท์',
-    userContact: 'Line: pattaravet_k',
-    userEmail: 'b6802240@g.sut.ac.th',
-    createdAt: '2026-08-22T13:00:00.000Z',
-  },
-  {
-    id: 'post-004',
-    type: 'found',
-    title: 'หูฟัง AirPods Pro เคสสีเขียวเหนี่ยวทรัพย์',
-    category: 'หูฟัง / AirPods / Gadgets',
-    color: 'เขียว',
-    location: 'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)',
-    dateTime: '2026-08-22 16:30',
-    description: 'พบที่โต๊ะอ่านหนังสือชั้น 2 โซนเงียบ ข้างในมีหูฟังครบ 2 ข้าง นำมาติดต่อขอรับได้โดยบอกชื่อ Bluetooth',
-    imageUrl: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop&q=80',
-    status: 'found',
-    userId: 'usr-004',
-    userName: 'รพีพรรณ ช่วงชิง',
-    userContact: 'Line: rapeepan_cc',
-    userEmail: 'b6802196@g.sut.ac.th',
-    securityQuestion: 'ชื่อ Bluetooth ของหูฟังชื่ออะไร?',
-    createdAt: '2026-08-22T17:00:00.000Z',
-  },
-  {
-    id: 'post-005',
-    type: 'lost',
-    title: 'iPad Air 5 สี Space Gray ใส่เคสสีม่วงพาสเทล',
-    category: 'แท็บเล็ต / iPad / โน้ตบุ๊ก',
-    color: 'ม่วง',
-    location: 'อาคารเรียนรวม 2 (B2)',
-    dateTime: '2026-08-21 15:00',
-    description: 'ลืมไว้ห้องเรียนรวม B2101 หลังเลิกวิชาแคลคูลัส มีปากกา Apple Pencil แปะอยู่ข้างเครื่อง มีไฟล์โปรเจกต์สำคัญมากครับ',
-    imageUrl: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&auto=format&fit=crop&q=80',
-    status: 'returned',
-    userId: 'usr-005',
-    userName: 'รามเทพ ตรีเมฆ',
-    userContact: '085-555-4321',
-    userEmail: 'b6804145@g.sut.ac.th',
-    createdAt: '2026-08-21T15:30:00.000Z',
-  },
-];
+export const INITIAL_POSTS: PostItem[] = [];
 
-export const INITIAL_FAVORITES: FavoriteItem[] = [
-  {
-    id: 'fav-001',
-    userId: 'usr-001',
-    postId: 'post-004',
-    post: INITIAL_POSTS[3],
-    personalNote: 'หูฟังเหมือนของเพื่อนในสาขา รอถามเพื่อนก่อน',
-    createdAt: '2026-08-22T18:00:00.000Z',
-  },
-];
+export const INITIAL_FAVORITES: FavoriteItem[] = [];
 
-export const INITIAL_NOTIFICATIONS: MatchNotification[] = [
-  {
-    id: 'notif-001',
-    sourcePostId: 'post-001',
-    matchedPostId: 'post-002',
-    sourcePostTitle: 'กุญแจรถมอเตอร์ไซค์ Honda Wave',
-    matchedPostTitle: 'พวงกุญแจรถฮอนด้า ตกอยู่ใต้โต๊ะม้าหินอ่อน B1',
-    matchScore: 95,
-    category: 'กุญแจรถ / พวงกุญแจ',
-    color: 'ดำ',
-    location: 'อาคารเรียนรวม 1 (B1)',
-    matchedWithUserName: 'นัฐภัทร์ กตัญวิญญู',
-    matchedWithContact: '081-999-8888',
-    isRead: false,
-    createdAt: '2026-08-23T10:21:00.000Z',
-  },
-];
+export const INITIAL_NOTIFICATIONS: MatchNotification[] = [];
