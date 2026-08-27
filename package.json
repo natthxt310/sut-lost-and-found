@@ -1,0 +1,27 @@
+{
+  "name": "sut-lost-and-found-workspace",
+  "version": "1.0.0",
+  "description": "SUT Lost & Found System (Integrated Next.js Web/API + React Native Mobile App for DGT01 1130 & DGT01 1230)",
+  "scripts": {
+    "dev": "concurrently -i -n \"SERVER-API,EXPO-APP\" -c \"cyan,green\" \"npm run web\" \"npm run mobile\"",
+    "start": "concurrently -i -n \"SERVER-API,EXPO-APP\" -c \"cyan,green\" \"npm run web\" \"npm run mobile\"",
+    "dev:tunnel": "concurrently -i -n \"SERVER-API,EXPO-APP\" -c \"cyan,green\" \"npm run web\" \"cd lost-and-found && npx expo start --tunnel\"",
+    "dev:android": "concurrently -n \"SERVER-API,ANDROID\" -c \"cyan,green\" \"npm run web\" \"npm run android\"",
+    "mobile": "cd lost-and-found && npx expo start",
+    "android": "cd lost-and-found && npx expo start --android",
+    "web": "cd lost-and-found-web && npm run dev",
+    "test": "npx tsx scripts/test_matching_and_crud.mjs"
+  },
+  "keywords": [
+    "sut",
+    "lost-and-found",
+    "react-native",
+    "nextjs",
+    "expo"
+  ],
+  "author": "SUT DGT01 Group 7",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
