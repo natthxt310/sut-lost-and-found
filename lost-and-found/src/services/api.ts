@@ -6,10 +6,10 @@ import { findMatchesForPost } from './matching';
 
 // Keys สำหรับ AsyncStorage บนอุปกรณ์
 const STORAGE_KEYS = {
-  USER: '@sut_lost_found_user_v1',
-  POSTS: '@sut_lost_found_posts_v1',
-  FAVORITES: '@sut_lost_found_favorites_v1',
-  NOTIFICATIONS: '@sut_lost_found_notifications_v1',
+  USER: '@sut_lost_found_user_v2',
+  POSTS: '@sut_lost_found_posts_v2',
+  FAVORITES: '@sut_lost_found_favorites_v2',
+  NOTIFICATIONS: '@sut_lost_found_notifications_v2',
 };
 
 // Base URL ของ Next.js Backend API ตาม Platform (รองรับทั้งมือถือจริง และ Emulator)
@@ -110,6 +110,13 @@ class PersistentApiService {
         if (data.success && Array.isArray(data.data)) {
           this.posts = data.data;
           await safeStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(this.posts));
+
+          // กรองการแจ้งเตือนที่เกี่ยวข้องกับโพสต์ที่ยังมีอยู่จริงเท่านั้น
+          const validPostIds = new Set(this.posts.map((p) => p.id));
+          this.notifications = this.notifications.filter(
+            (n) => validPostIds.has(n.sourcePostId) && validPostIds.has(n.matchedPostId)
+          );
+          await this.saveNotificationsToStorage();
         }
       }
     } catch (e) {
@@ -481,6 +488,12 @@ class PersistentApiService {
   async markAllNotificationsAsRead(): Promise<void> {
     await this.ensureInitialized();
     this.notifications.forEach((n) => (n.isRead = true));
+    await this.saveNotificationsToStorage();
+  }
+
+  async clearAllNotifications(): Promise<void> {
+    await this.ensureInitialized();
+    this.notifications = [];
     await this.saveNotificationsToStorage();
   }
 

@@ -34,6 +34,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
     unreadNotifsCount,         // จำนวนที่ยังไม่ได้อ่าน
     markNotificationAsRead,    // มาร์กว่าอ่านแล้ว
     markAllNotificationsAsRead,// มาร์กว่าอ่านทั้งหมดแล้ว
+    clearAllNotifications,     // ล้างแจ้งเตือนทั้งหมด
     refreshData,
     isLoading,
   } = useApp();
@@ -57,14 +58,24 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
             แจ้งเตือนทันทีเมื่อระบบตรวจพบข้อมูลของหายและพบของตรงกัน
           </Text>
         </View>
-        {unreadNotifsCount > 0 && (
-          <TouchableOpacity
-            onPress={markAllNotificationsAsRead}
-            style={[styles.markAllBtn, { backgroundColor: colors.primaryBg }]}
-          >
-            <Text style={[styles.markAllText, { color: colors.primary }]}>อ่านทั้งหมด</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              onPress={clearAllNotifications}
+              style={[styles.markAllBtn, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Text style={[styles.markAllText, { color: colors.textSecondary }]}>ล้างทั้งหมด</Text>
+            </TouchableOpacity>
+          )}
+          {unreadNotifsCount > 0 && (
+            <TouchableOpacity
+              onPress={markAllNotificationsAsRead}
+              style={[styles.markAllBtn, { backgroundColor: colors.primaryBg }]}
+            >
+              <Text style={[styles.markAllText, { color: colors.primary }]}>อ่านทั้งหมด</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView

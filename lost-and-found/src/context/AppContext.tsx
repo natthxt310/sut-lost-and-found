@@ -36,6 +36,7 @@ interface AppContextType {
   isFavorite: (postId: string) => boolean;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   login: (studentId: string, password?: string) => Promise<void>;
   register: (fullName: string, studentId: string, password?: string, phone?: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -153,6 +154,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshData();
   };
 
+  const clearAllNotifications = async () => {
+    await api.clearAllNotifications();
+    await refreshData();
+  };
+
   const login = async (studentId: string, password?: string) => {
     const loggedIn = await api.login(studentId, password);
     setUser(loggedIn);
@@ -205,6 +211,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isFavorite,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        clearAllNotifications,
         login,
         register,
         updateProfile,
