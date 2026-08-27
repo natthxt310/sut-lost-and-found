@@ -20,7 +20,7 @@ jobs:
       - name: ⚙️ Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: 'lost-and-found/package.json'
 
@@ -47,7 +47,7 @@ jobs:
       - name: ⚙️ Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: 'lost-and-found-web/package.json'
 
@@ -79,7 +79,7 @@ jobs:
       - name: ⚙️ Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: 📦 Install Workspace Dependencies
         run: npm install
