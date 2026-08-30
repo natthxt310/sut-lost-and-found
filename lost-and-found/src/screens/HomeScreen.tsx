@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ItemCard } from '../components/ItemCard';
 import { SearchBar } from '../components/SearchBar';
 import { PostItem } from '../types';
+import { useShakeSensor } from '../hooks/useShakeSensor';
 
 // =========================================================================
 // 🏠 หน้าหลัก (Home Screen)
@@ -43,6 +44,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   // ตัวแปรสำหรับค้นหาและกรองหมวดหมู่
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
+  const [showShakeBanner, setShowShakeBanner] = useState(false);
+
+  // 📳 เรียกใช้ Accelerometer Shake Sensor: เมื่อเขย่าเครื่องจะรีเฟรชข้อมูลและแจ้งเตือน
+  useShakeSensor(async () => {
+    setShowShakeBanner(true);
+    await refreshData();
+    setTimeout(() => {
+      setShowShakeBanner(false);
+    }, 3500);
+  });
 
   // หมวดหมู่สิ่งของทั้งหมดที่ให้เลือกกดกรอง
   const categories = [
@@ -81,6 +92,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <RefreshControl refreshing={isLoading} onRefresh={refreshData} colors={[colors.primary]} />
         }
       >
+        {/* 📳 Shake Sensor Detection Banner */}
+        {showShakeBanner && (
+          <View style={[styles.shakeBanner, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}>
+            <View style={styles.shakeBannerLeft}>
+              <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.shakeBannerTitle, { color: colors.primary }]}>
+                  ตรวจพบการเขย่าเครื่อง (Shake Sensor Active) 📳
+                </Text>
+                <Text style={[styles.shakeBannerSubtitle, { color: colors.textSecondary }]}>
+                  รีเฟรชข้อมูลโพสต์และสถิติล่าสุดเรียบร้อยแล้ว
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => setShowShakeBanner(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Minimalist Hero Section */}
         <View style={[styles.heroCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder, shadowColor: colors.shadowColor }]}>
           <View style={styles.heroTop}>
@@ -373,5 +404,29 @@ const styles = StyleSheet.create({
   },
   emptyDesc: {
     fontSize: 12,
+  },
+  shakeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  shakeBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  shakeBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  shakeBannerSubtitle: {
+    fontSize: 11,
+    marginTop: 2,
   },
 });

@@ -42,7 +42,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenFavorites,
 }) => {
   const { user, posts, updateProfile, updatePost, logout } = useApp();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark, toggleTheme, autoLightSensor, toggleAutoLightSensor, currentLux } = useTheme();
 
   // สถานะสำหรับเปิด/ปิด Modal แก้ไขข้อมูลโปรไฟล์
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -156,6 +156,44 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             trackColor={{ false: '#CBD5E1', true: colors.primary }}
             thumbColor="#FFFFFF"
           />
+        </View>
+
+        {/* 📳 & 💡 Hardware Sensors Integration Card */}
+        <View style={[styles.themeCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+          <View style={styles.themeCardLeft}>
+            <View style={[styles.themeIconCircle, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5' }]}>
+              <Ionicons name="hardware-chip-outline" size={20} color={colors.success} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.themeCardTitle, { color: colors.text }]}>
+                สลับธีมอัตโนมัติด้วยเซ็นเซอร์แสง (Light Sensor)
+              </Text>
+              <Text style={[styles.themeCardSubtitle, { color: colors.textSecondary }]}>
+                {autoLightSensor
+                  ? `ทำงานอยู่ ${currentLux !== null ? `(${Math.round(currentLux)} lux)` : ''} • ปรับมืด/สว่างตามแสงห้อง`
+                  : 'ปิดอยู่ • แตะเพื่อเปิดใช้เซ็นเซอร์วัดแสง'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={autoLightSensor}
+            onValueChange={toggleAutoLightSensor}
+            trackColor={{ false: '#CBD5E1', true: colors.success }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        {/* 📳 Shake Sensor Status Card */}
+        <View style={[styles.adminInfoCard, { backgroundColor: isDark ? 'rgba(251, 146, 60, 0.12)' : '#FFF7ED', borderColor: isDark ? 'rgba(251, 146, 60, 0.3)' : '#FED7AA' }]}>
+          <View style={[styles.adminInfoIcon, { backgroundColor: isDark ? 'rgba(251, 146, 60, 0.25)' : '#FFEDD5' }]}>
+            <Ionicons name="phone-portrait-outline" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.adminInfoTitle, { color: colors.primary }]}>เซ็นเซอร์ตรวจจับการเขย่า (Accelerometer Sensor)</Text>
+            <Text style={[styles.adminInfoDesc, { color: colors.textSecondary }]}>
+              สามารถ <Text style={{ fontWeight: '700', color: colors.primary }}>เขย่าโทรศัพท์มือถือ</Text> ในหน้าหลัก เพื่อสั่นเตือนและรีเฟรชข้อมูลของหายล่าสุดได้แบบ Real-time
+            </Text>
+          </View>
         </View>
 
         {/* 💻 Admin Portal Quick Info Card */}

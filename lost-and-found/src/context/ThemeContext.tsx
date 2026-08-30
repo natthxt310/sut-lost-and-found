@@ -1,55 +1,101 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import { LightSensor } from 'expo-sensors';
 import { ThemeColors, lightColors, darkColors } from '../theme/theme';
 
 /**
  * =========================================================================
- * 🌙 ระบบจัดการธีม (Dark Theme / Light Theme Context)
+ * 🌙 ระบบจัดการธีม & เซ็นเซอร์วัดแสง (Dark Theme / LightSensor Context)
  * =========================================================================
  * 💡 อธิบายการทำงานแบบเข้าใจง่าย:
- * ทำหน้าที่เป็น "ศูนย์กลางควบคุมสีทั้งแอป"
- * 
- * 📌 ความสามารถ:
- * 1. จดจำการตั้งค่าลงหน่วยความจำเครื่อง (AsyncStorage) ปิดแอปแล้วเปิดใหม่ยังจำโหมดเดิมได้
- * 2. ฟังก์ชัน `toggleTheme()` สำหรับสลับระหว่าง "โหมดสว่าง ☀️" กับ "โหมดมืด 🌙"
- * 3. แจกจ่ายชุดสี (`colors`) ไปให้ทุกหน้าจอและทุก Component นำไปใช้งานได้ทันที
+ * 1. ทำหน้าที่เป็น "ศูนย์กลางควบคุมสีทั้งแอป" (สว่าง / มืด)
+ * 2. ☀️/🌙 สลับธีมอัตโนมัติตามความสว่างของห้องด้วย LightSensor (Ambient Light Sensor)
+ * 3. 💾 จดจำการตั้งค่าลงเครื่อง (AsyncStorage)
  * =========================================================================
  */
 
-// คีย์สำหรับบันทึกการตั้งค่าธีมลงในเครื่อง
-const THEME_STORAGE_KEY = '@sut_lost_found_theme_v1';
+const THEME_STORAGE_KEY = '@sut_lost_found_theme_v2';
+const AUTO_LIGHT_STORAGE_KEY = '@sut_lost_found_auto_light_v2';
 
 interface ThemeContextType {
-  colors: ThemeColors;    // รวบรวมชุดสีปัจจุบัน (สว่าง หรือ มืด)
-  isDark: boolean;        // โหมดมืดเปิดอยู่หรือไม่ (true/false)
-  toggleTheme: () => void;// ฟังก์ชันสำหรับกดสลับธีม
+  colors: ThemeColors;
+  isDark: boolean;
+  toggleTheme: () => void;
+  autoLightSensor: boolean;
+  toggleAutoLightSensor: () => void;
+  currentLux: number | null;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   colors: lightColors,
   isDark: false,
   toggleTheme: () => {},
+  autoLightSensor: false,
+  toggleAutoLightSensor: () => {},
+  currentLux: null,
 });
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
+  const [autoLightSensor, setAutoLightSensor] = useState(false);
+  const [currentLux, setCurrentLux] = useState<number | null>(null);
 
-  // 🔄 โหลดการตั้งค่าธีมที่เคยบันทึกไว้ทันทีที่เปิดแอปขึ้นมา
+  // 🔄 โหลดการตั้งค่าธีมและเซ็นเซอร์วัดแสงจากเครื่อง
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadSettings = async () => {
       try {
-        const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        if (stored === 'dark') {
+        const [storedTheme, storedAutoLight] = await Promise.all([
+          AsyncStorage.getItem(THEME_STORAGE_KEY),
+          AsyncStorage.getItem(AUTO_LIGHT_STORAGE_KEY),
+        ]);
+
+        if (storedTheme === 'dark') {
           setIsDark(true);
         }
+        if (storedAutoLight === 'true') {
+          setAutoLightSensor(true);
+        }
       } catch {
-        // หากโหลดไม่ได้ให้ใช้ Light Mode เป็นค่าเริ่มต้น
+        // Silently use defaults
       }
     };
-    loadTheme();
+    loadSettings();
   }, []);
 
-  // 🔀 ฟังก์ชันสลับธีม สว่าง <-> มืด พร้อมบันทึกลงเครื่อง
+  // 💡 ตรวจจับระดับแสงรอบตัวด้วย LightSensor
+  useEffect(() => {
+    let subscription: { remove: () => void } | null = null;
+
+    if (autoLightSensor && Platform.OS === 'android') {
+      try {
+        LightSensor.setUpdateInterval(500);
+        subscription = LightSensor.addListener(({ illuminance }) => {
+          setCurrentLux(illuminance);
+
+          // ถ้ามืด (< 20 lux) ให้เปลี่ยนเป็นโหมดมืดอัตโนมัติ
+          // ถ้าสว่าง (> 35 lux) ให้เปลี่ยนเป็นโหมดสว่างอัตโนมัติ
+          if (illuminance < 20) {
+            setIsDark(true);
+          } else if (illuminance > 35) {
+            setIsDark(false);
+          }
+        });
+      } catch {
+        // LightSensor not supported
+      }
+    } else {
+      setCurrentLux(null);
+    }
+
+    return () => {
+      if (subscription) {
+        subscription.remove();
+      }
+    };
+  }, [autoLightSensor]);
+
+  // 🔀 ฟังก์ชันสลับธีม สว่าง <-> มืด ด้วยตัวเอง
   const toggleTheme = async () => {
     const newValue = !isDark;
     setIsDark(newValue);
@@ -60,17 +106,35 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // เลือกชุดสีตามโหมดที่เปิดอยู่
+  // 💡 ฟังก์ชันเปิด/ปิด ระบบสลับธีมอัตโนมัติตามเซ็นเซอร์วัดแสง (Light Sensor)
+  const toggleAutoLightSensor = async () => {
+    const newValue = !autoLightSensor;
+    setAutoLightSensor(newValue);
+    try {
+      await AsyncStorage.setItem(AUTO_LIGHT_STORAGE_KEY, newValue ? 'true' : 'false');
+    } catch {
+      // Silently fail
+    }
+  };
+
   const colors = isDark ? darkColors : lightColors;
 
   return (
-    <ThemeContext.Provider value={{ colors, isDark, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        colors,
+        isDark,
+        toggleTheme,
+        autoLightSensor,
+        toggleAutoLightSensor,
+        currentLux,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Hook สำหรับเรียกใช้งานธีมในหน้าจอต่างๆ เช่น const { colors, isDark } = useTheme();
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   return context;

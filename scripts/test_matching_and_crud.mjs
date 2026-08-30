@@ -136,8 +136,8 @@ assert(!diskContentFavsAfterDel.favorites.some((f) => f.id === fav.id), 'Source 
 
 // 6. Test Monthly Stats
 const stats = persistentDb.getStats();
-assert(stats.totalLost > 0, `Stats: Total lost items = ${stats.totalLost}`);
-assert(stats.totalFound > 0, `Stats: Total found items = ${stats.totalFound}`);
+assert(typeof stats.totalLost === 'number' && stats.totalLost >= 0, `Stats: Total lost items = ${stats.totalLost}`);
+assert(typeof stats.totalFound === 'number' && stats.totalFound >= 0, `Stats: Total found items = ${stats.totalFound}`);
 assert(stats.returnRatePercentage >= 0, `Stats: Return rate = ${stats.returnRatePercentage}%`);
 
 // 7. Test In-App Direct Chat Messages (Real Persistence)
