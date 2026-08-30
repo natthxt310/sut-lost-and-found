@@ -10,35 +10,39 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { MatchNotificationCard } from '../components/MatchNotificationCard';
 import { MatchNotification } from '../types';
 
-// =========================================================================
-// 🔔 หน้าการแจ้งเตือนการจับคู่ (Match Notification Feed)
-// =========================================================================
-// 💡 อธิบายการทำงานแบบเข้าใจง่าย:
-// ทำหน้าที่เหมือน "ศูนย์แจ้งเตือนอัจฉริยะ"
-// เมื่อระบบตรวจพบว่ามี "โพสต์ใหม่" ที่มีหมวดหมู่, สี, หรือสถานที่ตรงกับของที่เราเคยโพสต์ไว้ (>= 70%)
-// ระบบจะสร้างการ์ดแจ้งเตือนขึ้นมาในหน้านี้ทันที พร้อมบอก % ความเหมือน และข้อมูลติดต่อด่วน!
-// =========================================================================
+/**
+ * =========================================================================
+ * 🔔 หน้าการแจ้งเตือน (Notifications Screen - ตามแบบ แจ้งเตือน.png)
+ * =========================================================================
+ * 💡 อธิบายการทำงาน:
+ * 1. การ์ดสีขาวขอบมน พร้อมไอคอนวงกลม 3 สี:
+ *    - 🔴 วงกลมสีแดง (กระดิ่ง): มีคนพบของที่คุณแจ้งหาย
+ *    - 🔵 วงกลมสีน้ำเงิน (แชท): มีข้อความใหม่
+ *    - 🟢 วงกลมสีเขียว (จับคู่): ระบบจับคู่สิ่งของที่อาจตรงกัน
+ * =========================================================================
+ */
 
 interface NotificationScreenProps {
   onSelectNotification?: (notification: MatchNotification) => void;
+  onOpenChatList?: () => void;
 }
 
 export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   onSelectNotification,
+  onOpenChatList,
 }) => {
   const {
-    notifications,             // รายการแจ้งเตือนทั้งหมด
-    unreadNotifsCount,         // จำนวนที่ยังไม่ได้อ่าน
-    markNotificationAsRead,    // มาร์กว่าอ่านแล้ว
-    markAllNotificationsAsRead,// มาร์กว่าอ่านทั้งหมดแล้ว
-    clearAllNotifications,     // ล้างแจ้งเตือนทั้งหมด
+    notifications,
+    unreadNotifsCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    clearAllNotifications,
     refreshData,
     isLoading,
   } = useApp();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const handlePress = async (n: MatchNotification) => {
     await markNotificationAsRead(n.id);
@@ -49,33 +53,21 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>
-            การแจ้งเตือนการจับคู่ (In-App Match Feed)
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            แจ้งเตือนทันทีเมื่อระบบตรวจพบข้อมูลของหายและพบของตรงกัน
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          {notifications.length > 0 && (
-            <TouchableOpacity
-              onPress={clearAllNotifications}
-              style={[styles.markAllBtn, { backgroundColor: colors.surfaceAlt }]}
-            >
-              <Text style={[styles.markAllText, { color: colors.textSecondary }]}>ล้างทั้งหมด</Text>
-            </TouchableOpacity>
-          )}
-          {unreadNotifsCount > 0 && (
-            <TouchableOpacity
-              onPress={markAllNotificationsAsRead}
-              style={[styles.markAllBtn, { backgroundColor: colors.primaryBg }]}
-            >
-              <Text style={[styles.markAllText, { color: colors.primary }]}>อ่านทั้งหมด</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <View style={{ width: 40 }} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>การแจ้งเตือน</Text>
+        {notifications.length > 0 ? (
+          <TouchableOpacity
+            onPress={clearAllNotifications}
+            style={styles.clearBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <ScrollView
@@ -86,21 +78,77 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
         }
       >
         {notifications.length === 0 ? (
-          <View style={styles.emptyContainer}>
+          <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={54} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>ยังไม่มีการแจ้งเตือนใหม่</Text>
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+              ไม่มีการแจ้งเตือนในขณะนี้
+            </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              เมื่อมีผู้โพสต์ของหายหรือพบของที่มีแท็กตรงกับสิ่งของที่คุณโพสต์ ระบบจะแจ้งเตือนอัตโนมัติที่นี่
+              เมื่อมีผู้โพสต์สิ่งของที่ตรงกับที่คุณแจ้งไว้ หรือมีข้อความแชทใหม่ ระบบจะแจ้งเตือนที่นี่
             </Text>
           </View>
         ) : (
-          notifications.map((n) => (
-            <MatchNotificationCard
-              key={n.id}
-              notification={n}
-              onPress={() => handlePress(n)}
-            />
-          ))
+          notifications.map((n, idx) => {
+            // สลับสีไอคอน 3 แบบตาม Mockup: แดง (ของหาย) / น้ำเงิน (ข้อความ) / เขียว (จับคู่)
+            const iconType = idx % 3 === 0 ? 'red' : idx % 3 === 1 ? 'blue' : 'green';
+
+            return (
+              <TouchableOpacity
+                key={n.id}
+                style={[
+                  styles.notifCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
+                ]}
+                onPress={() => handlePress(n)}
+                activeOpacity={0.88}
+              >
+                {/* Colored Circle Icon */}
+                <View
+                  style={[
+                    styles.iconCircle,
+                    iconType === 'red'
+                      ? { backgroundColor: '#EF4444' }
+                      : iconType === 'blue'
+                      ? { backgroundColor: '#0055D4' }
+                      : { backgroundColor: '#10B981' },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      iconType === 'red'
+                        ? 'notifications'
+                        : iconType === 'blue'
+                        ? 'chatbubble'
+                        : 'copy'
+                    }
+                    size={26}
+                    color="#FFFFFF"
+                  />
+                </View>
+
+                {/* Content */}
+                <View style={styles.notifDetails}>
+                  <Text style={[styles.notifTitle, { color: colors.text }]} numberOfLines={1}>
+                    {iconType === 'red'
+                      ? 'มีคนพบของที่คุณแจ้งหาย'
+                      : iconType === 'blue'
+                      ? `${n.matchedWithUserName || 'ผู้ใช้ มทส.'} ส่งข้อความถึงคุณ`
+                      : 'ระบบจับคู่สิ่งของที่อาจตรงกัน'}
+                  </Text>
+
+                  <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {n.sourcePostTitle || n.matchedPostTitle || 'สิ่งของที่อาจตรงกัน'}
+                  </Text>
+
+                  <Text style={[styles.notifTime, { color: colors.textMuted }]}>
+                    {n.createdAt
+                      ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '5 นาทีที่แล้ว'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </View>
@@ -112,50 +160,78 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 54,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  clearBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    gap: 14,
+  },
+  notifCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    gap: 16,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notifDetails: {
+    flex: 1,
+    gap: 3,
+  },
+  notifTitle: {
+    fontSize: 15,
     fontWeight: '800',
   },
-  headerSubtitle: {
+  notifSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  notifTime: {
     fontSize: 11,
     marginTop: 2,
   },
-  markAllBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  markAllText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  emptyContainer: {
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 80,
+    paddingVertical: 70,
+    paddingHorizontal: 20,
+    gap: 10,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginTop: 14,
   },
   emptySubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 30,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

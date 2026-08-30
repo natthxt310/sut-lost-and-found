@@ -6,276 +6,335 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { CameraCapture } from '../components/CameraCapture';
 import { SUTDropdown } from '../components/SUTDropdown';
-import { moderatePostContent } from '../services/moderation';
-import { PostType, SUT_LOCATIONS, ITEM_CATEGORIES, ITEM_COLORS } from '../types';
+import { PostType } from '../types';
 
-// =========================================================================
-// 📝 หน้าสร้างโพสต์ (Create Post Screen)
-// =========================================================================
-// 💡 อธิบายการทำงานแบบเข้าใจง่าย:
-// ใช้สำหรับสร้างโพสต์ใหม่ แบ่งออกเป็น 2 แบบ:
-// 1. "ฉันทำของหาย (Lost)"  => ใส่ข้อมูลของที่หาย เพื่อให้คนอื่นช่วยตามหา
-// 2. "ฉันเก็บของได้ (Found)" => ใส่ข้อมูลของที่เก็บได้ พร้อมคำถามกันคนแอบอ้าง (Security Question)
-//
-// 🛡️ ระบบความปลอดภัยที่มีในหน้านี้:
-// - กล้องถ่ายรูป: ถ่ายภาพจริงผ่านเซนเซอร์กล้องมือถือ
-// - AI กรองคำหยาบ: ตรวจสอบข้อความก่อนบันทึก ถ้ามีคำหยาบจะไม่อนุญาตให้โพสต์
-// - Auto-Match: ทันทีที่โพสต์เสร็จ ระบบจะคำนวณจับคู่กับโพสต์ที่มีทันที ถ้าตรงจะเด้งเตือน!
-// =========================================================================
+/**
+ * =========================================================================
+ * 📝 หน้าสร้างโพสต์แจ้งของหาย / พบของ (Create Post Screen - ตามแบบ โพสต์.png)
+ * =========================================================================
+ * 💡 อธิบายการทำงาน:
+ * 1. สลับประเภท 'ของหาย' (สีแดง) หรือ 'ของที่พบ' (สีเขียว)
+ * 2. กรอบเส้นประอัปโหลดรูปภาพสิ่งของ
+ * 3. ฟอร์มครบถ้วน: ชื่อ, หมวดหมู่, สถานที่ มทส., วันที่, เวลา, รายละเอียด
+ * 4. ปุ่มส้ม "โพสต์" บันทึกข้อมูลขึ้นระบบและค้นหา Auto-Match ทันที
+ * =========================================================================
+ */
 
 interface CreatePostScreenProps {
   initialType?: PostType;
+  onBack: () => void;
   onSuccess: () => void;
 }
 
 export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   initialType = 'lost',
+  onBack,
   onSuccess,
 }) => {
-  const { user, createPost } = useApp();
+  const { createPost, user } = useApp();
   const { colors, isDark } = useTheme();
 
-  // สถานะข้อมูลของฟอร์ม (Form States)
-  const [type, setType] = useState<PostType>(initialType); // 'lost' หรือ 'found'
-  const [title, setTitle] = useState('');                   // ชื่อสิ่งของ
-  const [category, setCategory] = useState(ITEM_CATEGORIES[0]); // หมวดหมู่
-  const [color, setColor] = useState(ITEM_COLORS[0]);           // สี
-  const [location, setLocation] = useState(SUT_LOCATIONS[0]);   // พิกัดสถานที่ใน มทส.
-  const [dateTime, setDateTime] = useState(
-    new Date().toLocaleDateString('th-TH') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  );
-  const [description, setDescription] = useState('');       // รายละเอียดเพิ่มเติม
-  const [imageUrl, setImageUrl] = useState('');             // รูปภาพ
-  const [userContact, setUserContact] = useState(user ? `Line: ${user.studentId} / โทร ${user.phone}` : ''); // ช่องทางติดต่อ
-  const [securityQuestion, setSecurityQuestion] = useState(''); // คำถามพิสูจน์เจ้าของ
-  const [isSubmitting, setIsSubmitting] = useState(false);  // สถานะกำลังโหลดตอนกดบันทึก
+  const [type, setType] = useState<PostType>(initialType);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [location, setLocation] = useState('');
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}`;
+  });
+  const [time, setTime] = useState(() => {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  });
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // เลือกรูปภาพจากคลังภาพ
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUrl(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('ต้องการสิทธิ์การเข้าถึงกล้อง', 'กรุณาอนุญาตการเข้าถึงกล้องถ่ายรูป');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUrl(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเปิดกล้องถ่ายรูปได้');
+    }
+  };
+
+  const handleImageChoice = () => {
+    Alert.alert('อัปโหลดรูปภาพ', 'เลือกช่องทางอัปโหลดรูปสิ่งของ', [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'เปิดกล้องถ่ายภาพ 📷',
+        onPress: takePhoto,
+      },
+      {
+        text: 'เลือกจากคลังภาพ 🖼️',
+        onPress: pickImage,
+      },
+    ]);
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert('กรุณากรอกข้อมูล', 'กรุณาระบุชื่อสิ่งของที่ต้องการโพสต์');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุชื่อสิ่งของ');
       return;
     }
-    if (!userContact.trim()) {
-      Alert.alert('กรุณากรอกข้อมูล', 'กรุณาระบุช่องทางการติดต่อสำหรับส่งคืน');
+    if (!category) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดเลือกหมวดหมู่สิ่งของ');
       return;
     }
-
-    // 🛡️ AI Automated Content Safety & Moderation Check
-    const modResult = moderatePostContent(title.trim(), description.trim(), imageUrl);
-    if (modResult.status === 'rejected') {
-      Alert.alert(
-        '🚫 ตรวจพบคำไม่เหมาะสม',
-        modResult.reason || 'กรุณาตรวจสอบและใช้ถ้อยคำที่สุภาพเหมาะสมสำหรับพื้นที่สาธารณะ'
-      );
+    if (!location) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดเลือกสถานที่ใน มทส.');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const result = await createPost({
+      await createPost({
         type,
         title: title.trim(),
         category,
-        color,
+        color: 'ไม่ระบุ',
         location,
-        dateTime,
+        dateTime: `${date} ${time}`,
         description: description.trim(),
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80',
         status: type === 'lost' ? 'lost' : 'found',
-        userId: user?.id || 'usr-anon',
-        userName: user?.fullName || 'นักศึกษา มทส.',
-        userContact: userContact.trim(),
-        userEmail: user?.email || 'student@g.sut.ac.th',
-        securityQuestion: securityQuestion.trim() || undefined,
-        isApproved: modResult.status === 'approved',
-        moderationStatus: modResult.status,
-        moderationScore: modResult.score,
-        moderationNotes: modResult.reason,
+        userId: user?.id || 'usr-001',
+        userName: user?.fullName || 'ศิวะพร ภูดินทราย',
+        userContact: user?.phone || '089-123-4567',
+        userEmail: user?.email || 'b6802189@g.sut.ac.th',
       });
 
-      if (result.matches.length > 0) {
-        Alert.alert(
-          '🎉 ตรวจพบการจับคู่อัตโนมัติ (Auto-Match)!',
-          `ระบบตรวจพบโพสต์ที่มีข้อมูลตรงกัน ${result.matches.length} รายการ!\nกรุณาตรวจสอบที่แท็บการแจ้งเตือนเพื่อดูข้อมูลผู้ติดต่อ`,
-          [{ text: 'ตกลง', onPress: onSuccess }]
-        );
-      } else {
-        Alert.alert(
-          'สำเร็จ',
-          modResult.status === 'approved'
-            ? '✅ บันทึกโพสต์เรียบร้อย (ผ่านการตรวจสอบความปลอดภัย AI อัตโนมัติ)'
-            : '⚠️ บันทึกโพสต์เรียบร้อย (ส่งให้ผู้ดูแลระบบตรวจสอบเพิ่มเติม)',
-          [{ text: 'ตกลง', onPress: onSuccess }]
-        );
-      }
+      Alert.alert('โพสต์สำเร็จ! 🎉', 'ข้อมูลสิ่งของของคุณถูกบันทึกขึ้นระบบเรียบร้อยแล้ว', [
+        {
+          text: 'ตกลง',
+          onPress: onSuccess,
+        },
+      ]);
     } catch (error) {
-      console.error('Error creating post:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกโพสต์ได้ กรุณาลองใหม่อีกครั้ง');
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถสร้างโพสต์ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const categories = [
+    'โทรศัพท์',
+    'กระเป๋า',
+    'บัตร / เอกสาร',
+    'กุญแจ',
+    'หูฟัง / AirPods',
+    'นาฬิกา',
+    'เสื้อผ้า',
+    'อื่นๆ',
+  ];
+
+  const locations = [
+    'อาคารเรียนรวม 1 (B1)',
+    'อาคารเรียนรวม 2 (B2)',
+    'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)',
+    'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
+    'อาคารบริหาร มทส.',
+    'U-Store / Fresh Me',
+    'อาคารวิชาการ 1-2',
+    'หอพักสุรนิเวศ',
+  ];
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.modalBg }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.blackCircleBtn}
+          onPress={onBack}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>โพสต์</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Toggle ประเภทโพสต์ */}
-        <View style={[styles.typeSelectorContainer, { backgroundColor: colors.surfaceAlt }]}>
+        {/* 1. ประเภท (Type Selector) */}
+        <Text style={[styles.label, { color: colors.text }]}>ประเภท</Text>
+        <View style={styles.typeSelectorRow}>
           <TouchableOpacity
-            style={[styles.typeBtn, type === 'lost' && styles.typeBtnLostActive]}
+            style={[
+              styles.typeBtn,
+              type === 'lost'
+                ? { backgroundColor: '#EF4444' }
+                : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+            ]}
             onPress={() => setType('lost')}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Ionicons
-              name="search"
-              size={18}
-              color={type === 'lost' ? '#FFFFFF' : colors.textSecondary}
-            />
-            <Text style={[styles.typeBtnText, { color: colors.textSecondary }, type === 'lost' && styles.typeBtnTextActive]}>
-              ฉันทำของหาย (Lost)
+            <Text style={[styles.typeBtnText, type === 'lost' ? styles.typeBtnTextActive : { color: colors.text }]}>
+              ของหาย
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.typeBtn, type === 'found' && styles.typeBtnFoundActive]}
+            style={[
+              styles.typeBtn,
+              type === 'found'
+                ? { backgroundColor: '#10B981' }
+                : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+            ]}
             onPress={() => setType('found')}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Ionicons
-              name="camera"
-              size={18}
-              color={type === 'found' ? '#FFFFFF' : colors.textSecondary}
-            />
-            <Text style={[styles.typeBtnText, { color: colors.textSecondary }, type === 'found' && styles.typeBtnTextActive]}>
-              ฉันเก็บของได้ (Found)
+            <Text style={[styles.typeBtnText, type === 'found' ? styles.typeBtnTextActive : { color: colors.text }]}>
+              ของที่พบ
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Camera Sensor Integration */}
-        <CameraCapture imageUri={imageUrl} onImageChange={setImageUrl} />
+        {/* 2. รูปภาพ (Upload Box with Dashed Border) */}
+        <Text style={[styles.label, { color: colors.text }]}>รูปภาพ</Text>
+        <TouchableOpacity
+          style={[
+            styles.imageUploadBox,
+            { borderColor: isDark ? '#475569' : '#CBD5E1', backgroundColor: colors.surface },
+          ]}
+          onPress={handleImageChoice}
+          activeOpacity={0.8}
+        >
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
+          ) : (
+            <View style={styles.uploadPlaceholder}>
+              <Ionicons name="camera" size={38} color={colors.text} />
+              <Text style={[styles.uploadText, { color: colors.text }]}>อัปโหลดรูปภาพ</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
-        {/* ฟิลด์ชื่อสิ่งของ */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>
-            ชื่อสิ่งของ <Text style={styles.required}>*</Text>
-          </Text>
-          <TextInput
-            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-            placeholderTextColor={colors.placeholder}
-            placeholder={type === 'lost' ? 'เช่น กุญแจรถฮอนด้าเวฟ, หูฟัง AirPods...' : 'เช่น บัตรนักศึกษา, กระเป๋าสตางค์...'}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
+        {/* 3. ชื่อ */}
+        <Text style={[styles.label, { color: colors.text }]}>ชื่อ</Text>
+        <TextInput
+          style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+          placeholder="เช่น iPhone 13 สีดำ, กุญแจรถ Wave"
+          placeholderTextColor="#94A3B8"
+          value={title}
+          onChangeText={setTitle}
+        />
 
-        {/* Dropdown หมวดหมู่และสี */}
+        {/* 4. หมวดหมู่ */}
+        <Text style={[styles.label, { color: colors.text }]}>หมวดหมู่</Text>
         <SUTDropdown
-          label="หมวดหมู่สิ่งของ (Category Tag)"
-          items={ITEM_CATEGORIES}
+          label=""
+          items={categories}
           selectedValue={category}
           onSelect={setCategory}
-          iconName="pricetag-outline"
+          placeholder="เลือกหมวดหมู่สิ่งของ"
         />
 
+        {/* 5. สถานที่ */}
+        <Text style={[styles.label, { color: colors.text }]}>สถานที่</Text>
         <SUTDropdown
-          label="สีของสิ่งของ (Color Tag)"
-          items={ITEM_COLORS}
-          selectedValue={color}
-          onSelect={setColor}
-          iconName="color-palette-outline"
-        />
-
-        {/* Dropdown พิกัดสถานที่ใน มทส. */}
-        <SUTDropdown
-          label="พิกัดสถานที่ใน มทส. (SUT Campus Location)"
-          items={SUT_LOCATIONS}
+          label=""
+          items={locations}
           selectedValue={location}
           onSelect={setLocation}
-          iconName="location-outline"
+          placeholder="เลือกสถานที่ใน มทส."
         />
 
-        {/* วันและเวลา */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>วันและเวลาที่ทำหาย/พบ</Text>
-          <TextInput
-            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-            placeholderTextColor={colors.placeholder}
-            value={dateTime}
-            onChangeText={setDateTime}
-            placeholder="ระบุวันเวลา เช่น 23 ส.ค. 2569 10:00"
-          />
-        </View>
-
-        {/* รายละเอียดเพิ่มเติม */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>รายละเอียดและจุดสังเกต</Text>
-          <TextInput
-            style={[styles.textInput, styles.textArea, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-            placeholderTextColor={colors.placeholder}
-            placeholder="ระบุจุดสังเกตเพิ่มเติม เช่น มีสติกเกอร์แปะ มีรอยขีดข่วน หรือบริเวณที่ทำตก..."
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* ช่องทางติดต่อ */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>
-            ช่องทางการติดต่อ <Text style={styles.required}>*</Text>
-          </Text>
-          <TextInput
-            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-            placeholderTextColor={colors.placeholder}
-            placeholder="เช่น Line ID, เบอร์โทรศัพท์, Facebook..."
-            value={userContact}
-            onChangeText={setUserContact}
-          />
-        </View>
-
-        {/* คำถามยืนยันความเป็นเจ้าของ (สำหรับคนเจอของ) */}
-        {type === 'found' && (
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
-              คำถามเพื่อพิสูจน์ความเป็นเจ้าของ (Security Question - ป้องกันการสวมรอย)
-            </Text>
-            <TextInput
-              style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-              placeholderTextColor={colors.placeholder}
-              placeholder="เช่น ข้างในกระเป๋ามีเหรียญอะไร, หน้าจอมือถือรูปลูกอะไร..."
-              value={securityQuestion}
-              onChangeText={setSecurityQuestion}
-            />
+        {/* 6. วันที่ & เวลา (2 Columns Row) */}
+        <View style={styles.dateTimeRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.label, { color: colors.text }]}>วันที่</Text>
+            <View style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.inputInner, { color: colors.text }]}
+                value={date}
+                onChangeText={setDate}
+                placeholder="วว/ดด/ปปปป"
+                placeholderTextColor="#94A3B8"
+              />
+              <Ionicons name="calendar-outline" size={20} color="#64748B" />
+            </View>
           </View>
-        )}
 
-        {/* ปุ่มบันทึก */}
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.label, { color: colors.text }]}>เวลา</Text>
+            <View style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.inputInner, { color: colors.text }]}
+                value={time}
+                onChangeText={setTime}
+                placeholder="00:00"
+                placeholderTextColor="#94A3B8"
+              />
+              <Ionicons name="time-outline" size={20} color="#64748B" />
+            </View>
+          </View>
+        </View>
+
+        {/* 7. รายละเอียด */}
+        <Text style={[styles.label, { color: colors.text }]}>รายละเอียด</Text>
+        <TextInput
+          style={[
+            styles.inputBox,
+            styles.textArea,
+            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+          ]}
+          placeholder="ระบุจุดสังเกต หรือรายละเอียดเพิ่มเติม..."
+          placeholderTextColor="#94A3B8"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+        />
+
+        {/* Orange Submit Button */}
         <TouchableOpacity
-          style={[styles.submitButton, { backgroundColor: colors.primary }, isSubmitting && styles.disabledButton]}
+          style={[styles.orangeSubmitBtn, { backgroundColor: colors.primary }]}
           onPress={handleSubmit}
           disabled={isSubmitting}
-          activeOpacity={0.85}
+          activeOpacity={0.88}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <>
-              <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>
-                {type === 'lost' ? 'เผยแพร่ประกาศของหาย' : 'บันทึกรายการที่พบ'}
-              </Text>
-            </>
+            <Text style={styles.orangeSubmitBtnText}>โพสต์</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -287,80 +346,124 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    paddingTop: 54,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blackCircleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  typeSelectorContainer: {
+  label: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+    marginTop: 14,
+  },
+  typeSelectorRow: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 16,
-    gap: 6,
+    gap: 12,
   },
   typeBtn: {
     flex: 1,
-    flexDirection: 'row',
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
-  },
-  typeBtnLostActive: {
-    backgroundColor: '#EF4444',
-  },
-  typeBtnFoundActive: {
-    backgroundColor: '#10B981',
   },
   typeBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   typeBtnTextActive: {
     color: '#FFFFFF',
   },
-  inputGroup: {
-    marginBottom: 14,
+  imageUploadBox: {
+    width: '100%',
+    height: 140,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
+  uploadPlaceholder: {
+    alignItems: 'center',
+    gap: 8,
   },
-  required: {
-    color: '#EF4444',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  uploadText: {
     fontSize: 14,
+    fontWeight: '700',
   },
-  textArea: {
-    minHeight: 80,
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
-  submitButton: {
+  inputBox: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  inputBoxWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    justifyContent: 'space-between',
+  },
+  inputInner: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  textArea: {
+    height: 90,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+  },
+  orangeSubmitBtn: {
+    height: 52,
     borderRadius: 14,
-    marginTop: 10,
-    gap: 8,
-    shadowColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
+  orangeSubmitBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

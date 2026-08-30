@@ -6,28 +6,24 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Image,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { api } from '../services/api';
 import { PostItem, ChatMessage } from '../types';
+import { api } from '../services/api';
 
 /**
  * =========================================================================
- * 💬 ห้องแชทสไตล์ Instagram Direct (IG Direct Chat Screen)
+ * 💬 หน้าต่างห้องแชท (Chat Room Screen - ตามแบบ แชท.png)
  * =========================================================================
- * 💡 อธิบายการทำงานแบบเข้าใจง่าย:
- * ออกแบบห้องแชทสไตล์ Instagram Direct (DM):
- * 1. บับเบิ้ลข้อความทรงกลมนุ่มนวล (Pill Bubbles)
- * 2. กดหัวใจ ❤️ (Like Message) ให้ข้อความที่ชอบได้
- * 3. มีสถานะ "อ่านแล้ว (Seen)" ใต้ข้อความล่าสุด
- * 4. เมื่อเปิดเข้ามาในห้องนี้ จะมาร์กข้อความเป็น "อ่านแล้ว" ทันที ทำให้ตัวเลขแจ้งเตือนที่แท็บบาร์หายไป
+ * 💡 อธิบายการทำงาน:
+ * 1. ส่วนหัว: ปุ่มย้อนกลับสีดำ, ชื่อผู้ใช้งาน + สถานะ 'ออนไลน์' สีเขียว
+ * 2. บับเบิ้ลข้อความ: ฝั่งซ้ายสีเทาอ่อน (คนอื่น) vs ฝั่งขวาสีน้ำเงิน (เรา) พร้อมเวลาด้านล่าง
+ * 3. กล่องพิมพ์ข้อความขอบมน พร้อมไอคอนยิ้ม และปุ่มส่งวงกลมสีดำไอคอนเครื่องบินกระดาษ
  * =========================================================================
  */
 
@@ -36,295 +32,184 @@ interface ChatScreenProps {
   onBack: () => void;
 }
 
-const QUICK_REPLIES = [
-  '👋 สวัสดีครับ ทักเรื่องของชิ้นนี้ครับ',
-  '📍 นัดรับที่อาคารเรียนรวม 1 (B1) สะดวกมั้ยครับ',
-  '🏢 นัดรับที่ศูนย์บรรณสาร (หอสมุด) สะดวกมั้ยครับ',
-  '🍽️ นัดรับที่โรงอาหารสุรนิเวศน์ (กาสะลอง) ได้มั้ยครับ',
-  '📞 ขอช่องทางติดต่อ Line / เบอร์โทร เพิ่มเติมหน่อยครับ',
-  '✅ ได้รับของส่งคืนเรียบร้อยแล้ว ขอบคุณมากครับ!',
-];
-
 export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
-  const { user, refreshConversations, markChatAsRead, toggleLikeMessage } = useApp();
+  const { user, markChatAsRead, toggleLikeMessage } = useApp();
   const { colors, isDark } = useTheme();
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const isMyPost = user?.id === post.userId;
-  const receiverId = isMyPost ? 'usr-requester' : post.userId;
-  const receiverName = isMyPost ? 'ผู้ติดต่อขอรับของ' : post.userName;
-
-  const loadChatHistory = async (showLoading: boolean = false) => {
-    try {
-      if (showLoading) setLoading(true);
-      const history = await api.getMessages(post.id);
-
-      if (history.length === 0) {
-        const welcomeMsg: ChatMessage = {
-          id: `welcome-${post.id}`,
-          postId: post.id,
-          postTitle: post.title,
-          senderId: post.userId,
-          senderName: post.userName,
-          receiverId: user?.id || 'usr-current',
-          receiverName: user?.fullName || 'ฉัน',
-          text: `สวัสดีครับ! ติดต่อสอบถามเกี่ยวกับ "${post.title}" ที่ ${post.location} สามารถพิมพ์ข้อความหรือเลือกคำตอบด่วนด้านล่างได้เลยครับ`,
-          isRead: true,
-          createdAt: post.createdAt,
-        };
-        setMessages([welcomeMsg]);
-      } else {
-        setMessages(history);
-      }
-
-      // ✅ เคลียร์สถานะการอ่านทันที เพื่อให้ Badge แท็บบาร์ด้านล่างหายไปทันที
-      await markChatAsRead(post.id);
-    } catch (err) {
-      console.error('Error loading chat:', err);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
-
+  // โหลดประวัติแชทและมาร์กว่าอ่านแล้ว
   useEffect(() => {
-    loadChatHistory(true);
+    const loadChat = async () => {
+      await markChatAsRead(post.id);
+      const history = await api.getMessages(post.id);
+      setMessages(history);
+    };
+    loadChat();
 
-    // 🔄 Auto-polling: ดึงข้อความใหม่อัตโนมัติทุก 2.5 วินาทีขณะเปิดหน้านี้อยู่
-    const timer = setInterval(() => {
-      loadChatHistory(false);
-    }, 2500);
-
-    return () => clearInterval(timer);
+    const interval = setInterval(loadChat, 3000);
+    return () => clearInterval(interval);
   }, [post.id]);
 
-  const handleSend = async (textToSend?: string) => {
-    const content = (textToSend || inputText).trim();
-    if (!content) return;
+  const handleSend = async () => {
+    if (!inputText.trim()) return;
 
     try {
-      setSending(true);
-      setInputText('');
-
-      const newMsg = await api.sendMessage(
-        post.id,
-        post.title,
-        receiverId,
-        receiverName,
-        content
-      );
-
-      // อัปเดตข้อความบนหน้าจอทันที
-      setMessages((prev) => [...prev.filter((m) => m.id !== newMsg.id), newMsg]);
-      refreshConversations();
-      await markChatAsRead(post.id);
-
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    } catch (err) {
-      console.error('Error sending message:', err);
-    } finally {
-      setSending(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {
+      // Ignore
     }
+
+    setIsSending(true);
+    const textToSend = inputText.trim();
+    setInputText('');
+
+    const newMsg = await api.sendMessage(
+      post.id,
+      post.title,
+      post.userId || 'usr-receiver',
+      post.userName || 'ผู้ใช้ มทส.',
+      textToSend
+    );
+
+    setMessages((prev) => [...prev, newMsg]);
+    setIsSending(false);
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
-  const handleLikeMessage = async (msgId: string) => {
-    // สลับสถานะหัวใจ ❤️ (Like reaction)
-    setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, liked: !m.liked } : m))
-    );
-    await toggleLikeMessage(post.id, msgId);
+  const handleLike = async (msgId: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const updated = await api.toggleLikeMessage(post.id, msgId);
+      setMessages(updated);
+    } catch {
+      // Ignore
+    }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.modalBg }]}>
-      {/* IG-Style Top Navigation Bar */}
-      <View style={[styles.topHeader, { backgroundColor: colors.modalBg, borderBottomColor: colors.borderLight }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Top Header */}
+      <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
+        <TouchableOpacity
+          style={styles.blackCircleBtn}
+          onPress={onBack}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
-        <View style={styles.headerProfileWrap}>
-          <View style={styles.headerAvatarContainer}>
-            {post.imageUrl ? (
-              <Image source={{ uri: post.imageUrl }} style={styles.headerAvatarImg} />
-            ) : (
-              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.primaryBg }]}>
-                <Ionicons name="person" size={16} color={colors.primary} />
-              </View>
-            )}
-            <View style={styles.headerOnlineDot} />
-          </View>
-          <View style={styles.headerTextWrap}>
-            <Text style={[styles.headerUsername, { color: colors.text }]} numberOfLines={1}>
-              {receiverName}
+        {/* User Info & Online Dot on Right */}
+        <View style={styles.headerRightInfo}>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={[styles.headerUserName, { color: colors.text }]}>
+              {post.userName || 'ชื่อผู้ใช้งาน'}
             </Text>
-            <Text style={[styles.headerActivity, { color: colors.textSecondary }]}>
-              {post.type === 'found' ? 'ผู้เก็บสิ่งของได้' : 'ผู้ตามหาสิ่งของ'} • ออนไลน์
-            </Text>
+            <Text style={styles.onlineStatusText}>ออนไลน์</Text>
           </View>
-        </View>
 
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => loadChatHistory(true)} style={styles.headerActionBtn}>
-            <Ionicons name="refresh" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Item Summary Banner Card */}
-      <View style={[styles.itemBanner, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
-        <Image source={{ uri: post.imageUrl }} style={styles.itemThumb} />
-        <View style={styles.itemBannerInfo}>
-          <Text style={[styles.itemBannerType, { color: post.type === 'lost' ? colors.danger : colors.success }]}>
-            {post.type === 'lost' ? '🔴 ประกาศของหาย' : '🟢 แจ้งพบของ'}
-          </Text>
-          <Text style={[styles.itemBannerTitle, { color: colors.text }]} numberOfLines={1}>
-            {post.title}
-          </Text>
-          <Text style={[styles.itemBannerLocation, { color: colors.textSecondary }]}>📍 {post.location}</Text>
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={22} color="#FFFFFF" />
+          </View>
         </View>
       </View>
 
       {/* Messages Scroll Area */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.messagesScroll}
+        showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
       >
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={[styles.messagesScroll, { backgroundColor: colors.background }]}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
-        >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.textMuted }]}>กำลังโหลดข้อความ...</Text>
-            </View>
-          ) : (
-            messages.map((msg, index) => {
-              const isMine = msg.senderId === user?.id || (msg.senderId !== post.userId && !isMyPost);
-              const isLastMessage = index === messages.length - 1;
+        {messages.map((msg) => {
+          const isMine = msg.senderId === user?.id || msg.senderName === user?.fullName;
+          const timeStr = msg.createdAt
+            ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '10:25';
 
-              return (
-                <View key={msg.id} style={styles.messageWrapper}>
-                  <View
-                    style={[styles.messageRow, isMine ? styles.myMessageRow : styles.theirMessageRow]}
-                  >
-                    {!isMine && (
-                      <View style={[styles.avatarSmall, { backgroundColor: colors.primaryBg }]}>
-                        <Ionicons name="person" size={13} color={colors.primary} />
-                      </View>
-                    )}
-
-                    {/* Double-tap to Like message */}
-                    <TouchableOpacity
-                      activeOpacity={0.9}
-                      onLongPress={() => handleLikeMessage(msg.id)}
-                      style={[
-                        styles.bubble,
-                        isMine
-                          ? [styles.myBubble, { backgroundColor: colors.chatBubbleMine }]
-                          : [styles.theirBubble, { backgroundColor: colors.chatBubbleOther, borderColor: colors.borderLight }],
-                      ]}
-                    >
-                      {!isMine && (
-                        <Text style={[styles.senderNameLabel, { color: colors.primary }]}>{msg.senderName}</Text>
-                      )}
-                      <Text
-                        style={[
-                          styles.bubbleText,
-                          { color: isMine ? colors.chatBubbleTextMine : colors.chatBubbleTextOther },
-                        ]}
-                      >
-                        {msg.text}
-                      </Text>
-
-                      {/* Heart Like Badge (IG Style) */}
-                      {msg.liked && (
-                        <View style={styles.likedHeartBadge}>
-                          <Text style={{ fontSize: 11 }}>❤️</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Time & "อ่านแล้ว (Seen)" Receipt under message */}
-                  <View style={[styles.statusRow, isMine ? { justifyContent: 'flex-end', paddingRight: 4 } : { paddingLeft: 34 }]}>
-                    <Text style={[styles.messageTimeText, { color: colors.textMuted }]}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                    {isMine && isLastMessage && (
-                      <Text style={[styles.seenText, { color: colors.textMuted }]}> • อ่านแล้ว</Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
-
-        {/* Quick Replies Suggestion Chips */}
-        <View style={[styles.quickRepliesSection, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
-          <Text style={[styles.quickRepliesLabel, { color: colors.textSecondary }]}>💡 ข้อความด่วน (แตะเพื่อส่งทันที):</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScroll}>
-            {QUICK_REPLIES.map((text, idx) => (
+          return (
+            <View
+              key={msg.id}
+              style={[
+                styles.messageRow,
+                isMine ? styles.myMessageRow : styles.otherMessageRow,
+              ]}
+            >
               <TouchableOpacity
-                key={idx}
-                style={[styles.quickChip, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}
-                onPress={() => handleSend(text)}
-                activeOpacity={0.7}
+                style={[
+                  styles.messageBubble,
+                  isMine
+                    ? [styles.myBubble, { backgroundColor: '#0055D4' }]
+                    : [styles.otherBubble, { backgroundColor: isDark ? '#334155' : '#E2E8F0' }],
+                ]}
+                onLongPress={() => handleLike(msg.id)}
+                activeOpacity={0.9}
               >
-                <Text style={[styles.quickChipText, { color: colors.primary }]}>{text}</Text>
+                <Text
+                  style={[
+                    styles.messageText,
+                    isMine ? styles.myMessageText : { color: colors.text },
+                  ]}
+                >
+                  {msg.text}
+                </Text>
+                {msg.liked && (
+                  <View style={styles.heartBadge}>
+                    <Text style={{ fontSize: 12 }}>❤️</Text>
+                  </View>
+                )}
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
-        {/* IG-Style Bottom Input Bar */}
-        <View style={[styles.inputSection, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
-          <TouchableOpacity style={styles.inputLeftIcon} activeOpacity={0.7}>
-            <Ionicons name="camera" size={22} color={colors.primary} />
-          </TouchableOpacity>
+              <Text style={[styles.timestampText, { color: colors.textMuted }]}>
+                {timeStr}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
 
+      {/* Bottom Message Input Bar */}
+      <View style={[styles.inputBarContainer, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
+        <View
+          style={[
+            styles.pillInputBox,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           <TextInput
-            style={[styles.textInput, { backgroundColor: colors.inputBg, color: colors.inputText, borderColor: colors.borderLight }]}
-            placeholder="ส่งข้อความ..."
+            style={[styles.textInput, { color: colors.text }]}
+            placeholder="พิมพ์ข้อความ..."
+            placeholderTextColor="#94A3B8"
             value={inputText}
             onChangeText={setInputText}
-            placeholderTextColor={colors.placeholder}
-            multiline
+            onSubmitEditing={handleSend}
           />
-
-          {inputText.trim() ? (
-            <TouchableOpacity
-              style={[styles.sendBtn, { backgroundColor: colors.primary }]}
-              onPress={() => handleSend()}
-              disabled={sending}
-              activeOpacity={0.8}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.sendBtnText}>ส่ง</Text>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.heartQuickBtn}
-              onPress={() => handleSend('❤️')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="heart" size={26} color="#EF4444" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity activeOpacity={0.7} style={{ padding: 4 }}>
+            <Ionicons name="happy-outline" size={22} color="#64748B" />
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        {/* Black Circular Send Button with Blue Paper Plane */}
+        <TouchableOpacity
+          style={[styles.blackSendBtn, isSending && { opacity: 0.7 }]}
+          onPress={handleSend}
+          disabled={isSending}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="paper-plane" size={18} color="#38BDF8" style={{ marginLeft: 2 }} />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -332,238 +217,128 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topHeader: {
+  header: {
+    paddingTop: 54,
+    paddingBottom: 14,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     borderBottomWidth: 1,
   },
-  backBtn: {
-    padding: 4,
-  },
-  headerProfileWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 4,
-  },
-  headerAvatarContainer: {
-    position: 'relative',
-    marginRight: 10,
-  },
-  headerAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  headerAvatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerOnlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#22C55E',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  headerUsername: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  headerActivity: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerActionBtn: {
-    padding: 6,
-  },
-  itemBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  itemThumb: {
+  blackCircleBtn: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  itemBannerInfo: {
-    flex: 1,
+  headerRightInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  itemBannerType: {
-    fontSize: 10,
-    fontWeight: '700',
+  headerUserName: {
+    fontSize: 15,
+    fontWeight: '800',
   },
-  itemBannerTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+  onlineStatusText: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
+    marginTop: 1,
   },
-  itemBannerLocation: {
-    fontSize: 11,
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   messagesScroll: {
-    padding: 14,
-    paddingBottom: 20,
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 12,
-  },
-  messageWrapper: {
-    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    gap: 16,
   },
   messageRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    maxWidth: '75%',
   },
   myMessageRow: {
-    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
   },
-  theirMessageRow: {
-    justifyContent: 'flex-start',
+  otherMessageRow: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
   },
-  avatarSmall: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  bubble: {
-    maxWidth: '76%',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
+  messageBubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
     position: 'relative',
   },
   myBubble: {
-    borderBottomRightRadius: 5,
+    borderBottomRightRadius: 4,
   },
-  theirBubble: {
-    borderBottomLeftRadius: 5,
-    borderWidth: 1,
+  otherBubble: {
+    borderBottomLeftRadius: 4,
   },
-  senderNameLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginBottom: 2,
+  messageText: {
+    fontSize: 15,
+    lineHeight: 20,
   },
-  bubbleText: {
-    fontSize: 14,
-    lineHeight: 19,
+  myMessageText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
-  likedHeartBadge: {
+  timestampText: {
+    fontSize: 11,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  heartBadge: {
     position: 'absolute',
     bottom: -8,
-    right: 8,
+    right: -4,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingHorizontal: 4,
-    paddingVertical: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    paddingVertical: 2,
     elevation: 2,
   },
-  statusRow: {
+  inputBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
-  },
-  messageTimeText: {
-    fontSize: 10,
-  },
-  seenText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  quickRepliesSection: {
-    paddingTop: 8,
-    paddingBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    gap: 10,
     borderTopWidth: 1,
   },
-  quickRepliesLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    marginBottom: 6,
-  },
-  quickScroll: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  quickChip: {
+  pillInputBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  quickChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  inputSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
+    paddingHorizontal: 16,
     gap: 8,
-  },
-  inputLeftIcon: {
-    padding: 4,
   },
   textInput: {
     flex: 1,
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     fontSize: 14,
-    maxHeight: 90,
+    fontWeight: '500',
   },
-  sendBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
+  blackSendBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  heartQuickBtn: {
-    padding: 4,
+    elevation: 3,
   },
 });

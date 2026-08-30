@@ -1,6 +1,5 @@
 // ==========================================================
-// SUT Lost & Found — Theme Color System
-// ระบบสีสำหรับ Light/Dark Theme
+// SUT Lost & Found — SUT Orange Theme System (Mockup Design)
 // ==========================================================
 
 export interface ThemeColors {
@@ -16,9 +15,10 @@ export interface ThemeColors {
   textMuted: string;
   textInverse: string;
 
-  // Brand
+  // Brand (SUT Signature Orange)
   primary: string;
   primaryLight: string;
+  primaryDark: string;
   primaryBg: string;
   primaryBorder: string;
 
@@ -32,16 +32,22 @@ export interface ThemeColors {
   headerGradientEnd: string;
   tabBarBg: string;
   tabBarBorder: string;
+  tabBarActive: string;
+  tabBarInactive: string;
 
-  // Status Colors
+  // Status & Action Colors
   danger: string;
   dangerBg: string;
+  dangerLight: string;
   success: string;
   successBg: string;
+  successLight: string;
   warning: string;
   warningBg: string;
   info: string;
   infoBg: string;
+  actionBlue: string;
+  actionGreen: string;
 
   // Inputs
   inputBg: string;
@@ -58,7 +64,7 @@ export interface ThemeColors {
   overlay: string;
   modalBg: string;
 
-  // Chat
+  // Chat (Blue & Grey as per mockup)
   chatBubbleMine: string;
   chatBubbleOther: string;
   chatBubbleTextMine: string;
@@ -72,65 +78,72 @@ export interface ThemeColors {
 
 export const lightColors: ThemeColors = {
   // Backgrounds
-  background: '#F8FAFC',
+  background: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceAlt: '#F1F5F9',
-  surfaceHover: '#F8FAFC',
+  surfaceAlt: '#F8FAFC',
+  surfaceHover: '#F1F5F9',
 
   // Text
-  text: '#0F172A',
+  text: '#1E293B',
   textSecondary: '#64748B',
   textMuted: '#94A3B8',
   textInverse: '#FFFFFF',
 
-  // Brand (SUT Orange)
-  primary: '#EA580C',
-  primaryLight: '#FB923C',
+  // Brand (SUT Orange #FF7A00)
+  primary: '#FF7A00',
+  primaryLight: '#FFA040',
+  primaryDark: '#E56B00',
   primaryBg: '#FFF7ED',
   primaryBorder: '#FFEDD5',
 
   // Borders & Dividers
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
-  divider: '#EEEEEE',
+  divider: '#F1F5F9',
 
   // Header & Navigation
-  headerGradientStart: '#1E293B',
-  headerGradientEnd: '#0F172A',
+  headerGradientStart: '#FF8800',
+  headerGradientEnd: '#FF5500',
   tabBarBg: '#FFFFFF',
-  tabBarBorder: '#F1F5F9',
+  tabBarBorder: '#E2E8F0',
+  tabBarActive: '#FF7A00',
+  tabBarInactive: '#1E293B',
 
   // Status Colors
   danger: '#EF4444',
-  dangerBg: '#FEF2F2',
+  dangerBg: '#FEE2E2',
+  dangerLight: '#FFEAEA',
   success: '#10B981',
-  successBg: '#ECFDF5',
+  successBg: '#DCFCE7',
+  successLight: '#E8F8F0',
   warning: '#F59E0B',
-  warningBg: '#FFFBEB',
-  info: '#3B82F6',
+  warningBg: '#FEF3C7',
+  info: '#0055D4',
   infoBg: '#EFF6FF',
+  actionBlue: '#0055D4',
+  actionGreen: '#10B981',
 
   // Inputs
-  inputBg: '#F8FAFC',
-  inputBorder: '#E2E8F0',
+  inputBg: '#FFFFFF',
+  inputBorder: '#CBD5E1',
   inputText: '#0F172A',
   placeholder: '#94A3B8',
 
   // Cards & Shadows
   cardBg: '#FFFFFF',
-  cardBorder: '#F1F5F9',
-  shadowColor: '#0F172A',
+  cardBorder: '#E2E8F0',
+  shadowColor: 'rgba(0, 0, 0, 0.08)',
 
   // Overlays
   overlay: 'rgba(0, 0, 0, 0.5)',
   modalBg: '#FFFFFF',
 
   // Chat
-  chatBubbleMine: '#EA580C',
-  chatBubbleOther: '#F1F5F9',
+  chatBubbleMine: '#0055D4',
+  chatBubbleOther: '#E2E8F0',
   chatBubbleTextMine: '#FFFFFF',
-  chatBubbleTextOther: '#0F172A',
-  chatInputBg: '#F8FAFC',
+  chatBubbleTextOther: '#1E293B',
+  chatInputBg: '#FFFFFF',
 
   // Misc
   skeleton: '#E2E8F0',
@@ -145,16 +158,17 @@ export const darkColors: ThemeColors = {
   surfaceHover: '#334155',
 
   // Text
-  text: '#F1F5F9',
+  text: '#F8FAFC',
   textSecondary: '#94A3B8',
   textMuted: '#64748B',
   textInverse: '#0F172A',
 
-  // Brand (SUT Orange — สว่างขึ้นสำหรับ Dark Mode)
-  primary: '#FB923C',
-  primaryLight: '#FDBA74',
-  primaryBg: 'rgba(251, 146, 60, 0.15)',
-  primaryBorder: 'rgba(251, 146, 60, 0.3)',
+  // Brand (SUT Orange for Dark Mode)
+  primary: '#FF7A00',
+  primaryLight: '#FFA040',
+  primaryDark: '#E56B00',
+  primaryBg: 'rgba(255, 122, 0, 0.15)',
+  primaryBorder: 'rgba(255, 122, 0, 0.3)',
 
   // Borders & Dividers
   border: '#334155',
@@ -162,42 +176,48 @@ export const darkColors: ThemeColors = {
   divider: '#334155',
 
   // Header & Navigation
-  headerGradientStart: '#0F172A',
-  headerGradientEnd: '#020617',
+  headerGradientStart: '#FF7A00',
+  headerGradientEnd: '#E56B00',
   tabBarBg: '#1E293B',
   tabBarBorder: '#334155',
+  tabBarActive: '#FF7A00',
+  tabBarInactive: '#94A3B8',
 
   // Status Colors
   danger: '#F87171',
-  dangerBg: 'rgba(239, 68, 68, 0.15)',
+  dangerBg: 'rgba(239, 68, 68, 0.2)',
+  dangerLight: 'rgba(239, 68, 68, 0.15)',
   success: '#34D399',
-  successBg: 'rgba(16, 185, 129, 0.15)',
+  successBg: 'rgba(16, 185, 129, 0.2)',
+  successLight: 'rgba(16, 185, 129, 0.15)',
   warning: '#FBBF24',
-  warningBg: 'rgba(245, 158, 11, 0.15)',
-  info: '#60A5FA',
-  infoBg: 'rgba(59, 130, 246, 0.15)',
+  warningBg: 'rgba(245, 158, 11, 0.2)',
+  info: '#38BDF8',
+  infoBg: 'rgba(56, 189, 248, 0.2)',
+  actionBlue: '#2563EB',
+  actionGreen: '#10B981',
 
   // Inputs
-  inputBg: '#334155',
+  inputBg: '#1E293B',
   inputBorder: '#475569',
-  inputText: '#F1F5F9',
+  inputText: '#F8FAFC',
   placeholder: '#64748B',
 
   // Cards & Shadows
   cardBg: '#1E293B',
   cardBorder: '#334155',
-  shadowColor: '#000000',
+  shadowColor: 'rgba(0, 0, 0, 0.5)',
 
   // Overlays
   overlay: 'rgba(0, 0, 0, 0.7)',
   modalBg: '#1E293B',
 
   // Chat
-  chatBubbleMine: '#FB923C',
+  chatBubbleMine: '#0055D4',
   chatBubbleOther: '#334155',
-  chatBubbleTextMine: '#0F172A',
-  chatBubbleTextOther: '#F1F5F9',
-  chatInputBg: '#334155',
+  chatBubbleTextMine: '#FFFFFF',
+  chatBubbleTextOther: '#F8FAFC',
+  chatInputBg: '#1E293B',
 
   // Misc
   skeleton: '#334155',

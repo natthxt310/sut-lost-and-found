@@ -9,329 +9,353 @@ import {
   Alert,
   Modal,
   Switch,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { ItemCard } from '../components/ItemCard';
-import { PostItem, ItemStatus } from '../types';
+import { PostItem } from '../types';
 
-// =========================================================================
-// 👤 หน้าโปรไฟล์และจัดการบัญชี (Profile Screen)
-// =========================================================================
-// 💡 อธิบายการทำงานแบบเข้าใจง่าย:
-// หน้านี้สำหรับดูข้อมูลส่วนตัวของนักศึกษา และจัดการสิ่งของที่ตัวเองเคยโพสต์
-// 
-// 📌 ฟีเจอร์หลักในหน้านี้:
-// 1. การ์ดข้อมูลนักศึกษา มทส. (รหัสนักศึกษา, ชื่อ, เบอร์โทร, อีเมล)
-// 2. ปุ่มแก้ไขข้อมูลโปรไฟล์ (แก้ไขชื่อ-เบอร์โทร แล้วบันทึกทันที)
-// 3. 🌙 สวิตช์เปิด/ปิด Dark Theme (โหมดมืด) สลับสีทั้งแอปได้ทันทีแบบ Real-time
-// 4. ข้อมูลและลิงก์เข้า Web Admin สำหรับผู้ดูแลระบบ
-// 5. สรุปสถิติ & รายการโพสต์ทั้งหมดของตัวเอง พร้อมปุ่มแตะเปลี่ยนสถานะด่วน (ยังไม่เจอ ➔ เจอแล้ว ➔ ส่งคืนแล้ว)
-// =========================================================================
+const { width } = Dimensions.get('window');
+
+/**
+ * =========================================================================
+ * 👤 หน้าโปรไฟล์ผู้ใช้ & แก้ไขข้อมูล (Profile & Edit Screen - ตามแบบ โปรไฟล์.png และ แก้ไขโปรไฟล์.png)
+ * =========================================================================
+ * 💡 อธิบายการทำงาน:
+ * 1. ส่วนหัวสีส้ม SUT Orange รูปโปรไฟล์ใหญ่พร้อมดินสอ, ชื่อ และรหัสนักศึกษา
+ * 2. กล่องสถิติ 3 ช่อง: โพสต์, พบของ, ส่งคืน
+ * 3. รายการเมนู: ประวัติการโพสต์, รายการที่บันทึก, การตั้งค่า, ช่วยเหลือ, ออกจากระบบ
+ * 4. หน้าต่างแก้ไขโปรไฟล์ (Edit Profile Modal): แก้ไขชื่อ, เบอร์โทร, คณะ, อีเมล
+ * =========================================================================
+ */
 
 interface ProfileScreenProps {
-  onSelectPost: (post: PostItem) => void;
+  onOpenMyPosts: () => void;
+  onOpenFavorites: () => void;
+  onOpenDashboard: () => void;
   onOpenAuth: () => void;
-  onOpenFavorites?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
-  onSelectPost,
-  onOpenAuth,
+  onOpenMyPosts,
   onOpenFavorites,
+  onOpenDashboard,
+  onOpenAuth,
 }) => {
-  const { user, posts, updateProfile, updatePost, logout } = useApp();
+  const { user, posts, updateProfile, logout } = useApp();
   const { colors, isDark, toggleTheme, autoLightSensor, toggleAutoLightSensor, currentLux } = useTheme();
 
-  // สถานะสำหรับเปิด/ปิด Modal แก้ไขข้อมูลโปรไฟล์
+  // Edit Profile Modal States
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [faculty, setFaculty] = useState('สำนักวิชาวิศวกรรมศาสตร์');
+  const [email, setEmail] = useState(user?.email || '');
 
-  // ดึงเฉพาะโพสต์ที่เป็นของตัวเอง
+  // คำนวณยอดสถิติของตัวเอง
   const myPosts = posts.filter((p) => p.userId === user?.id || p.userEmail === user?.email);
+  const myLostCount = myPosts.filter((p) => p.type === 'lost').length;
+  const myFoundCount = myPosts.filter((p) => p.type === 'found').length;
+  const myReturnedCount = myPosts.filter((p) => p.status === 'returned').length;
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile({ fullName, phone });
+      await updateProfile({ fullName, phone, email });
       setEditModalVisible(false);
       Alert.alert('สำเร็จ', 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว');
-    } catch (error) {
+    } catch {
       Alert.alert('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้');
     }
   };
 
-  const handleQuickStatusChange = async (postId: string, currentStatus: ItemStatus) => {
-    const nextStatus: ItemStatus =
-      currentStatus === 'lost'
-        ? 'found'
-        : currentStatus === 'found'
-        ? 'returned'
-        : 'lost';
-    try {
-      await updatePost(postId, { status: nextStatus });
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้');
-    }
+  const handleLogout = () => {
+    Alert.alert('ออกจากระบบ', 'คุณต้องการออกจากระบบหรือไม่?', [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ออกจากระบบ',
+        style: 'destructive',
+        onPress: () => {
+          logout();
+          onOpenAuth();
+        },
+      },
+    ]);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* การ์ดโปรไฟล์นักศึกษา มทส. */}
-        <View style={[styles.profileCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder, shadowColor: colors.shadowColor }]}>
-          <View style={styles.profileHeader}>
-            <View style={[styles.avatarLarge, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}>
-              <Ionicons name="person" size={36} color={colors.primary} />
+        {/* 1. Orange Gradient Header with Large Avatar */}
+        <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={() => {
+              setFullName(user?.fullName || '');
+              setPhone(user?.phone || '');
+              setEmail(user?.email || '');
+              setEditModalVisible(true);
+            }}
+            activeOpacity={0.88}
+          >
+            <View style={styles.largeAvatarCircle}>
+              <Ionicons name="person" size={54} color="#FF7A00" />
             </View>
-            <View style={styles.profileDetails}>
-              <Text style={[styles.profileName, { color: colors.text }]}>{user?.fullName || 'นักศึกษา มทส.'}</Text>
-              <Text style={[styles.studentIdBadge, { color: colors.primary }]}>
-                รหัสนักศึกษา: {user?.studentId || 'B6800000'}
-              </Text>
-              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || 'student@g.sut.ac.th'}</Text>
+            {/* Pencil Icon Badge */}
+            <View style={styles.pencilBadge}>
+              <Ionicons name="pencil" size={16} color="#000000" />
             </View>
-          </View>
+          </TouchableOpacity>
 
-          <View style={[styles.contactRow, { borderTopColor: colors.borderLight }]}>
-            <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.contactText, { color: colors.textSecondary }]}>เบอร์โทร: {user?.phone || 'ยังไม่ระบุ'}</Text>
-          </View>
-
-          <View style={styles.profileActions}>
-            <TouchableOpacity
-              style={[styles.editProfileBtn, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}
-              onPress={() => {
-                setFullName(user?.fullName || '');
-                setPhone(user?.phone || '');
-                setEditModalVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="create-outline" size={16} color={colors.primary} />
-              <Text style={[styles.editProfileText, { color: colors.primary }]}>แก้ไขข้อมูล</Text>
-            </TouchableOpacity>
-
-            {onOpenFavorites && (
-              <TouchableOpacity
-                style={[styles.favShortcutBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEF2F2', borderColor: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2' }]}
-                onPress={onOpenFavorites}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="heart" size={16} color={colors.danger} />
-                <Text style={[styles.favShortcutText, { color: colors.danger }]}>รายการโปรด</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[styles.switchAccountBtn, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-              onPress={onOpenAuth}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="log-in-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.switchAccountText, { color: colors.textSecondary }]}>สลับบัญชี</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 🌙 Dark Theme Toggle Setting Card */}
-        <View style={[styles.themeCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          <View style={styles.themeCardLeft}>
-            <View style={[styles.themeIconCircle, { backgroundColor: isDark ? 'rgba(251, 146, 60, 0.2)' : '#FEF3C7' }]}>
-              <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color={isDark ? colors.primary : '#D97706'} />
-            </View>
-            <View>
-              <Text style={[styles.themeCardTitle, { color: colors.text }]}>
-                {isDark ? 'โหมดมืด (Dark Theme)' : 'โหมดสว่าง (Light Theme)'}
-              </Text>
-              <Text style={[styles.themeCardSubtitle, { color: colors.textSecondary }]}>
-                {isDark ? 'เปิดใช้งานอยู่ • สบายตาในที่มืด' : 'เปิดใช้งานอยู่ • สีสันสดใส'}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            trackColor={{ false: '#CBD5E1', true: colors.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-
-        {/* 📳 & 💡 Hardware Sensors Integration Card */}
-        <View style={[styles.themeCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          <View style={styles.themeCardLeft}>
-            <View style={[styles.themeIconCircle, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5' }]}>
-              <Ionicons name="hardware-chip-outline" size={20} color={colors.success} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.themeCardTitle, { color: colors.text }]}>
-                สลับธีมอัตโนมัติด้วยเซ็นเซอร์แสง (Light Sensor)
-              </Text>
-              <Text style={[styles.themeCardSubtitle, { color: colors.textSecondary }]}>
-                {autoLightSensor
-                  ? `ทำงานอยู่ ${currentLux !== null ? `(${Math.round(currentLux)} lux)` : ''} • ปรับมืด/สว่างตามแสงห้อง`
-                  : 'ปิดอยู่ • แตะเพื่อเปิดใช้เซ็นเซอร์วัดแสง'}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={autoLightSensor}
-            onValueChange={toggleAutoLightSensor}
-            trackColor={{ false: '#CBD5E1', true: colors.success }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-
-        {/* 📳 Shake Sensor Status Card */}
-        <View style={[styles.adminInfoCard, { backgroundColor: isDark ? 'rgba(251, 146, 60, 0.12)' : '#FFF7ED', borderColor: isDark ? 'rgba(251, 146, 60, 0.3)' : '#FED7AA' }]}>
-          <View style={[styles.adminInfoIcon, { backgroundColor: isDark ? 'rgba(251, 146, 60, 0.25)' : '#FFEDD5' }]}>
-            <Ionicons name="phone-portrait-outline" size={22} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.adminInfoTitle, { color: colors.primary }]}>เซ็นเซอร์ตรวจจับการเขย่า (Accelerometer Sensor)</Text>
-            <Text style={[styles.adminInfoDesc, { color: colors.textSecondary }]}>
-              สามารถ <Text style={{ fontWeight: '700', color: colors.primary }}>เขย่าโทรศัพท์มือถือ</Text> ในหน้าหลัก เพื่อสั่นเตือนและรีเฟรชข้อมูลของหายล่าสุดได้แบบ Real-time
-            </Text>
-          </View>
-        </View>
-
-        {/* 💻 Admin Portal Quick Info Card */}
-        <View style={[styles.adminInfoCard, { backgroundColor: isDark ? 'rgba(2, 136, 209, 0.15)' : '#F0F9FF', borderColor: isDark ? 'rgba(2, 136, 209, 0.3)' : '#BAE6FD' }]}>
-          <View style={[styles.adminInfoIcon, { backgroundColor: isDark ? 'rgba(2, 136, 209, 0.25)' : '#E0F2FE' }]}>
-            <Ionicons name="desktop-outline" size={22} color={colors.info} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.adminInfoTitle, { color: colors.info }]}>ระบบจัดการสำหรับแอดมิน (Web Admin)</Text>
-            <Text style={[styles.adminInfoDesc, { color: colors.textSecondary }]}>
-              เปิดผ่านเบราว์เซอร์ที่: <Text style={{ fontWeight: '700', color: colors.info }}>http://localhost:3000/admin</Text> เพื่อดูกราฟสถิติและคัดกรองโพสต์
-            </Text>
-          </View>
-        </View>
-
-        {/* สรุปสถิติโพสต์ของฉัน */}
-        <View style={[styles.myStatsRow, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          <View style={styles.myStatBox}>
-            <Text style={[styles.myStatNum, { color: colors.text }]}>{myPosts.length}</Text>
-            <Text style={[styles.myStatLabel, { color: colors.textSecondary }]}>โพสต์ทั้งหมดของฉัน</Text>
-          </View>
-          <View style={styles.myStatBox}>
-            <Text style={[styles.myStatNum, { color: colors.danger }]}>
-              {myPosts.filter((p) => p.status === 'lost').length}
-            </Text>
-            <Text style={[styles.myStatLabel, { color: colors.textSecondary }]}>ยังไม่เจอ</Text>
-          </View>
-          <View style={styles.myStatBox}>
-            <Text style={[styles.myStatNum, { color: colors.success }]}>
-              {myPosts.filter((p) => p.status === 'returned').length}
-            </Text>
-            <Text style={[styles.myStatLabel, { color: colors.textSecondary }]}>ส่งคืนสำเร็จ</Text>
-          </View>
-        </View>
-
-        {/* รายการโพสต์ของฉัน */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            รายการประกาศของฉัน ({myPosts.length})
+          <Text style={styles.profileNameText}>{user?.fullName || 'ชื่อผู้ใช้งาน'}</Text>
+          <Text style={styles.profileStudentIdText}>
+            รหัสนักศึกษา {user?.studentId || 'B6802189'}
           </Text>
         </View>
 
-        {myPosts.length === 0 ? (
-          <View style={[styles.emptyContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-            <Ionicons name="documents-outline" size={48} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>คุณยังไม่มีรายการประกาศ</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              เมื่อคุณสร้างโพสต์ของหายหรือพบของ โพสต์จะถูกรวบรวมไว้ที่นี่
-            </Text>
-          </View>
-        ) : (
-          myPosts.map((post) => (
-            <View key={post.id} style={styles.myPostWrapper}>
-              <ItemCard
-                item={post}
-                onPress={() => onSelectPost(post)}
-              />
-              <View style={[styles.quickStatusBar, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-                <Text style={[styles.quickStatusTitle, { color: colors.textSecondary }]}>สถานะปัจจุบัน: </Text>
-                <TouchableOpacity
-                  style={[styles.toggleStatusBtn, { backgroundColor: colors.primaryBg }]}
-                  onPress={() => handleQuickStatusChange(post.id, post.status)}
-                >
-                  <Text style={[styles.toggleStatusBtnText, { color: colors.primary }]}>
-                    แตะเพื่อเปลี่ยนสถานะ ➔
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        )}
+        {/* 2. 3-Column Stats Card (Overlapping header) */}
+        <View style={[styles.statsCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder, shadowColor: colors.shadowColor }]}>
+          <TouchableOpacity style={styles.statColumn} onPress={onOpenMyPosts} activeOpacity={0.7}>
+            <Text style={[styles.statLabel, { color: colors.text }]}>โพสต์</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{myLostCount}</Text>
+          </TouchableOpacity>
 
-        {/* ข้อมูลมาตรฐานและผู้จัดทำ */}
-        <View style={[styles.academicCard, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}>
-          <Text style={[styles.academicTitle, { color: colors.primary }]}>
-            🎓 DGT01 1130 & DGT01 1230 Project Info
-          </Text>
-          <Text style={[styles.academicText, { color: colors.textSecondary }]}>
-            • โครงงาน: Lost and Found (ระบบตามหาของหาย มทส. กลุ่ม 7)
-          </Text>
-          <Text style={[styles.academicText, { color: colors.textSecondary }]}>
-            • สมาชิก: B6802189 ศิวะพร, B6802196 รพีพรรณ, B6802240 ภัทรเวท, B6803100 นัฐภัทร์, B6804145 รามเทพ
-          </Text>
-          <Text style={[styles.academicText, { color: colors.textSecondary }]}>
-            • สถาปัตยกรรม: React Native Mobile + Next.js Web & Backend API
-          </Text>
+          <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
+
+          <TouchableOpacity style={styles.statColumn} onPress={onOpenMyPosts} activeOpacity={0.7}>
+            <Text style={[styles.statLabel, { color: colors.text }]}>พบของ</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{myFoundCount}</Text>
+          </TouchableOpacity>
+
+          <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
+
+          <TouchableOpacity style={styles.statColumn} onPress={onOpenMyPosts} activeOpacity={0.7}>
+            <Text style={[styles.statLabel, { color: colors.text }]}>ส่งคืน</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{myReturnedCount}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 3. Menu List Options (ตรงตาม โปรไฟล์.png) */}
+        <View style={styles.menuList}>
+          {/* ประวัติการโพสต์ */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={onOpenMyPosts}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="create-outline" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>ประวัติการโพสต์</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* รายการที่บันทึก (Favorites) */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={onOpenFavorites}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="bookmark" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>รายการที่บันทึก</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* แดชบอร์ดสรุปสถิติ (Dashboard Shortcut) */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={onOpenDashboard}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="bar-chart-outline" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>สถิติภาพรวม (Dashboard)</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* การตั้งค่า (Settings & Sensors) */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={() => setSettingsModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="settings-outline" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>การตั้งค่า</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* ช่วยเหลือ */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={() => {
+              Alert.alert(
+                'ศูนย์ช่วยเหลือ SUT Lost & Found',
+                'ติดต่อผู้ดูแลระบบ: อาคารบริหาร มทส. หรือโทร 044-225-789\nเปิด Web Admin ที่ http://localhost:3000/admin'
+              );
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="help-circle-outline" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>ช่วยเหลือ</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* ออกจากระบบ */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: 'transparent' }]}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="log-out-outline" size={26} color={colors.text} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>ออกจากระบบ</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Modal แก้ไขโปรไฟล์ */}
-      <Modal
-        visible={editModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.modalBg }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>👤 แก้ไขข้อมูลโปรไฟล์</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-              ปรับปรุงชื่อและเบอร์โทรศัพท์สำหรับติดต่อส่งมอบของ
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>ชื่อ-นามสกุล</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="ระบุชื่อ-นามสกุล"
-                placeholderTextColor={colors.placeholder}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>เบอร์โทรศัพท์</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="ระบุเบอร์โทรศัพท์ เช่น 089-123-4567"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="phone-pad"
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.cancelBtn, { backgroundColor: colors.surfaceAlt }]}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>ยกเลิก</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSaveProfile}>
-                <Text style={styles.saveBtnText}>บันทึกข้อมูล</Text>
-              </TouchableOpacity>
-            </View>
+      {/* ================= EDIT PROFILE MODAL (แก้ไขโปรไฟล์.png) ================= */}
+      <Modal visible={editModalVisible} animationType="slide" transparent={false}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.blackCircleBtn}
+              onPress={() => setEditModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={[styles.modalHeaderTitle, { color: colors.text }]}>แก้ไขโปรไฟล์</Text>
+            <View style={{ width: 40 }} />
           </View>
+
+          <ScrollView contentContainerStyle={styles.editFormContent} showsVerticalScrollIndicator={false}>
+            {/* Big Avatar with Pencil in Edit Screen */}
+            <View style={styles.editAvatarCenter}>
+              <View style={styles.editLargeAvatarCircle}>
+                <Ionicons name="person" size={54} color="#FFFFFF" />
+              </View>
+              <View style={styles.editPencilBadge}>
+                <Ionicons name="pencil" size={14} color="#000000" />
+              </View>
+            </View>
+
+            {/* Field: ชื่อ */}
+            <Text style={[styles.formLabel, { color: colors.text }]}>ชื่อ</Text>
+            <TextInput
+              style={[styles.formInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="ชื่อ-นามสกุล"
+              placeholderTextColor="#94A3B8"
+            />
+
+            {/* Field: เบอร์โทรศัพท์ */}
+            <Text style={[styles.formLabel, { color: colors.text }]}>เบอร์โทรศัพท์</Text>
+            <TextInput
+              style={[styles.formInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="08X-XXX-XXXX"
+              placeholderTextColor="#94A3B8"
+              keyboardType="phone-pad"
+            />
+
+            {/* Field: คณะ */}
+            <Text style={[styles.formLabel, { color: colors.text }]}>คณะ</Text>
+            <TextInput
+              style={[styles.formInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+              value={faculty}
+              onChangeText={setFaculty}
+              placeholder="สำนักวิชา / สาขาวิชา"
+              placeholderTextColor="#94A3B8"
+            />
+
+            {/* Field: อีเมล */}
+            <Text style={[styles.formLabel, { color: colors.text }]}>อีเมล</Text>
+            <TextInput
+              style={[styles.formInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@g.sut.ac.th"
+              placeholderTextColor="#94A3B8"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            {/* Orange Save Button */}
+            <TouchableOpacity
+              style={[styles.orangeSaveBtn, { backgroundColor: colors.primary }]}
+              onPress={handleSaveProfile}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.orangeSaveBtnText}>บันทึก</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ================= SETTINGS & SENSORS MODAL ================= */}
+      <Modal visible={settingsModalVisible} animationType="slide" transparent={false}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.blackCircleBtn}
+              onPress={() => setSettingsModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={[styles.modalHeaderTitle, { color: colors.text }]}>การตั้งค่า</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <ScrollView contentContainerStyle={styles.editFormContent}>
+            {/* Dark Mode Switch */}
+            <View style={[styles.settingRowCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>โหมดมืด (Dark Theme)</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                  {isDark ? 'เปิดใช้งานอยู่' : 'ปิดใช้งานอยู่'}
+                </Text>
+              </View>
+              <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: '#CBD5E1', true: colors.primary }} />
+            </View>
+
+            {/* LightSensor Switch */}
+            <View style={[styles.settingRowCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>เซ็นเซอร์วัดแสง (Light Sensor)</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                  {autoLightSensor
+                    ? `ทำงานอยู่ ${currentLux !== null ? `(${Math.round(currentLux)} lux)` : ''} • สลับธีมอัตโนมัติ`
+                    : 'ปิดอยู่'}
+                </Text>
+              </View>
+              <Switch value={autoLightSensor} onValueChange={toggleAutoLightSensor} trackColor={{ false: '#CBD5E1', true: colors.success }} />
+            </View>
+
+            {/* Shake Sensor Info */}
+            <View style={[styles.settingRowCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>เขย่าเพื่อรีเฟรช (Accelerometer)</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                  เขย่ามือถือในหน้าหลักเพื่อรีเฟรชข้อมูลโพสต์อัตโนมัติ
+                </Text>
+              </View>
+              <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -343,306 +367,197 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
-  profileCard: {
-    borderRadius: 20,
-    padding: 16,
+  orangeHeader: {
+    paddingTop: 54,
+    paddingBottom: 48,
+    alignItems: 'center',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  largeAvatarCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  pencilBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+  },
+  profileNameText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  profileStudentIdText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: -26,
+    borderRadius: 18,
     borderWidth: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    elevation: 3,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBottom: 14,
+    shadowRadius: 6,
+    marginBottom: 24,
   },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 14,
-  },
-  avatarLarge: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  profileDetails: {
+  statColumn: {
     flex: 1,
-  },
-  profileName: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  studentIdBadge: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  profileEmail: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  contactRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderTopWidth: 1,
   },
-  contactText: {
+  statLabel: {
     fontSize: 13,
-  },
-  profileActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-  },
-  editProfileBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
-    borderWidth: 1,
-  },
-  editProfileText: {
-    fontSize: 12,
     fontWeight: '700',
-  },
-  favShortcutBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
-    borderWidth: 1,
-  },
-  favShortcutText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  switchAccountBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
-    borderWidth: 1,
-  },
-  switchAccountText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  themeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-  },
-  themeCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  themeIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  themeCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  themeCardSubtitle: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  myStatsRow: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  myStatBox: {
-    alignItems: 'center',
-  },
-  myStatNum: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  myStatLabel: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  myPostWrapper: {
-    marginBottom: 14,
-  },
-  quickStatusBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: -8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  quickStatusTitle: {
-    fontSize: 12,
-  },
-  toggleStatusBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  toggleStatusBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 10,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 20,
-  },
-  academicCard: {
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  academicTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  academicText: {
-    fontSize: 11,
-    lineHeight: 16,
-    marginBottom: 3,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    borderRadius: 20,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
     marginBottom: 4,
   },
-  modalInput: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    fontSize: 14,
+  statNumber: {
+    fontSize: 18,
+    fontWeight: '900',
   },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 10,
+  statDivider: {
+    width: 1,
+    height: 28,
   },
-  cancelBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+  menuList: {
+    paddingHorizontal: 24,
   },
-  cancelBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  saveBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  saveBtnText: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  adminInfoCard: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
   },
-  adminInfoIcon: {
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  menuItemLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    paddingTop: 54,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blackCircleBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  editFormContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  editAvatarCenter: {
+    alignSelf: 'center',
+    position: 'relative',
+    marginBottom: 24,
+  },
+  editLargeAvatarCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editPencilBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+    marginTop: 14,
+  },
+  formInput: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  orangeSaveBtn: {
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 32,
+    elevation: 3,
   },
-  adminInfoTitle: {
-    fontSize: 13,
+  orangeSaveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  settingRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  settingTitle: {
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 2,
   },
-  adminInfoDesc: {
-    fontSize: 11,
-    lineHeight: 16,
+  settingSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

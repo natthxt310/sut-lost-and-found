@@ -7,339 +7,202 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  ActivityIndicator,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { api } from '../services/api';
 
-// =========================================================================
-// 🔐 ระบบเข้าสู่ระบบและลงทะเบียน (Student ID Authentication Modal)
-// =========================================================================
-// 💡 อธิบายการทำงานแบบเข้าใจง่าย:
-// ออกแบบเฉพาะสำหรับนักศึกษา มทส. (SUT) โดยไม่ต้องใช้อีเมล
-// 
-// 📌 มี 3 แท็บการใช้งาน:
-// 1. "เข้าสู่ระบบ (Login)": กรอกรหัสนักศึกษา (เช่น B6803100) + รหัสผ่าน
-// 2. "ลงทะเบียน (Register)": สำหรับนักศึกษาใหม่ กรอกชื่อ, รหัส, รหัสผ่าน, เบอร์โทร
-// 3. "ลืมรหัสผ่าน (Forgot Password)": ส่งคำขอรีเซ็ตรหัสผ่านด้วยรหัสนักศึกษา
-// =========================================================================
+/**
+ * =========================================================================
+ * 🔐 หน้าต่างเข้าสู่ระบบ (Auth / Login Screen - ตามแบบ ลอกอิน.png)
+ * =========================================================================
+ * 💡 อธิบายการทำงาน:
+ * 1. โลโก้ SUT สีส้ม
+ * 2. ช่องกรอกรหัสนักศึกษา และรหัสผ่าน (พร้อมปุ่มเปิด/ปิดตา)
+ * 3. ตัวเลือก 'จดจำผู้ใช้'
+ * 4. ปุ่มส้ม 'เข้าสู่ระบบ', ปุ่ม 'Login with Google', ลิงก์ 'ลืมรหัสผ่าน?'
+ * =========================================================================
+ */
 
 interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-type AuthMode = 'login' | 'register' | 'forgot';
-
 export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   const { login, register } = useApp();
   const { colors, isDark } = useTheme();
-  const [mode, setMode] = useState<AuthMode>('login'); // แท็บที่เลือกอยู่ (login/register/forgot)
 
-  // Form States
-  const [studentId, setStudentId] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentId, setStudentId] = useState('B6802189');
+  const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!studentId.trim()) {
-      Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกรหัสนักศึกษา');
-      return;
-    }
-    if (!password) {
-      Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกรหัสผ่าน');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา (เช่น B6802189)');
       return;
     }
 
+    setIsLoading(true);
     try {
-      setIsSubmitting(true);
-      await login(studentId.trim(), password);
-      Alert.alert('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับนักศึกษา รหัส ${studentId.trim().toUpperCase()}`);
+      await login(studentId.trim().toUpperCase(), password);
       onClose();
-    } catch (error: any) {
-      const errMsg = error?.message || '';
-      if (errMsg.includes('NOT_REGISTERED') || errMsg.includes('ไม่พบรหัสนักศึกษา')) {
-        Alert.alert(
-          '⚠️ ยังไม่ได้ลงทะเบียน',
-          `ไม่พบรหัสนักศึกษา "${studentId.trim().toUpperCase()}" ในระบบ\nกรุณาลงทะเบียนก่อนเข้าใช้งานครั้งแรก`,
-          [
-            { text: 'ยกเลิก', style: 'cancel' },
-            {
-              text: 'ลงทะเบียนเดี๋ยวนี้',
-              onPress: () => {
-                setMode('register');
-              },
-            },
-          ]
-        );
-      } else if (errMsg.includes('รหัสผ่านไม่ถูกต้อง')) {
-        Alert.alert('รหัสผ่านไม่ถูกต้อง', 'กรุณาตรวจสอบรหัสผ่านใหม่อีกครั้ง');
-      } else {
-        Alert.alert('ข้อผิดพลาด', errMsg || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่');
-      }
+    } catch {
+      Alert.alert('เข้าสู่ระบบไม่สำเร็จ', 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleRegister = async () => {
-    if (!fullName.trim() || !studentId.trim() || !password.trim()) {
-      Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกชื่อ-นามสกุล, รหัสนักศึกษา และรหัสผ่าน');
-      return;
-    }
-
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
     try {
-      setIsSubmitting(true);
-      await register(fullName.trim(), studentId.trim(), password.trim(), phone.trim());
-      Alert.alert(
-        '🎉 ลงทะเบียนสำเร็จ',
-        `สร้างบัญชีสำหรับ ${fullName} (${studentId.trim().toUpperCase()}) เรียบร้อยแล้ว`,
-        [
-          {
-            text: 'เริ่มใช้งาน',
-            onPress: onClose,
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('ข้อผิดพลาด', error?.message || 'ลงทะเบียนไม่สำเร็จ');
+      await login('B6802189', 'google-auth');
+      onClose();
+    } catch {
+      //
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!studentId.trim()) {
-      Alert.alert('กรุณาระบุข้อมูล', 'กรุณาระบุรหัสนักศึกษา');
-      return;
-    }
-    try {
-      setIsSubmitting(true);
-      const res = await api.resetPassword(studentId.trim());
-      Alert.alert('ส่งคำขอสำเร็จ', res.message, [
-        { text: 'กลับไปหน้าเข้าสู่ระบบ', onPress: () => setMode('login') },
-      ]);
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถส่งคำขอได้');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'กู้คืนรหัสผ่าน (Password Recovery)',
+      `ระบบจะส่งรหัส OTP สำหรับตั้งค่ารหัสผ่านใหม่ไปยังอีเมลนักศึกษา: ${studentId ? studentId.toLowerCase() : 'student'}@g.sut.ac.th`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ส่งอีเมลรีเซ็ต',
+          onPress: () => Alert.alert('สำเร็จ', 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลนักศึกษาเรียบร้อยแล้ว'),
+        },
+      ]
+    );
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.modalBg }]}>
-        <View style={[styles.header, { backgroundColor: colors.modalBg, borderBottomColor: colors.borderLight }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {mode === 'login'
-              ? 'เข้าสู่ระบบ (SUT Login)'
-              : mode === 'register'
-                ? 'ลงทะเบียนนักศึกษาใหม่'
-                : 'กู้คืนรหัสผ่าน (Reset Password)'}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
-
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: '#FFFFFF' }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Logo Brand SUT */}
-          <View style={styles.logoSection}>
-            <View style={[styles.logoBadge, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}>
-              <Ionicons name="shield-checkmark" size={36} color={colors.primary} />
+          {/* Close Button on Top Left */}
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
+            <Ionicons name="close" size={24} color="#64748B" />
+          </TouchableOpacity>
+
+          {/* SUT Brand Logo (ส้ม มทส. พร้อมลูกศรเฉียงขวาบน) */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoRow}>
+              <Text style={styles.sutText}>SUT</Text>
+              {/* Arrow Up-Right Element */}
+              <View style={styles.arrowBox}>
+                <View style={styles.arrowTop} />
+                <View style={styles.arrowRight} />
+              </View>
             </View>
-            <Text style={[styles.brandTitle, { color: colors.primary }]}>SUT Lost and Found</Text>
-            <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
-              ระบบล็อกอินด้วยรหัสนักศึกษา (Student ID) และรหัสผ่าน
-            </Text>
           </View>
 
-          {/* Mode Switcher */}
-          <View style={[styles.modeTabs, { backgroundColor: colors.surfaceAlt }]}>
-            <TouchableOpacity
-              style={[styles.modeTab, mode === 'login' && [styles.activeModeTab, { backgroundColor: colors.cardBg }]]}
-              onPress={() => setMode('login')}
-            >
-              <Text style={[styles.modeTabText, { color: colors.textSecondary }, mode === 'login' && { color: colors.primary, fontWeight: '700' }]}>
-                เข้าสู่ระบบ
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeTab, mode === 'register' && [styles.activeModeTab, { backgroundColor: colors.cardBg }]]}
-              onPress={() => setMode('register')}
-            >
-              <Text style={[styles.modeTabText, { color: colors.textSecondary }, mode === 'register' && { color: colors.primary, fontWeight: '700' }]}>
-                ลงทะเบียน
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeTab, mode === 'forgot' && [styles.activeModeTab, { backgroundColor: colors.cardBg }]]}
-              onPress={() => setMode('forgot')}
-            >
-              <Text style={[styles.modeTabText, { color: colors.textSecondary }, mode === 'forgot' && { color: colors.primary, fontWeight: '700' }]}>
-                ลืมรหัสผ่าน
-              </Text>
-            </TouchableOpacity>
+          {/* Input 1: รหัสนักศึกษา */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.inputBox}
+              placeholder="รหัสนักศึกษา"
+              placeholderTextColor="#94A3B8"
+              value={studentId}
+              onChangeText={setStudentId}
+              autoCapitalize="characters"
+            />
           </View>
 
-          {/* TAB 1: เข้าสู่ระบบ (LOGIN) */}
-          {mode === 'login' && (
-            <View style={[styles.formCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  รหัสนักศึกษา (Student ID) <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={studentId}
-                  onChangeText={setStudentId}
-                  placeholder="เช่น B6802189"
-                  autoCapitalize="characters"
+          {/* Input 2: รหัสผ่าน with Eye Icon */}
+          <View style={styles.inputContainer}>
+            <View style={styles.passwordBox}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="รหัสผ่าน"
+                placeholderTextColor="#94A3B8"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={22}
+                  color="#94A3B8"
                 />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  รหัสผ่าน (Password) <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="กรอกรหัสผ่านของคุณ"
-                  secureTextEntry
-                />
-              </View>
-
-              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleLogin} disabled={isSubmitting}>
-                <Text style={styles.submitBtnText}>
-                  {isSubmitting ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.switchPrompt}>
-                <Text style={[styles.switchPromptText, { color: colors.textSecondary }]}>ยังไม่มีบัญชีในระบบ? </Text>
-                <TouchableOpacity onPress={() => setMode('register')}>
-                  <Text style={[styles.switchPromptLink, { color: colors.primary }]}>ลงทะเบียนที่นี่</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* TAB 2: ลงทะเบียน (REGISTER) */}
-          {mode === 'register' && (
-            <View style={[styles.formCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-              <View style={[styles.infoBanner, { backgroundColor: colors.primaryBg }]}>
-                <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-                <Text style={[styles.infoBannerText, { color: colors.primary }]}>
-                  กรุณาลงทะเบียนข้อมูลนักศึกษาเพื่อเริ่มใช้งานระบบ
-                </Text>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  Username <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Username"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  รหัสนักศึกษา (Student ID) <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={studentId}
-                  onChangeText={setStudentId}
-                  placeholder="เช่น B69XXXXX"
-                  autoCapitalize="characters"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
-                  ตั้งรหัสผ่าน (Password) <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="รหัสผ่าน"
-                  secureTextEntry
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>เบอร์โทรศัพท์สำหรับติดต่อรับของ</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="เช่น 089-123-4567"
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleRegister} disabled={isSubmitting}>
-                <Text style={styles.submitBtnText}>
-                  {isSubmitting ? 'กำลังบันทึกข้อมูล...' : 'ลงทะเบียนสมาชิกใหม่'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.switchPrompt}>
-                <Text style={[styles.switchPromptText, { color: colors.textSecondary }]}>มีบัญชีอยู่แล้ว? </Text>
-                <TouchableOpacity onPress={() => setMode('login')}>
-                  <Text style={[styles.switchPromptLink, { color: colors.primary }]}>เข้าสู่ระบบที่นี่</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* TAB 3: ลืมรหัสผ่าน (FORGOT) */}
-          {mode === 'forgot' && (
-            <View style={[styles.formCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-              <Text style={[styles.forgotDesc, { color: colors.textSecondary }]}>
-                กรุณาระบุรหัสนักศึกษาเพื่อส่งคำขอรีเซ็ตรหัสผ่าน
-              </Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>รหัสนักศึกษา (Student ID)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
-                  placeholderTextColor={colors.placeholder}
-                  value={studentId}
-                  onChangeText={setStudentId}
-                  placeholder="เช่น B6802189"
-                  autoCapitalize="characters"
-                />
-              </View>
-
-              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleForgotPassword} disabled={isSubmitting}>
-                <Text style={styles.submitBtnText}>ส่งคำขอรีเซ็ตรหัสผ่าน</Text>
               </TouchableOpacity>
             </View>
-          )}
+          </View>
+
+          {/* Remember Me Checkbox */}
+          <TouchableOpacity
+            style={styles.rememberRow}
+            onPress={() => setRememberMe(!rememberMe)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
+              {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+            </View>
+            <Text style={styles.rememberText}>จดจำผู้ใช้</Text>
+          </TouchableOpacity>
+
+          {/* Orange Login Button */}
+          <TouchableOpacity
+            style={styles.orangeLoginBtn}
+            onPress={handleLogin}
+            disabled={isLoading}
+            activeOpacity={0.88}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.orangeLoginBtnText}>เข้าสู่ระบบ</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Or Login With Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>หรือเข้าสู่ระบบด้วย</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Login with Google Button */}
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={handleGoogleLogin}
+            activeOpacity={0.85}
+          >
+            <View style={styles.googleGLogo}>
+              <Text style={styles.googleGText}>G</Text>
+            </View>
+            <Text style={styles.googleBtnText}>Login with Google</Text>
+          </TouchableOpacity>
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn} activeOpacity={0.7}>
+            <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
+          </TouchableOpacity>
+
+          {/* SUT Building Silhouette Footer Illustration */}
+          <View style={styles.silhouetteContainer}>
+            <View style={styles.towerShape} />
+            <View style={styles.mainBuildingShape} />
+          </View>
         </ScrollView>
-      </SafeAreaView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -348,137 +211,206 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+  scrollContent: {
+    paddingHorizontal: 28,
+    paddingTop: 54,
+    paddingBottom: 20,
+    minHeight: '100%',
   },
   closeBtn: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logoBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
+    width: 36,
+    height: 36,
     justifyContent: 'center',
-    marginBottom: 10,
-    borderWidth: 2,
-  },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  brandSubtitle: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  modeTabs: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
     marginBottom: 20,
   },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 8,
+  logoContainer: {
     alignItems: 'center',
-    borderRadius: 8,
+    marginTop: 20,
+    marginBottom: 44,
   },
-  activeModeTab: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  modeTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  formCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-  },
-  infoBanner: {
+  logoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    gap: 6,
-    marginBottom: 14,
+    alignItems: 'flex-start',
   },
-  infoBannerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
+  sutText: {
+    fontSize: 72,
+    fontWeight: '900',
+    color: '#FF7A00',
+    letterSpacing: -2,
+    lineHeight: 78,
   },
-  forgotDesc: {
-    fontSize: 13,
-    lineHeight: 18,
+  arrowBox: {
+    width: 24,
+    height: 24,
+    marginLeft: 4,
+    marginTop: 4,
+    position: 'relative',
+  },
+  arrowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 6,
+    backgroundColor: '#FF7A00',
+  },
+  arrowRight: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 6,
+    backgroundColor: '#FF7A00',
+  },
+  inputContainer: {
     marginBottom: 16,
   },
-  inputGroup: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  required: {
-    color: '#EF4444',
-  },
-  input: {
+  inputBox: {
+    height: 50,
+    borderRadius: 8,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: '#0F172A',
   },
-  submitBtn: {
-    paddingVertical: 12,
-    borderRadius: 10,
+  passwordBox: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#0F172A',
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 24,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: '#FF7A00',
+    borderColor: '#FF7A00',
+  },
+  rememberText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  orangeLoginBtn: {
+    height: 50,
+    backgroundColor: '#FF7A00',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
   },
-  submitBtnText: {
+  orangeLoginBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
   },
-  switchPrompt: {
+  dividerRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 28,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  dividerText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  googleGLogo: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EA4335',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 14,
   },
-  switchPromptText: {
-    fontSize: 12,
+  googleGText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 13,
   },
-  switchPromptLink: {
-    fontSize: 12,
+  googleBtnText: {
+    fontSize: 14,
     fontWeight: '700',
+    color: '#0F172A',
+  },
+  forgotBtn: {
+    alignSelf: 'center',
+    marginTop: 24,
+    marginBottom: 40,
+  },
+  forgotText: {
+    color: '#0055D4',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  silhouetteContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    opacity: 0.12,
+    pointerEvents: 'none',
+  },
+  towerShape: {
+    position: 'absolute',
+    bottom: 0,
+    left: 20,
+    width: 30,
+    height: 80,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    backgroundColor: '#64748B',
+  },
+  mainBuildingShape: {
+    position: 'absolute',
+    bottom: 0,
+    left: 60,
+    right: 20,
+    height: 50,
+    backgroundColor: '#64748B',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
 });

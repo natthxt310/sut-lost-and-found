@@ -4,304 +4,295 @@ import {
   Text,
   View,
   ScrollView,
+  TextInput,
   TouchableOpacity,
-  RefreshControl,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { ItemCard } from '../components/ItemCard';
-import { SearchBar } from '../components/SearchBar';
-import { SUTDropdown } from '../components/SUTDropdown';
-import { PostItem, PostType, SUT_LOCATIONS, ITEM_CATEGORIES } from '../types';
+import { PostItem } from '../types';
+
+const { width } = Dimensions.get('window');
 
 /**
  * =========================================================================
- * 🔍 หน้าค้นหาและกระดานประกาศรวม (Explore & Search Board Screen)
+ * 🔍 หน้าค้นหา & แผนที่ มทส. (Search & Explore Screen - ตามแบบ หน้าหลัก-1.png และ ค้นหา.png)
  * =========================================================================
- * 💡 อธิบายการทำงานแบบเข้าใจง่าย:
- * รวมหน้า "ของหาย (Lost)" และ "พบของ (Found)" เข้ามาอยู่ในหน้าเดียวกัน
- * 
- * 📌 ฟังก์ชันหลัก:
- * 1. ปุ่มสลับแท็บประเภท: [ทั้งหมด] | [ของหาย 🔴] | [พบของ 🟢]
- * 2. ช่องค้นหาข้อความ (Search Bar): พิมพ์ชื่อ, สี, หรือรายละเอียด
- * 3. ตัวกรองหมวดหมู่และสถานที่ใน มทส.
- * 4. แสดงการ์ดรายการสิ่งของ พร้อมปุ่มแตะดูรายละเอียด และ Pull-to-refresh
+ * 💡 อธิบายการทำงาน:
+ * 1. โหมดค้นหา & ตัวกรอง (Search + Filters): ค้นหาสถานที่, หมวดหมู่, ช่วงเวลา
+ * 2. โหมดแผนที่ มทส. (Campus Map): แสดงอาคาร มทส. พร้อมระยะทาง "ใกล้คุณ"
  * =========================================================================
  */
 
 interface ExploreBoardScreenProps {
   onSelectPost: (post: PostItem) => void;
-  onNavigateToCreate: (type: PostType) => void;
+  initialCategory?: string;
 }
-
-type FilterType = 'all' | 'lost' | 'found';
 
 export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
   onSelectPost,
-  onNavigateToCreate,
+  initialCategory,
 }) => {
-  const { posts, refreshData, isLoading } = useApp();
+  const { posts } = useApp();
   const { colors, isDark } = useTheme();
 
-  const [activeType, setActiveType] = useState<FilterType>('all');
+  // สถานะการค้นหาและฟิลเตอร์
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
-  const [selectedLocation, setSelectedLocation] = useState('ทั้งหมด');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory || '');
+  const [timeFilter, setTimeFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'filter' | 'map'>('filter');
 
-  const categories = ['ทั้งหมด', ...ITEM_CATEGORIES];
-  const locations = ['ทั้งหมด', ...SUT_LOCATIONS];
+  // รายการสถานที่ใน มทส.
+  const sutLocations = [
+    'อาคารเรียนรวม 1 (B1)',
+    'อาคารเรียนรวม 2 (B2)',
+    'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)',
+    'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
+    'อาคารบริหาร มทส.',
+    'U-Store / Fresh Me',
+  ];
 
-  // 🔍 กรองข้อมูลตามเงื่อนไขทั้งหมด (ประเภท + คำค้นหา + หมวดหมู่ + สถานที่)
-  const filteredPosts = posts.filter((post) => {
-    // 1. กรองประเภท (ทั้งหมด / ของหาย / พบของ)
-    if (activeType === 'lost' && post.type !== 'lost') return false;
-    if (activeType === 'found' && post.type !== 'found') return false;
+  // กรองผลการค้นหา
+  const searchResults = posts.filter((post) => {
+    const matchSearch =
+      !search ||
+      post.title.toLowerCase().includes(search.toLowerCase()) ||
+      post.description.toLowerCase().includes(search.toLowerCase());
 
-    // 2. กรองหมวดหมู่
-    if (selectedCategory !== 'ทั้งหมด' && !post.category.includes(selectedCategory)) {
-      return false;
-    }
+    const matchLocation =
+      !locationFilter || post.location.toLowerCase().includes(locationFilter.toLowerCase());
 
-    // 3. กรองสถานที่
-    if (selectedLocation !== 'ทั้งหมด' && post.location !== selectedLocation) {
-      return false;
-    }
+    const matchCategory =
+      !categoryFilter || post.category.toLowerCase().includes(categoryFilter.toLowerCase());
 
-    // 4. กรองคำค้นหา
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchTitle = post.title.toLowerCase().includes(q);
-      const matchDesc = post.description.toLowerCase().includes(q);
-      const matchLoc = post.location.toLowerCase().includes(q);
-      const matchCat = post.category.toLowerCase().includes(q);
-      const matchColor = post.color.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchLoc && !matchCat && !matchColor) {
-        return false;
-      }
-    }
-
-    return true;
+    return matchSearch && matchLocation && matchCategory;
   });
-
-  const lostCount = posts.filter((p) => p.type === 'lost' && p.status === 'lost').length;
-  const foundCount = posts.filter((p) => p.type === 'found' && p.status !== 'returned').length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refreshData} colors={[colors.primary]} />
-        }
-      >
-        {/* Header Title Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={[styles.mainTitle, { color: colors.text }]}>ค้นหาและกระดานประกาศ</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                รวมรายการของหายและของที่พบทั้งหมดใน มทส.
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.createQuickBtn, { backgroundColor: colors.primary }]}
-              onPress={() => onNavigateToCreate(activeType === 'found' ? 'found' : 'lost')}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.createQuickBtnText}>โพสต์</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 🔘 Segmented Type Filter Tabs */}
-        <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeType === 'all' && [styles.segmentBtnActive, { backgroundColor: colors.primary }],
-            ]}
-            onPress={() => setActiveType('all')}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="grid"
-              size={15}
-              color={activeType === 'all' ? '#FFFFFF' : colors.textSecondary}
-              style={{ marginRight: 5 }}
-            />
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeType === 'all' ? '#FFFFFF' : colors.textSecondary },
-                activeType === 'all' && styles.segmentTextActive,
-              ]}
-            >
-              ทั้งหมด ({posts.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeType === 'lost' && [styles.segmentBtnActive, { backgroundColor: colors.danger }],
-            ]}
-            onPress={() => setActiveType('lost')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.badgeDot, { backgroundColor: colors.danger }]} />
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeType === 'lost' ? '#FFFFFF' : colors.textSecondary },
-                activeType === 'lost' && styles.segmentTextActive,
-              ]}
-            >
-              ของหาย ({lostCount})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeType === 'found' && [styles.segmentBtnActive, { backgroundColor: colors.success }],
-            ]}
-            onPress={() => setActiveType('found')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.badgeDot, { backgroundColor: colors.success }]} />
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeType === 'found' ? '#FFFFFF' : colors.textSecondary },
-                activeType === 'found' && styles.segmentTextActive,
-              ]}
-            >
-              พบของ ({foundCount})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchWrapper}>
-          <SearchBar
+      {/* Top Search Header Bar */}
+      <View style={styles.topHeader}>
+        <View
+          style={[
+            styles.searchBar,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="search" size={20} color="#94A3B8" />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="ค้นหา"
+            placeholderTextColor="#94A3B8"
             value={search}
             onChangeText={setSearch}
-            placeholder="ค้นหาชื่อสิ่งของ, สี, อาคาร หรือจุดที่พบ..."
           />
         </View>
 
-        {/* Dropdown Filters */}
-        <View style={styles.dropdownsRow}>
-          <View style={{ flex: 1, marginRight: 6 }}>
-            <SUTDropdown
-              label="หมวดหมู่"
-              items={categories}
-              selectedValue={selectedCategory}
-              onSelect={setSelectedCategory}
-            />
-          </View>
-          <View style={{ flex: 1, marginLeft: 6 }}>
-            <SUTDropdown
-              label="สถานที่ใน มทส."
-              items={locations}
-              selectedValue={selectedLocation}
-              onSelect={setSelectedLocation}
-            />
-          </View>
-        </View>
-
-        {/* Category Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScrollView}
-          contentContainerStyle={styles.chipContainer}
+        {/* Toggle Mode Button (Filter vs Map) */}
+        <TouchableOpacity
+          style={[
+            styles.filterToggleBtn,
+            viewMode === 'map' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+          onPress={() => setViewMode(viewMode === 'filter' ? 'map' : 'filter')}
+          activeOpacity={0.8}
         >
-          {categories.slice(0, 7).map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.chip,
-                  { backgroundColor: colors.surface, borderColor: colors.borderLight },
-                  isSelected && [styles.chipActive, { backgroundColor: colors.primary, borderColor: colors.primary }],
-                ]}
-                onPress={() => setSelectedCategory(cat)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    { color: colors.textSecondary },
-                    isSelected && styles.chipTextActive,
-                  ]}
-                >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <Ionicons
+            name={viewMode === 'filter' ? 'filter-outline' : 'list-outline'}
+            size={22}
+            color={viewMode === 'map' ? '#FFFFFF' : colors.text}
+          />
+        </TouchableOpacity>
+      </View>
 
-        {/* Results Count & Reset Filter */}
-        <View style={styles.resultsInfoRow}>
-          <Text style={[styles.resultsCountText, { color: colors.textSecondary }]}>
-            พบทั้งหมด <Text style={{ fontWeight: '700', color: colors.primary }}>{filteredPosts.length}</Text> รายการ
-          </Text>
-          {(search !== '' || selectedCategory !== 'ทั้งหมด' || selectedLocation !== 'ทั้งหมด' || activeType !== 'all') && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearch('');
-                setSelectedCategory('ทั้งหมด');
-                setSelectedLocation('ทั้งหมด');
-                setActiveType('all');
-              }}
-              style={styles.resetFilterBtn}
-            >
-              <Ionicons name="refresh" size={13} color={colors.primary} style={{ marginRight: 3 }} />
-              <Text style={[styles.resetFilterText, { color: colors.primary }]}>ล้างตัวกรอง</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {viewMode === 'filter' ? (
+        /* ================= MODE 1: FILTER & SEARCH RESULTS (หน้าหลัก-1.png) ================= */
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* ตัวกรอง Section */}
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ตัวกรอง</Text>
 
-        {/* Post Items List */}
-        <View style={styles.itemsList}>
-          {filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
-              <ItemCard
-                key={post.id}
-                item={post}
-                onPress={() => onSelectPost(post)}
+          <View style={styles.filterForm}>
+            {/* 1. Location Input */}
+            <View style={[styles.filterInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="location" size={18} color={colors.text} />
+              <TextInput
+                style={[styles.filterTextInput, { color: colors.text }]}
+                placeholder="สถานที่ (เช่น อาคารเรียนรวม 2)"
+                placeholderTextColor="#94A3B8"
+                value={locationFilter}
+                onChangeText={setLocationFilter}
               />
-            ))
-          ) : (
-            <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-              <View style={[styles.emptyIconCircle, { backgroundColor: colors.primaryBg }]}>
-                <Ionicons name="search-outline" size={36} color={colors.primary} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>ไม่พบรายการที่ค้นหา</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                ลองเปลี่ยนคำค้นหา หรือเลือกตัวกรองหมวดหมู่อื่นดูนะครับ
-              </Text>
-              <TouchableOpacity
-                style={[styles.resetAllBtn, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSearch('');
-                  setSelectedCategory('ทั้งหมด');
-                  setSelectedLocation('ทั้งหมด');
-                  setActiveType('all');
-                }}
-              >
-                <Text style={styles.resetAllBtnText}>แสดงรายการทั้งหมด</Text>
-              </TouchableOpacity>
+              {locationFilter ? (
+                <TouchableOpacity onPress={() => setLocationFilter('')}>
+                  <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
             </View>
-          )}
+
+            {/* 2. Category Input */}
+            <View style={[styles.filterInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="folder" size={18} color={colors.text} />
+              <TextInput
+                style={[styles.filterTextInput, { color: colors.text }]}
+                placeholder="หมวดหมู่ (เช่น โทรศัพท์, กุญแจ)"
+                placeholderTextColor="#94A3B8"
+                value={categoryFilter}
+                onChangeText={setCategoryFilter}
+              />
+              {categoryFilter ? (
+                <TouchableOpacity onPress={() => setCategoryFilter('')}>
+                  <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* 3. Time Range Input */}
+            <View style={[styles.filterInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="calendar" size={18} color={colors.text} />
+              <TextInput
+                style={[styles.filterTextInput, { color: colors.text }]}
+                placeholder="ช่วงเวลา"
+                placeholderTextColor="#94A3B8"
+                value={timeFilter}
+                onChangeText={setTimeFilter}
+              />
+              {timeFilter ? (
+                <TouchableOpacity onPress={() => setTimeFilter('')}>
+                  <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Orange Search Button */}
+            <TouchableOpacity
+              style={[styles.orangeSubmitBtn, { backgroundColor: colors.primary }]}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.orangeSubmitBtnText}>ค้นหา</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ผลการค้นหา Header */}
+          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 12 }]}>ผลการค้นหา</Text>
+
+          {/* Results List */}
+          <View style={styles.resultsList}>
+            {searchResults.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={44} color={colors.textMuted} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>ไม่พบสิ่งของที่ตรงกับเงื่อนไข</Text>
+              </View>
+            ) : (
+              searchResults.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={[
+                    styles.resultCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
+                  ]}
+                  onPress={() => onSelectPost(post)}
+                  activeOpacity={0.88}
+                >
+                  <View style={[styles.resultThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
+                    {post.imageUrl ? (
+                      <Image source={{ uri: post.imageUrl }} style={styles.resultThumbnail} resizeMode="cover" />
+                    ) : (
+                      <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
+                    )}
+                  </View>
+
+                  <View style={styles.resultDetails}>
+                    <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+                      {post.title}
+                    </Text>
+                    <Text style={[styles.resultLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {post.location}
+                    </Text>
+                    <Text style={[styles.resultTime, { color: colors.textMuted }]}>
+                      {post.dateTime || 'เมื่อสักครู่'}
+                    </Text>
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      ) : (
+        /* ================= MODE 2: CAMPUS MAP VIEW (ค้นหา.png) ================= */
+        <View style={styles.mapContainer}>
+          {/* SUT Illustrated Map Container */}
+          <View style={[styles.mapVisual, { backgroundColor: isDark ? '#1E293B' : '#E8F5E9' }]}>
+            {/* SUT Buildings Badges */}
+            <View style={[styles.mapBadge, { top: 60, left: 30, backgroundColor: '#FFF7ED', borderColor: colors.primary }]}>
+              <Ionicons name="cafe" size={14} color={colors.primary} />
+              <Text style={[styles.mapBadgeText, { color: colors.primary }]}>กาแฟพันธุ์ไทย @B1</Text>
+            </View>
+
+            <View style={[styles.mapBadge, { top: 130, left: 100, backgroundColor: '#EFF6FF', borderColor: '#3B82F6' }]}>
+              <Ionicons name="bag" size={14} color="#3B82F6" />
+              <Text style={[styles.mapBadgeText, { color: '#3B82F6' }]}>U-Store มทส.</Text>
+            </View>
+
+            <View style={[styles.mapBadge, { top: 200, right: 30, backgroundColor: '#FFF7ED', borderColor: colors.primary }]}>
+              <Ionicons name="cafe" size={14} color={colors.primary} />
+              <Text style={[styles.mapBadgeText, { color: colors.primary }]}>Fresh Me มทส. B1</Text>
+            </View>
+
+            <View style={[styles.mapCenterBuilding, { backgroundColor: isDark ? '#334155' : '#FEF3C7', borderColor: '#F59E0B' }]}>
+              <Ionicons name="school" size={24} color="#D97706" />
+              <Text style={[styles.mapCenterText, { color: colors.text }]}>อาคารเรียนรวม 1 (B1)</Text>
+            </View>
+
+            <View style={[styles.mapBadge, { bottom: 20, left: 20, backgroundColor: '#F1F5F9', borderColor: '#64748B' }]}>
+              <Ionicons name="restaurant" size={14} color="#475569" />
+              <Text style={[styles.mapBadgeText, { color: '#475569' }]}>โรงอาหารเรียนรวม 2</Text>
+            </View>
+          </View>
+
+          {/* Near You Bottom Sheet */}
+          <View style={[styles.nearYouSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.nearYouTitle, { color: colors.text }]}>ใกล้คุณ</Text>
+
+            <ScrollView contentContainerStyle={styles.nearYouList} showsVerticalScrollIndicator={false}>
+              {posts.map((post, idx) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={[styles.nearYouCard, { borderColor: colors.borderLight }]}
+                  onPress={() => onSelectPost(post)}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.resultThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
+                    {post.imageUrl ? (
+                      <Image source={{ uri: post.imageUrl }} style={styles.resultThumbnail} resizeMode="cover" />
+                    ) : (
+                      <Ionicons name="cube-outline" size={24} color={colors.textMuted} />
+                    )}
+                  </View>
+                  <View style={styles.nearYouDetails}>
+                    <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+                      {post.title}
+                    </Text>
+                    <View style={styles.distanceRow}>
+                      <Text style={[styles.resultLocation, { color: colors.textSecondary }]}>
+                        {post.location}
+                      </Text>
+                      <Text style={[styles.distanceText, { color: colors.textMuted }]}>
+                        • {(idx + 1) * 5 + 5} เมตร
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
-      </ScrollView>
+      )}
     </View>
   );
 };
@@ -310,163 +301,205 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  headerSection: {
-    marginBottom: 14,
-  },
-  titleRow: {
+  topHeader: {
+    paddingTop: 54,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
   },
-  mainTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  createQuickBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 7,
-    paddingHorizontal: 13,
-    borderRadius: 20,
-    elevation: 2,
-  },
-  createQuickBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-    marginLeft: 3,
-  },
-  segmentedContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 4,
-    marginBottom: 14,
-  },
-  segmentBtn: {
+  searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterToggleBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
+    alignItems: 'center',
   },
-  segmentBtnActive: {
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  badgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    marginRight: 6,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 12,
   },
-  segmentText: {
-    fontSize: 12,
-    fontWeight: '600',
+  filterForm: {
+    gap: 10,
+    marginBottom: 16,
   },
-  segmentTextActive: {
+  filterInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  filterTextInput: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  orangeSubmitBtn: {
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  orangeSubmitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '800',
   },
-  searchWrapper: {
-    marginBottom: 10,
+  resultsList: {
+    gap: 10,
   },
-  dropdownsRow: {
+  resultCard: {
     flexDirection: 'row',
-    marginBottom: 12,
-  },
-  chipScrollView: {
-    marginBottom: 14,
-  },
-  chipContainer: {
-    paddingRight: 10,
-  },
-  chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 18,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    marginRight: 8,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
-  chipActive: {
-    borderColor: 'transparent',
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  resultsInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 2,
-  },
-  resultsCountText: {
-    fontSize: 12,
-  },
-  resetFilterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  resetFilterText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  itemsList: {
-    gap: 12,
-  },
-  emptyContainer: {
-    padding: 30,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  emptyIconCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+  resultThumbnailBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
   },
-  emptyTitle: {
-    fontSize: 16,
+  resultThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  resultDetails: {
+    flex: 1,
+    marginLeft: 12,
+    gap: 2,
+  },
+  resultTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 6,
   },
-  emptySubtitle: {
+  resultLocation: {
+    fontSize: 12,
+  },
+  resultTime: {
+    fontSize: 11,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 50,
+    gap: 8,
+  },
+  emptyText: {
     fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 18,
+    fontWeight: '600',
   },
-  resetAllBtn: {
-    paddingVertical: 10,
+  mapContainer: {
+    flex: 1,
+  },
+  mapVisual: {
+    flex: 1,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapBadge: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  mapBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  mapCenterBuilding: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    gap: 4,
+  },
+  mapCenterText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  nearYouSheet: {
+    height: 280,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingTop: 12,
   },
-  resetAllBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  nearYouTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  nearYouList: {
+    gap: 10,
+    paddingBottom: 20,
+  },
+  nearYouCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+  },
+  nearYouDetails: {
+    flex: 1,
+    marginLeft: 12,
+    gap: 2,
+  },
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  distanceText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

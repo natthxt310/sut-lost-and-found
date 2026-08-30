@@ -30,9 +30,10 @@ import { FavoriteItem, PostItem } from '../types';
 
 interface FavoritesScreenProps {
   onSelectPost: (post: PostItem) => void;
+  onClose?: () => void;
 }
 
-export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ onSelectPost }) => {
+export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ onSelectPost, onClose }) => {
   const { favorites, toggleFavorite, updateFavoriteNote, refreshData, isLoading } = useApp();
   const { colors, isDark } = useTheme();
   const [selectedFav, setSelectedFav] = useState<FavoriteItem | null>(null);
@@ -71,11 +72,25 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ onSelectPost }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.modalBg }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>รายการโปรดที่บันทึกไว้</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          ติดตามโพสต์ที่สนใจ พร้อมบันทึกโน้ตส่วนตัว ({favorites.length} รายการ)
-        </Text>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+        {onClose ? (
+          <TouchableOpacity
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
+        <View style={{ alignItems: 'center' }}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>รายการที่บันทึก</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            บันทึกไว้ {favorites.length} รายการ
+          </Text>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
