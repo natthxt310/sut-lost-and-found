@@ -59,24 +59,45 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* 1. SUT Orange Header */}
-      <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
+      {/* 1. SUT Header (Orange in Light Mode, Dark in Dark Mode) */}
+      <View
+        style={[
+          styles.orangeHeader,
+          {
+            backgroundColor: isDark ? colors.surface : colors.primary,
+            borderBottomColor: isDark ? colors.primaryBorder : 'transparent',
+            borderBottomWidth: isDark ? 1 : 0,
+          },
+        ]}
+      >
         <View style={styles.headerContentRow}>
           {/* SUT Lost & Found Brand Logo Badge */}
-          <View style={styles.brandBadge}>
-            <View style={styles.brandLogoCircle}>
+          <View
+            style={[
+              styles.brandBadge,
+              { backgroundColor: isDark ? colors.surfaceAlt : '#FFFFFF', borderColor: isDark ? colors.border : 'transparent', borderWidth: isDark ? 1 : 0 },
+            ]}
+          >
+            <View style={[styles.brandLogoCircle, { backgroundColor: isDark ? 'rgba(255,122,0,0.2)' : '#FFF7ED' }]}>
               <Ionicons name="search" size={15} color="#FF7A00" />
             </View>
-            <Text style={styles.brandLogoText}>LOST & FOUND</Text>
+            <Text style={[styles.brandLogoText, { color: isDark ? colors.text : '#0F172A' }]}>
+              LOST & FOUND
+            </Text>
             <View style={styles.sutPill}>
               <Text style={styles.sutPillText}>มทส.</Text>
             </View>
           </View>
 
           {/* User Name Badge */}
-          <View style={styles.userBadge}>
-            <Ionicons name="person-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.userNameText} numberOfLines={1}>
+          <View
+            style={[
+              styles.userBadge,
+              { backgroundColor: isDark ? colors.surfaceAlt : 'rgba(0, 0, 0, 0.25)' },
+            ]}
+          >
+            <Ionicons name="person-circle" size={20} color={isDark ? colors.primary : '#FFFFFF'} />
+            <Text style={[styles.userNameText, { color: isDark ? colors.text : '#FFFFFF' }]} numberOfLines={1}>
               {user ? user.fullName : 'นักศึกษา มทส.'}
             </Text>
           </View>

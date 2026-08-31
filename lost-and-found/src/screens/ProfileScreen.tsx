@@ -82,13 +82,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         },
       },
     ]);
-  };
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.studentId?.toUpperCase() === 'ADMIN' ||
+    user?.email?.toLowerCase().includes('admin');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* 1. Orange Gradient Header with Large Avatar */}
-        <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
+        {/* 1. SUT Header with Large Avatar (Orange in Light, Dark in Dark Mode) */}
+        <View
+          style={[
+            styles.orangeHeader,
+            {
+              backgroundColor: isDark ? colors.surface : colors.primary,
+              borderBottomColor: isDark ? colors.primaryBorder : 'transparent',
+              borderBottomWidth: isDark ? 1 : 0,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.avatarWrapper}
             onPress={() => {
@@ -99,7 +111,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             }}
             activeOpacity={0.88}
           >
-            <View style={styles.largeAvatarCircle}>
+            <View style={[styles.largeAvatarCircle, { backgroundColor: isDark ? colors.surfaceAlt : '#0F172A' }]}>
               <Ionicons name="person" size={54} color="#FF7A00" />
             </View>
             {/* Pencil Icon Badge */}
@@ -164,21 +176,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          {/* แผงควบคุมและสถิติผู้ดูแลระบบ (Admin Dashboard) */}
-          <TouchableOpacity
-            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
-            onPress={onOpenDashboard}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
-              <Text style={[styles.menuItemLabel, { color: colors.text }]}>แผงสถิติผู้ดูแลระบบ</Text>
-              <View style={[styles.adminBadgeSmall, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]}>
-                <Text style={[styles.adminBadgeSmallText, { color: colors.primary }]}>ADMIN</Text>
+          {/* 🛡️ แผงควบคุมและสถิติผู้ดูแลระบบ (Admin Only - ซ่อนสำหรับผู้ใช้ทั่วไป) */}
+          {isAdmin && (
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+              onPress={onOpenDashboard}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
+                <Text style={[styles.menuItemLabel, { color: colors.text }]}>แผงสถิติผู้ดูแลระบบ</Text>
+                <View style={[styles.adminBadgeSmall, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]}>
+                  <Text style={[styles.adminBadgeSmallText, { color: colors.primary }]}>ADMIN</Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
 
           {/* การตั้งค่า (Settings & Sensors) */}
           <TouchableOpacity

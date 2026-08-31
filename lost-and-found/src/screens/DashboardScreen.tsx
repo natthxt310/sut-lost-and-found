@@ -65,8 +65,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Orange Gradient Header */}
-      <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
+      {/* SUT Admin Header (Orange in Light, Dark in Dark Mode) */}
+      <View
+        style={[
+          styles.orangeHeader,
+          {
+            backgroundColor: isDark ? colors.surface : colors.primary,
+            borderBottomColor: isDark ? colors.primaryBorder : 'transparent',
+            borderBottomWidth: isDark ? 1 : 0,
+          },
+        ]}
+      >
         <View style={styles.headerTop}>
           <TouchableOpacity
             style={styles.blackCircleBtn}
