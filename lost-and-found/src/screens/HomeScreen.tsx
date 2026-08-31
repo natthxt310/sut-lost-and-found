@@ -82,19 +82,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* 1. SUT Orange Gradient Header */}
+      {/* 1. SUT Orange Header */}
       <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>{greeting}</Text>
-            <Text style={styles.userNameText} numberOfLines={1}>
-              {user ? user.fullName : 'ชื่อผู้ใช้'}
-            </Text>
+        {/* Top Brand Logo & Digital Clock Row */}
+        <View style={styles.brandRow}>
+          <View style={styles.brandBadge}>
+            <View style={styles.brandLogoCircle}>
+              <Ionicons name="search" size={14} color="#FF7A00" />
+            </View>
+            <Text style={styles.brandLogoText}>LOST & FOUND</Text>
+            <View style={styles.sutPill}>
+              <Text style={styles.sutPillText}>มทส.</Text>
+            </View>
           </View>
 
           {/* Digital Clock Widget */}
           <View style={styles.digitalClockWidget}>
             <Text style={styles.clockDigitalText}>{currentTime}</Text>
+          </View>
+        </View>
+
+        {/* Greeting Row */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingText}>{greeting}</Text>
+            <Text style={styles.userNameText} numberOfLines={1}>
+              {user ? user.fullName : 'นักศึกษา มทส.'}
+            </Text>
           </View>
         </View>
 
@@ -106,7 +120,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         >
           <Ionicons name="search" size={18} color="#94A3B8" />
           <Text style={styles.searchPlaceholder}>
-            {search ? search : 'ค้นหา'}
+            {search ? search : 'ค้นหาของหาย / พบของใน มทส.'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -228,6 +242,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  brandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    gap: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  brandLogoCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFF7ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandLogoText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  sutPill: {
+    backgroundColor: '#FF7A00',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  sutPillText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
   },
   headerTopRow: {
     flexDirection: 'row',

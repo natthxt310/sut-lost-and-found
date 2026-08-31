@@ -75,7 +75,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
           >
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Dashboard</Text>
+          <View style={styles.headerTitleCenter}>
+            <Text style={styles.headerTitle}>Admin Dashboard</Text>
+            <View style={styles.adminHeaderBadge}>
+              <Text style={styles.adminHeaderBadgeText}>ระบบวิเคราะห์สถิติผู้ดูแล</Text>
+            </View>
+          </View>
           <View style={{ width: 40 }} />
         </View>
         <Text style={styles.headerDate}>{currentDateThai}</Text>
@@ -189,17 +194,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitleCenter: {
+    alignItems: 'center',
+    gap: 4,
+  },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
+  adminHeaderBadge: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  adminHeaderBadgeText: {
+    color: '#FF7A00',
+    fontSize: 10,
+    fontWeight: '800',
+  },
   headerDate: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 6,
-    fontWeight: '500',
+    marginTop: 8,
+    fontWeight: '600',
   },
   scrollContent: {
     paddingHorizontal: 18,

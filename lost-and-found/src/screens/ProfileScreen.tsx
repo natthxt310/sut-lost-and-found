@@ -164,15 +164,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          {/* แดชบอร์ดสรุปสถิติ (Dashboard Shortcut) */}
+          {/* แผงควบคุมและสถิติผู้ดูแลระบบ (Admin Dashboard) */}
           <TouchableOpacity
             style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
             onPress={onOpenDashboard}
             activeOpacity={0.7}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="bar-chart-outline" size={26} color={colors.text} />
-              <Text style={[styles.menuItemLabel, { color: colors.text }]}>สถิติภาพรวม (Dashboard)</Text>
+              <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>แผงสถิติผู้ดูแลระบบ</Text>
+              <View style={[styles.adminBadgeSmall, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]}>
+                <Text style={[styles.adminBadgeSmallText, { color: colors.primary }]}>ADMIN</Text>
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -461,6 +464,17 @@ const styles = StyleSheet.create({
   menuItemLabel: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  adminBadgeSmall: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  adminBadgeSmallText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   modalContainer: {
     flex: 1,
