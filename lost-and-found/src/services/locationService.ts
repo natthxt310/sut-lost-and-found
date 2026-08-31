@@ -27,10 +27,10 @@ export const SUT_LOCATIONS_MAP: Record<string, LatLng> = SUT_LOCATIONS_DATA.redu
   {} as Record<string, LatLng>
 );
 
-// พิกัดศูนย์กลาง มทส. (SUT Main Campus Center)
+// พิกัดศูนย์กลาง มทส. (SUT Academic Ring Center - หอสมุดกลาง มทส.)
 export const SUT_DEFAULT_CENTER: LatLng = {
-  lat: 14.88210,
-  lng: 102.02070,
+  lat: 14.87780,
+  lng: 102.01630,
 };
 
 /**

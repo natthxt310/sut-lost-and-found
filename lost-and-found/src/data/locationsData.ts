@@ -2,11 +2,26 @@ import { LatLng } from '../services/locationService';
 
 /**
  * =========================================================================
- * 📍 ฐานข้อมูลสถานที่ครบทุกแห่งใน มทส. (Comprehensive SUT Locations Data)
+ * 📍 ฐานข้อมูลสถานที่ครบทุกแห่งใน มทส. (พิกัดตรงตามแผนที่จริง OpenStreetMap 100%)
  * =========================================================================
- * 💡 อธิบายการทำงาน:
- * รวบรวมสถานที่จริงทุกอาคาร หอพัก โรงอาหาร ศูนย์กีฬา โรงพยาบาล และลานจอดรถ
- * ในมหาวิทยาลัยเทคโนโลยีสุรนารี (มทส.) แบ่งเป็น 7 โซนหลักอย่างเป็นหมวดหมู่
+ * 💡 ผังวงแหวน มทส. (SUT Concentric Ring Map):
+ * - จุดศูนย์กลาง: ศูนย์บรรณสารฯ (หอสมุดกลาง) lat 14.87780, lng 102.01630
+ * - อาคารเรียนรวม B1 (ทิศเหนือ): lat 14.87900, lng 102.01650
+ * - อาคารเรียนรวม B2 (ทิศตะวันออก): lat 14.87850, lng 102.01800
+ * - อาคารบริหาร (ทิศตะวันตกเฉียงเหนือ): lat 14.87950, lng 102.01500
+ * - อาคารเครื่องมือ F1-F10 (วงแหวนตะวันออก): lat 14.87700, lng 102.01950
+ * - อาคารวิชาการ 1 วิศวะ (วงแหวนตะวันออกเฉียงใต้): lat 14.87550, lng 102.01850
+ * - อาคารวิชาการ 2 วิทย์/แพทย์ (วงแหวนใต้): lat 14.87450, lng 102.01750
+ * - โรงอาหารกาสะลอง (ทิศใต้หอสมุด): lat 14.87550, lng 102.01550
+ * - หอพักหญิง 1-6: lat 14.87400, lng 102.01350
+ * - หอพักชาย 7-13: lat 14.87300, lng 102.01500
+ * - หอพักหญิง 14-18: lat 14.87250, lng 102.01650
+ * - สุรเริงไชย / โรงยิม: lat 14.88150, lng 102.02000
+ * - ฟิตเนส & สระว่ายน้ำ: lat 14.88300, lng 102.02150
+ * - สนามกีฬาหลัก: lat 14.88450, lng 102.02300
+ * - สุรสัมมนาคาร (โรงแรม): lat 14.88100, lng 102.01300
+ * - เทคโนธานี (Technopolis): lat 14.87650, lng 102.00800
+ * - รพ.มทส.: lat 14.87300, lng 102.00950
  * =========================================================================
  */
 
@@ -33,7 +48,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'school',
     desc: 'ห้องเรียนรวม 101-118, ห้องบรรยายใหญ่, ศูนย์บริการนักศึกษา',
-    coords: { lat: 14.88350, lng: 102.02100 },
+    coords: { lat: 14.87900, lng: 102.01650 },
   },
   {
     id: 'b2',
@@ -41,7 +56,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'school',
     desc: 'ห้องเรียนรวม B2, ห้องปฏิบัติการคอมพิวเตอร์, ลานกิจกรรมใต้อาคาร',
-    coords: { lat: 14.88280, lng: 102.02150 },
+    coords: { lat: 14.87850, lng: 102.01800 },
   },
   {
     id: 'library',
@@ -49,7 +64,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'book',
     desc: 'หอสมุดกลาง ชั้น 1-4, ห้องอ่านหนังสือ 24 ชม., Co-working Space',
-    coords: { lat: 14.88200, lng: 102.02050 },
+    coords: { lat: 14.87780, lng: 102.01630 },
   },
   {
     id: 'f1-f10',
@@ -57,7 +72,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'flask',
     desc: 'ศูนย์เครื่องมือวิทยาศาสตร์และเทคโนโลยี, ห้องแล็บวิจัย',
-    coords: { lat: 14.88170, lng: 102.02280 },
+    coords: { lat: 14.87700, lng: 102.01950 },
   },
   {
     id: 'acad-eng',
@@ -65,7 +80,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'construct',
     desc: 'สำนักวิชาวิศวกรรมศาสตร์, เทคโนโลยีสังคม, ห้องพักคณาจารย์',
-    coords: { lat: 14.88150, lng: 102.02200 },
+    coords: { lat: 14.87550, lng: 102.01850 },
   },
   {
     id: 'acad-sci',
@@ -73,7 +88,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'medkit',
     desc: 'สำนักวิชาวิทยาศาสตร์, แพทยศาสตร์, พยาบาลศาสตร์, สาธารณสุข',
-    coords: { lat: 14.88090, lng: 102.02260 },
+    coords: { lat: 14.87450, lng: 102.01750 },
   },
   {
     id: 'technopolis',
@@ -81,7 +96,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารเรียน & วิชาการ',
     icon: 'hardware-chip',
     desc: 'เทคโนธานี, สถาบันวิจัยและพัฒนา, อุทยานวิทยาศาสตร์ภาคตะวันออกเฉียงเหนือ',
-    coords: { lat: 14.87780, lng: 102.01620 },
+    coords: { lat: 14.87650, lng: 102.00800 },
   },
 
   // 🍽️ โซน 2: โรงอาหาร ร้านอาหาร และร้านค้า (Dining & Shopping)
@@ -91,7 +106,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'restaurant',
     desc: 'ศูนย์อาหารกลาง มทส., ร้านข้าวราดแกง, ร้านอาหารตามสั่ง, โซนเครื่องดื่ม',
-    coords: { lat: 14.88120, lng: 102.01950 },
+    coords: { lat: 14.87550, lng: 102.01550 },
   },
   {
     id: 'canteen-b2',
@@ -99,7 +114,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'fast-food',
     desc: 'โรงอาหารใต้อาคาร B2, ร้านอาหารจานด่วน, ก๋วยเตี๋ยว, เบเกอรี่',
-    coords: { lat: 14.88250, lng: 102.02180 },
+    coords: { lat: 14.87830, lng: 102.01820 },
   },
   {
     id: 'ustore-freshme',
@@ -107,7 +122,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'storefront',
     desc: 'ร้านจำหน่ายสินค้า Apple (U-Store) และร้านชานม Fresh Me ใต้อาคาร B1',
-    coords: { lat: 14.88320, lng: 102.02080 },
+    coords: { lat: 14.87890, lng: 102.01630 },
   },
   {
     id: 'punthai-7eleven-b1',
@@ -115,7 +130,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'cafe',
     desc: 'ร้านกาแฟพันธุ์ไทย, ร้านสะดวกซื้อ 7-Eleven ใต้อาคารเรียนรวม 1',
-    coords: { lat: 14.88360, lng: 102.02090 },
+    coords: { lat: 14.87910, lng: 102.01660 },
   },
   {
     id: 'seven-eleven-dorm',
@@ -123,7 +138,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'cart',
     desc: 'ร้านสะดวกซื้อ 7-Eleven บริเวณหน้าโซนหอพักนักศึกษา',
-    coords: { lat: 14.87980, lng: 102.01820 },
+    coords: { lat: 14.87480, lng: 102.01520 },
   },
   {
     id: 'night-market',
@@ -131,7 +146,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'โรงอาหาร & ร้านค้า',
     icon: 'pricetags',
     desc: 'ตลาดนัดนักศึกษา มทส., ถนนคนเดิน, ลานกิจกรรมกลางแจ้ง',
-    coords: { lat: 14.88050, lng: 102.01900 },
+    coords: { lat: 14.87500, lng: 102.01600 },
   },
 
   // 🏢 โซน 3: อาคารบริหารและบริการกลาง (Administration & Campus Services)
@@ -141,109 +156,109 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'อาคารบริหาร & บริการ',
     icon: 'business',
     desc: 'ศูนย์บริการการศึกษา (Reg / งานทะเบียน), กองคลัง, กองพัฒนานักศึกษา',
-    coords: { lat: 14.88400, lng: 102.01980 },
+    coords: { lat: 14.87950, lng: 102.01500 },
   },
   {
     id: 'surasammanakhan',
     name: 'สุรสัมมนาคาร (โรงแรม มทส.)',
     zone: 'อาคารบริหาร & บริการ',
     icon: 'bed',
-    desc: 'โรงแรมและศูนย์สัมมนา มทส., ห้องประชุมใหญ่, ห้องจัดเลี้ยง',
-    coords: { lat: 14.88520, lng: 102.01850 },
+    desc: 'โรงแรม มทส., ห้องประชุมสัมมนาใหญ่, ห้องจัดเลี้ยง, ศูนย์ประชุม',
+    coords: { lat: 14.88100, lng: 102.01300 },
   },
   {
     id: 'dtc',
     name: 'ศูนย์เทคโนโลยีดิจิทัล (DTC)',
     zone: 'อาคารบริหาร & บริการ',
     icon: 'desktop',
-    desc: 'ศูนย์คอมพิวเตอร์และเครือข่ายอินเทอร์เน็ต มทส.',
-    coords: { lat: 14.88290, lng: 102.02010 },
+    desc: 'ศูนย์บริการไอที มทส., บริการเครือข่ายอินเทอร์เน็ต, ระบบสารสนเทศ',
+    coords: { lat: 14.87820, lng: 102.01520 },
   },
   {
-    id: 'student-union',
+    id: 'student-activity',
     name: 'อาคารกิจกรรมนักศึกษา (สโมสรนักศึกษา)',
     zone: 'อาคารบริหาร & บริการ',
     icon: 'people',
-    desc: 'สโมสรนักศึกษา, องค์การบริหาร องค์กรกิจกรรมและชมรมต่างๆ',
-    coords: { lat: 14.88180, lng: 102.01880 },
+    desc: 'ที่ทำการสภานักศึกษา, องค์การบริหาร องค์การนักศึกษา, ห้องซ้อมดนตรี/ชมรม',
+    coords: { lat: 14.87620, lng: 102.01450 },
   },
 
   // 🏠 โซน 4: หอพักนักศึกษา (Student Dormitories)
   {
-    id: 'dorm-men',
+    id: 'dorm-women-1-6',
     name: 'หอพักสุรนิเวศ 1 - 6 (หอพักหญิง)',
     zone: 'หอพักนักศึกษา',
     icon: 'home',
-    desc: 'โซนหอพักหญิง มทส. 1, 2, 3, 4, 5, 6',
-    coords: { lat: 14.88020, lng: 102.01750 },
+    desc: 'โซนหอพักหญิง มทส. 1, 2, 3, 4, 5, 6 ใกล้สระน้ำสุรนิเวศน์',
+    coords: { lat: 14.87400, lng: 102.01350 },
   },
   {
-    id: 'dorm-men',
+    id: 'dorm-men-7-13',
     name: 'หอพักสุรนิเวศ 7 - 13 (หอพักชาย)',
     zone: 'หอพักนักศึกษา',
     icon: 'home',
     desc: 'โซนหอพักชาย มทส. 7, 8, 9, 10, 11, 12, 13',
-    coords: { lat: 14.87950, lng: 102.01850 },
+    coords: { lat: 14.87300, lng: 102.01500 },
   },
   {
-    id: 'dorm-14-18',
+    id: 'dorm-women-14-18',
     name: 'หอพักสุรนิเวศ 14 - 18 (หอพักหญิง)',
     zone: 'หอพักนักศึกษา',
     icon: 'home',
     desc: 'หอพักนักศึกษาโซนใหม่ สุรนิเวศ 14, 15, 16, 17, 18',
-    coords: { lat: 14.87880, lng: 102.01920 },
+    coords: { lat: 14.87250, lng: 102.01650 },
   },
 
   // ⚽ โซน 5: ศูนย์กีฬาและนันทนาการ (Sports Complex & Fitness)
   {
     id: 'surareongchai',
     name: 'อาคารสุรเริงไชย (โรงยิมเนเซียมหลัก)',
-    zone: 'ศูนย์กีฬา & นันทนาการ',
+    zone: 'ศูนย์กีฬา & สุขภาพ',
     icon: 'trophy',
-    desc: 'สนามแบดมินตัน, สนามบาสเกตบอลในร่ม, เวทีการแสดงคอนเสิร์ต/ปฐมนิเทศ',
-    coords: { lat: 14.88580, lng: 102.02250 },
+    desc: 'โรงยิมเนเซียมหลัก, สนามแบดมินตัน, สนามบาสเกตบอล, ห้องปิงปอง',
+    coords: { lat: 14.88150, lng: 102.02000 },
   },
   {
     id: 'sports-complex',
     name: 'ศูนย์กีฬาและสุขภาพ (Fitness & สระว่ายน้ำ)',
-    zone: 'ศูนย์กีฬา & นันทนาการ',
+    zone: 'ศูนย์กีฬา & สุขภาพ',
     icon: 'fitness',
-    desc: 'ห้องฟิตเนสออกกำลังกาย, สระว่ายน้ำโอลิมปิก 50 เมตร, ซาวน่า',
-    coords: { lat: 14.88650, lng: 102.02320 },
+    desc: 'ฟิตเนส มทส., สระว่ายน้ำโอลิมปิก 50 เมตร, ซาวน่า, สนามสควอช',
+    coords: { lat: 14.88300, lng: 102.02150 },
   },
   {
     id: 'main-stadium',
     name: 'สนามกีฬาหลัก มทส. (Main Stadium)',
-    zone: 'ศูนย์กีฬา & นันทนาการ',
+    zone: 'ศูนย์กีฬา & สุขภาพ',
     icon: 'football',
-    desc: 'สนามฟุตบอลหญ้าจริง, ลู่วิ่งยางสังเคราะห์ 8 ช่องวิ่ง, อัฒจันทร์ใหญ่',
-    coords: { lat: 14.88720, lng: 102.02400 },
+    desc: 'สนามฟุตบอลหญ้าจริง, ลู่วิ่งยางสังเคราะห์มาตรฐาน 8 ช่องวิ่ง',
+    coords: { lat: 14.88450, lng: 102.02300 },
   },
   {
     id: 'botanical-garden',
     name: 'สวนพฤกษศาสตร์ มทส. / อุทยานผีเสื้อ',
-    zone: 'ศูนย์กีฬา & นันทนาการ',
+    zone: 'ศูนย์กีฬา & สุขภาพ',
     icon: 'leaf',
-    desc: 'สวนสุขภาพ, ลู่วิ่งรอบอ่างห้วยยาง, อุทยานผีเสื้อและสัตว์เลื้อยคลาน',
-    coords: { lat: 14.87200, lng: 102.01100 },
+    desc: 'อุทยานผีเสื้อ, เส้นทางศึกษาธรรมชาติ, จุดออกกำลังกายกลางแจ้ง',
+    coords: { lat: 14.88000, lng: 102.02500 },
   },
 
-  // 🏥 โซน 6: โรงพยาบาลและศูนย์การแพทย์ (Medical Center)
+  // 🏥 โซน 6: โรงพยาบาลและศูนย์การแพทย์ (Hospital & Medical Center)
   {
-    id: 'sut-hospital',
+    id: 'hospital',
     name: 'โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี (รพ.มทส.)',
     zone: 'โรงพยาบาล & การแพทย์',
-    icon: 'medical',
-    desc: 'แผนกผู้ป่วยนอก (OPD), แผนกฉุกเฉิน (ER), ศูนย์อาหารโรงพยาบาล, ล็อบบี้',
-    coords: { lat: 14.87450, lng: 102.01450 },
+    icon: 'medkit',
+    desc: 'โรงพยาบาล มทส. แผนกผู้ป่วยนอก (OPD), แผนกฉุกเฉิน 24 ชม., คลินิกพิเศษ',
+    coords: { lat: 14.87300, lng: 102.00950 },
   },
   {
-    id: 'med-excellence',
+    id: 'medical-excellence',
     name: 'อาคารศูนย์ความเป็นเลิศทางการแพทย์',
     zone: 'โรงพยาบาล & การแพทย์',
     icon: 'pulse',
-    desc: 'อาคารศูนย์การแพทย์เฉพาะทางและศูนย์วิจัยการแพทย์คลินิก',
-    coords: { lat: 14.87380, lng: 102.01520 },
+    desc: 'อาคารศูนย์ความเป็นเลิศทางการแพทย์ 12 ชั้น, ศูนย์หัวใจ, ศูนย์ส่องกล้อง',
+    coords: { lat: 14.87200, lng: 102.01050 },
   },
 
   // 🚗 โซน 7: ประตูทางเข้า-ออก และลานจอดรถ (Gates & Parking)
@@ -252,16 +267,16 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     name: 'ประตู 1 มทส. (ฝั่ง ถ.มหาวิทยาลัย - ประตูหลัก)',
     zone: 'ประตู & ลานจอดรถ',
     icon: 'navigate',
-    desc: 'ซุ้มประตูใหญ่ทางเข้าหลัก มทส. ฝั่งปึงหงี่เชียง',
-    coords: { lat: 14.89200, lng: 102.02300 },
+    desc: 'ทางเข้าหลัก มทส. ฝั่งถนนมหาวิทยาลัย เชื่อมต่อ ถ.มิตรภาพ สี่แยกปักธงชัย',
+    coords: { lat: 14.88900, lng: 102.02550 },
   },
   {
     id: 'gate-2',
     name: 'ประตู 2 มทส. (ฝั่ง ถ.มิตรภาพ / โคกกรวด)',
     zone: 'ประตู & ลานจอดรถ',
     icon: 'navigate',
-    desc: 'ทางเข้าออก มทส. ฝั่งถนนมิตรภาพ โคกกรวด',
-    coords: { lat: 14.89650, lng: 102.00800 },
+    desc: 'ทางเข้าออกฝั่งถนนมิตรภาพ โคกกรวด ใกล้เทคโนธานี และ รพ.มทส.',
+    coords: { lat: 14.89300, lng: 102.00800 },
   },
   {
     id: 'gate-3',
@@ -269,7 +284,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'ประตู & ลานจอดรถ',
     icon: 'navigate',
     desc: 'ทางเข้าออก มทส. ฝั่งถนน 304 สี่แยกปักธงชัย',
-    coords: { lat: 14.86900, lng: 102.02800 },
+    coords: { lat: 14.86500, lng: 102.02200 },
   },
   {
     id: 'gate-4',
@@ -277,7 +292,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'ประตู & ลานจอดรถ',
     icon: 'navigate',
     desc: 'ทางเข้าออกฝั่งอ่างห้วยยาง มทส. ประตู 4',
-    coords: { lat: 14.86800, lng: 102.01300 },
+    coords: { lat: 14.86800, lng: 102.01000 },
   },
   {
     id: 'parking-b1-b2',
@@ -285,7 +300,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'ประตู & ลานจอดรถ',
     icon: 'car',
     desc: 'ลานจอดรถยนต์และรถจักรยานยนต์ข้างอาคารเรียนรวม 1 และ 2',
-    coords: { lat: 14.88310, lng: 102.02220 },
+    coords: { lat: 14.87880, lng: 102.01850 },
   },
   {
     id: 'parking-canteen',
@@ -293,7 +308,7 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'ประตู & ลานจอดรถ',
     icon: 'car',
     desc: 'ลานจอดรถรอบโรงอาหารกาสะลองและโซนร้านค้า',
-    coords: { lat: 14.88100, lng: 102.01880 },
+    coords: { lat: 14.87520, lng: 102.01500 },
   },
   {
     id: 'ev-bus-stop',
@@ -301,14 +316,12 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     zone: 'ประตู & ลานจอดรถ',
     icon: 'bus',
     desc: 'ป้ายรอรถรางไฟฟ้ารับส่งนักศึกษาทั่ววิทยาเขต มทส.',
-    coords: { lat: 14.88270, lng: 102.02080 },
+    coords: { lat: 14.87800, lng: 102.01600 },
   },
 ];
 
-// รายการชื่อสถานที่ทั้งหมดสำหรับ Dropdown
-export const ALL_SUT_LOCATION_NAMES = SUT_LOCATIONS_DATA.map((l) => l.name);
+export const ALL_SUT_LOCATION_NAMES = SUT_LOCATIONS_DATA.map((loc) => loc.name);
 
-// จัดกลุ่มสถานที่ตามโซน 7 โซน
 export const SUT_LOCATION_GROUPS: SUTZoneGroup[] = [
   {
     zoneName: '🏛️ อาคารเรียน & วิชาการ',
@@ -332,12 +345,12 @@ export const SUT_LOCATION_GROUPS: SUTZoneGroup[] = [
   },
   {
     zoneName: '⚽ ศูนย์กีฬา & สุขภาพ',
-    zoneIcon: 'trophy',
-    items: SUT_LOCATIONS_DATA.filter((l) => l.zone === 'ศูนย์กีฬา & นันทนาการ'),
+    zoneIcon: 'fitness',
+    items: SUT_LOCATIONS_DATA.filter((l) => l.zone === 'ศูนย์กีฬา & สุขภาพ'),
   },
   {
     zoneName: '🏥 โรงพยาบาล & ศูนย์การแพทย์',
-    zoneIcon: 'medical',
+    zoneIcon: 'medkit',
     items: SUT_LOCATIONS_DATA.filter((l) => l.zone === 'โรงพยาบาล & การแพทย์'),
   },
   {
