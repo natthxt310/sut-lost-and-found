@@ -77,20 +77,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }, 3500);
   });
 
-  // 8 หมวดหมู่ตามแบบ Mockup ที่เชื่อมโยงกับระบบแท็กละเอียด
-  const categoryGrid = [
-    { id: 'phone', name: 'โทรศัพท์ & แท็บเล็ต', icon: 'phone-portrait' },
-    { id: 'bag', name: 'กระเป๋าเป้ & ถุงผ้า', icon: 'bag' },
-    { id: 'card', name: 'บัตรนักศึกษา & บัตร', icon: 'card' },
-    { id: 'key', name: 'กุญแจรถ & กุญแจ', icon: 'key' },
-    { id: 'headset', name: 'หูฟัง & AirPods', icon: 'headset' },
-    { id: 'it', name: 'โน้ตบุ๊ก & IT', icon: 'laptop-outline' },
-    { id: 'shirt', name: 'เสื้อผ้า & เสื้อช็อป', icon: 'shirt' },
-    { id: 'other', name: 'อื่นๆ', icon: 'ellipsis-horizontal' },
-  ];
-
-  // โพสต์ 5 รายการล่าสุด
-  const latestPosts = posts.slice(0, 5);
+  // รายการโพสต์ทั้งหมด
+  const latestPosts = posts;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -171,37 +159,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* หมวดหมู่ (Categories Header) */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>หมวดหมู่</Text>
-
-        {/* 2x4 Categories Grid */}
-        <View style={styles.categoryGrid}>
-          {categoryGrid.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={styles.categoryItem}
-              onPress={() => onNavigateToSearch(cat.name)}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.categorySquare, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
-                <Ionicons name={cat.icon as any} size={28} color={colors.text} />
-              </View>
-              <Text style={[styles.categoryLabel, { color: colors.text }]} numberOfLines={1}>
-                {cat.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* โพสต์ล่าสุด Header with ดูทั้งหมด link */}
         <View style={styles.feedHeaderRow}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>โพสต์ล่าสุด</Text>
           <TouchableOpacity onPress={() => onNavigateToSearch()} activeOpacity={0.7}>
-            <Text style={[styles.viewAllText, { color: colors.actionBlue }]}>ดูทั้งหมด</Text>
+            <Text style={[styles.viewAllText, { color: colors.actionBlue }]}>ดูทั้งหมด ({posts.length})</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Latest Posts List */}
+        {/* Latest Posts Feed List */}
         <View style={styles.postsList}>
           {latestPosts.length === 0 ? (
             <View style={[styles.emptyBox, { borderColor: colors.border }]}>
