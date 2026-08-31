@@ -269,9 +269,16 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
   </div>
 
   <script>
-    const userLat = ${userLocation.lat};
-    const userLng = ${userLocation.lng};
+    const rawUserLat = ${userLocation.lat};
+    const rawUserLng = ${userLocation.lng};
     const locationsData = ${JSON.stringify(locationsWithItems)};
+
+    // ตรวจสอบว่าพิกัดอยู่ใน มทส. หรือไม่ ถ้าอยู่นอก มทส. (เช่น Emulator) ให้โฟกัสที่ศูนย์กลางอาคารเรียนรวม มทส.
+    const isInsideSUT = rawUserLat >= 14.85 && rawUserLat <= 14.92 && rawUserLng >= 101.98 && rawUserLng <= 102.05;
+    const centerLat = isInsideSUT ? rawUserLat : 14.88100;
+    const centerLng = isInsideSUT ? rawUserLng : 14.81650 ? 102.01650 : 102.01650;
+    const userLat = isInsideSUT ? rawUserLat : 14.88100;
+    const userLng = isInsideSUT ? rawUserLng : 14.88100 ? 102.01650 : 102.01650;
 
     // เริ่มต้นแผนที่โฟกัสที่ มทส. พร้อมเปิดโหมด Zoom ทุกรูปแบบ
     const map = L.map('map', {
@@ -285,7 +292,7 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
       tap: true,
       minZoom: 12,
       maxZoom: 19
-    }).setView([userLat, userLng], 16);
+    }).setView([14.88100, 102.01650], 16);
 
     // OpenStreetMap Standard Tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
