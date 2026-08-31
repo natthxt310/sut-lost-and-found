@@ -25,35 +25,19 @@ import {
 } from '../services/locationService';
 import { SUTInteractiveMap } from '../components/SUTInteractiveMap';
 import { POPULAR_TAG_CHIPS, SUT_CATEGORIES } from '../data/categoriesData';
+import { SUT_LOCATION_GROUPS, SUT_LOCATIONS_DATA } from '../data/locationsData';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
 
 const { width, height } = Dimensions.get('window');
-
-// รายการสถานที่ใน มทส.
-const SUT_LOCATIONS_LIST = [
-  { name: 'ทุกสถานที่', icon: 'globe-outline', desc: 'ค้นหาทุกพื้นที่ใน มทส.' },
-  { name: 'อาคารเรียนรวม 1 (B1)', icon: 'school-outline', desc: 'ห้องเรียนรวม, ห้องบรรยาย B1' },
-  { name: 'อาคารเรียนรวม 2 (B2)', icon: 'school-outline', desc: 'ห้องเรียนรวม, ห้องปฏิบัติการ B2' },
-  { name: 'ศูนย์บรรณสารฯ (หอสมุด)', icon: 'book-outline', desc: 'หอสมุดกลาง, พื้นที่ Co-working Space' },
-  { name: 'โรงอาหารสุรนิเวศน์ (กาสะลอง)', icon: 'restaurant-outline', desc: 'โรงอาหารกลาง, โซนร้านค้า' },
-  { name: 'โรงอาหารเรียนรวม 2', icon: 'restaurant-outline', desc: 'โรงอาหารใต้อาคาร B2' },
-  { name: 'U-Store / Fresh Me', icon: 'bag-handle-outline', desc: 'ร้านค้า U-Store และ Fresh Me B1' },
-  { name: 'กาแฟพันธุ์ไทย @B1', icon: 'cafe-outline', desc: 'ร้านกาแฟพันธุ์ไทย ใต้อาคาร B1' },
-  { name: 'อาคารบริหาร มทส.', icon: 'business-outline', desc: 'สำนักงานอธิการบดี, งานทะเบียน' },
-  { name: 'อาคารวิชาการ 1-2', icon: 'flask-outline', desc: 'สำนักวิชาวิศวกรรมศาสตร์ / วิทยาศาสตร์' },
-  { name: 'หอพักสุรนิเวศ', icon: 'home-outline', desc: 'หอพักนักศึกษาภายในมหาวิทยาลัย' },
-  { name: 'ลานจอดรถ มทส.', icon: 'car-outline', desc: 'ลานจอดรถจักรยานยนต์และรถยนต์' },
-];
 
 /**
  * =========================================================================
  * 🔍 หน้าค้นหา & แผนที่ มทส. (Search & Interactive SUT Map Screen)
  * =========================================================================
  * 💡 อธิบายการทำงาน:
- * 1. แตะช่อง "สถานที่": เปิด Bottom Sheet แถบเลือกสถานที่ใน มทส. แบบมีไอคอนและคำอธิบาย
- * 2. แตะช่อง "หมวดหมู่": เปิด Bottom Sheet แถบเลือกหมวดหมู่แบบละเอียด (17+ หมวด)
- * 3. แตะช่อง "วันที่": เปิด Calendar Picker ปฏิทินภาษาไทย
- * 4. ปุ่ม GPS ขวาบน: ดึงพิกัดจาก GPS Hardware Sensor จริง และจัดกึ่งกลางแผนที่
+ * 1. ครอบคลุมสถานที่ครบทุกแห่งใน มทส. (28+ แห่ง แบ่ง 7 โซน)
+ * 2. หมวดหมู่สิ่งของละเอียดครบ 17+ หมวด
+ * 3. แถบเลือกสถานที่ & หมวดหมู่แบบ Bottom Sheet พร้อมช่องค้นหาในตัว
  * =========================================================================
  */
 
@@ -81,7 +65,9 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
 
   // Modal Sheet States
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [calendarVisible, setCalendarVisible] = useState(false);
 
   // GPS Sensor & Toast States
@@ -411,7 +397,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
               <View style={styles.fieldLeft}>
                 <Ionicons name="location" size={20} color={colors.primary} />
                 <View style={styles.fieldTextContainer}>
-                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>สถานที่ (Location)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>สถานที่ใน มทส. (28+ แห่ง 7 โซน)</Text>
                   <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={1}>
                     {selectedLocation}
                   </Text>
@@ -429,7 +415,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
               <View style={styles.fieldLeft}>
                 <Ionicons name="folder-open" size={20} color={colors.primary} />
                 <View style={styles.fieldTextContainer}>
-                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>หมวดหมู่สิ่งของ (Category)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>หมวดหมู่สิ่งของ (17+ หมวดหมู่)</Text>
                   <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={1}>
                     {selectedTag}
                   </Text>
@@ -544,53 +530,124 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
         </ScrollView>
       )}
 
-      {/* ================= MODAL: LOCATION SELECTOR SHEET ================= */}
+      {/* ================= MODAL: 7-ZONE SUT LOCATION SELECTOR SHEET ================= */}
       <Modal visible={locationModalVisible} animationType="slide" transparent={true}>
         <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.pickerSheetCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
             <View style={styles.sheetHeader}>
               <View style={styles.sheetHeaderLeft}>
                 <Ionicons name="location" size={22} color={colors.primary} />
-                <Text style={[styles.sheetTitle, { color: colors.text }]}>เลือกสถานที่ใน มทส.</Text>
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>
+                  สถานที่ใน มทส. (28+ แห่ง)
+                </Text>
               </View>
               <TouchableOpacity onPress={() => setLocationModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
+            {/* In-Sheet Search Bar */}
+            <View style={[styles.sheetSearchBox, { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9', borderColor: colors.border }]}>
+              <Ionicons name="search" size={16} color="#94A3B8" />
+              <TextInput
+                style={[styles.sheetSearchInput, { color: colors.text }]}
+                placeholder="ค้นหาชื่ออาคาร, หอพัก, โรงอาหาร, ศูนย์กีฬา..."
+                placeholderTextColor="#94A3B8"
+                value={locationSearchQuery}
+                onChangeText={setLocationSearchQuery}
+              />
+              {locationSearchQuery ? (
+                <TouchableOpacity onPress={() => setLocationSearchQuery('')}>
+                  <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
             <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-              {SUT_LOCATIONS_LIST.map((loc, idx) => {
-                const isSelected = selectedLocation === loc.name;
+              {/* Option: ทุกสถานที่ */}
+              <TouchableOpacity
+                style={[
+                  styles.sheetOptionItem,
+                  selectedLocation === 'ทุกสถานที่'
+                    ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
+                    : { borderBottomColor: colors.borderLight },
+                ]}
+                onPress={() => {
+                  setSelectedLocation('ทุกสถานที่');
+                  setLocationModalVisible(false);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.sheetIconBox, { backgroundColor: selectedLocation === 'ทุกสถานที่' ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
+                  <Ionicons name="globe-outline" size={20} color={selectedLocation === 'ทุกสถานที่' ? '#FFFFFF' : colors.text} />
+                </View>
+                <View style={styles.sheetOptionTextContainer}>
+                  <Text style={[styles.sheetOptionTitle, { color: selectedLocation === 'ทุกสถานที่' ? colors.primary : colors.text }]}>
+                    ทุกสถานที่ (ทั่วทั้ง มทส.)
+                  </Text>
+                  <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                    ค้นหาครอบคลุมทุกอาคารและทุกโซนในมหาวิทยาลัย
+                  </Text>
+                </View>
+                {selectedLocation === 'ทุกสถานที่' && (
+                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+
+              {/* 7 Groups of SUT Locations */}
+              {SUT_LOCATION_GROUPS.map((group, gIdx) => {
+                const filteredItems = group.items.filter(
+                  (item) =>
+                    !locationSearchQuery ||
+                    item.name.toLowerCase().includes(locationSearchQuery.toLowerCase()) ||
+                    item.desc.toLowerCase().includes(locationSearchQuery.toLowerCase())
+                );
+
+                if (filteredItems.length === 0) return null;
+
                 return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.sheetOptionItem,
-                      isSelected
-                        ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
-                        : { borderBottomColor: colors.borderLight },
-                    ]}
-                    onPress={() => {
-                      setSelectedLocation(loc.name);
-                      setLocationModalVisible(false);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.sheetIconBox, { backgroundColor: isSelected ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
-                      <Ionicons name={loc.icon as any} size={20} color={isSelected ? '#FFFFFF' : colors.text} />
-                    </View>
-                    <View style={styles.sheetOptionTextContainer}>
-                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? colors.primary : colors.text }]}>
-                        {loc.name}
-                      </Text>
-                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        {loc.desc}
+                  <View key={gIdx} style={styles.groupSection}>
+                    <View style={[styles.groupHeaderBar, { backgroundColor: isDark ? colors.surfaceAlt : '#F8FAFC' }]}>
+                      <Text style={[styles.groupHeaderText, { color: colors.primary }]}>
+                        {group.zoneName}
                       </Text>
                     </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
+
+                    {filteredItems.map((loc, idx) => {
+                      const isSelected = selectedLocation === loc.name;
+                      return (
+                        <TouchableOpacity
+                          key={idx}
+                          style={[
+                            styles.sheetOptionItem,
+                            isSelected
+                              ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
+                              : { borderBottomColor: colors.borderLight },
+                          ]}
+                          onPress={() => {
+                            setSelectedLocation(loc.name);
+                            setLocationModalVisible(false);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <View style={[styles.sheetIconBox, { backgroundColor: isSelected ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
+                            <Ionicons name={loc.icon as any} size={20} color={isSelected ? '#FFFFFF' : colors.text} />
+                          </View>
+                          <View style={styles.sheetOptionTextContainer}>
+                            <Text style={[styles.sheetOptionTitle, { color: isSelected ? colors.primary : colors.text }]}>
+                              {loc.name}
+                            </Text>
+                            <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                              {loc.desc}
+                            </Text>
+                          </View>
+                          {isSelected && (
+                            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 );
               })}
             </ScrollView>
@@ -610,6 +667,23 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
               <TouchableOpacity onPress={() => setCategoryModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
+            </View>
+
+            {/* In-Sheet Search Bar */}
+            <View style={[styles.sheetSearchBox, { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9', borderColor: colors.border }]}>
+              <Ionicons name="search" size={16} color="#94A3B8" />
+              <TextInput
+                style={[styles.sheetSearchInput, { color: colors.text }]}
+                placeholder="ค้นหาหมวดหมู่ เช่น iPhone, AirPods, บัตร..."
+                placeholderTextColor="#94A3B8"
+                value={categorySearchQuery}
+                onChangeText={setCategorySearchQuery}
+              />
+              {categorySearchQuery ? (
+                <TouchableOpacity onPress={() => setCategorySearchQuery('')}>
+                  <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
@@ -644,7 +718,12 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
               </TouchableOpacity>
 
               {/* All 17+ Categories with Subtags */}
-              {SUT_CATEGORIES.map((cat, idx) => {
+              {SUT_CATEGORIES.filter(
+                (cat) =>
+                  !categorySearchQuery ||
+                  cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
+                  cat.subtags.some((st) => st.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+              ).map((cat, idx) => {
                 const isSelected = selectedTag === cat.name;
                 return (
                   <TouchableOpacity
@@ -989,7 +1068,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   pickerSheetCard: {
-    height: height * 0.65,
+    height: height * 0.72,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
@@ -1005,9 +1084,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    paddingBottom: 12,
   },
   sheetHeaderLeft: {
     flexDirection: 'row',
@@ -1018,13 +1095,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
   },
+  sheetSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    gap: 8,
+    marginBottom: 8,
+  },
+  sheetSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
   sheetScroll: {
-    paddingVertical: 10,
+    paddingVertical: 6,
+  },
+  groupSection: {
+    marginBottom: 12,
+  },
+  groupHeaderBar: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  groupHeaderText: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   sheetOptionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 14,
     borderBottomWidth: 1,
@@ -1047,10 +1152,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   sheetOptionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   sheetOptionDesc: {
-    fontSize: 12,
+    fontSize: 11,
   },
 });

@@ -16,20 +16,16 @@ export interface LatLng {
   lng: number;
 }
 
-// พิกัด GPS จริงของสถานที่ใน มทส. (Suranaree University of Technology)
-export const SUT_LOCATIONS_MAP: Record<string, LatLng> = {
-  'อาคารเรียนรวม 1 (B1)': { lat: 14.88350, lng: 102.02100 },
-  'อาคารเรียนรวม 2 (B2)': { lat: 14.88280, lng: 102.02150 },
-  'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)': { lat: 14.88200, lng: 102.02050 },
-  'โรงอาหารสุรนิเวศน์ (กาสะลอง)': { lat: 14.88120, lng: 102.01950 },
-  'โรงอาหารเรียนรวม 2': { lat: 14.88250, lng: 102.02180 },
-  'อาคารบริหาร มทส.': { lat: 14.88400, lng: 102.01980 },
-  'U-Store / Fresh Me': { lat: 14.88320, lng: 102.02080 },
-  'กาแฟพันธุ์ไทย @B1': { lat: 14.88360, lng: 102.02090 },
-  'อาคารวิชาการ 1-2': { lat: 14.88150, lng: 102.02200 },
-  'หอพักสุรนิเวศ': { lat: 14.88000, lng: 102.01800 },
-  'ลานจอดรถ มทส.': { lat: 14.88220, lng: 102.02250 },
-};
+import { SUT_LOCATIONS_DATA } from '../data/locationsData';
+
+// พิกัด GPS จริงของสถานที่ใน มทส. ทั้งหมด 28+ แห่ง
+export const SUT_LOCATIONS_MAP: Record<string, LatLng> = SUT_LOCATIONS_DATA.reduce(
+  (acc, item) => {
+    acc[item.name] = item.coords;
+    return acc;
+  },
+  {} as Record<string, LatLng>
+);
 
 // พิกัดศูนย์กลาง มทส. (SUT Main Campus Center)
 export const SUT_DEFAULT_CENTER: LatLng = {
@@ -43,35 +39,45 @@ export const SUT_DEFAULT_CENTER: LatLng = {
 export const getLocationCoords = (locationName: string): LatLng => {
   if (!locationName) return SUT_DEFAULT_CENTER;
 
-  const normalized = locationName.toLowerCase();
+  const normalized = locationName.toLowerCase().trim();
 
+  // 1. Exact or Partial Match
   for (const [key, coords] of Object.entries(SUT_LOCATIONS_MAP)) {
-    if (normalized.includes(key.toLowerCase())) {
+    if (normalized.includes(key.toLowerCase()) || key.toLowerCase().includes(normalized)) {
       return coords;
     }
   }
 
-  // Matching by Keywords
+  // 2. Matching by Keywords across all SUT areas
   if (normalized.includes('b2') || normalized.includes('รวม 2') || normalized.includes('รวม2')) {
-    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 2 (B2)'];
+    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 2 (B2)'] || { lat: 14.88280, lng: 102.02150 };
   }
   if (normalized.includes('b1') || normalized.includes('รวม 1') || normalized.includes('รวม1')) {
-    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 1 (B1)'];
+    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 1 (B1)'] || { lat: 14.88350, lng: 102.02100 };
   }
   if (normalized.includes('สมุด') || normalized.includes('บรรณสาร')) {
-    return SUT_LOCATIONS_MAP['ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)'];
+    return SUT_LOCATIONS_MAP['ศูนย์บรรณสารฯ (หอสมุดกลาง มทส.)'] || { lat: 14.88200, lng: 102.02050 };
   }
-  if (normalized.includes('อาหาร') || normalized.includes('กาสะลอง')) {
-    return SUT_LOCATIONS_MAP['โรงอาหารสุรนิเวศน์ (กาสะลอง)'];
+  if (normalized.includes('กาสะลอง') || (normalized.includes('อาหาร') && !normalized.includes('b2'))) {
+    return SUT_LOCATIONS_MAP['โรงอาหารสุรนิเวศน์ (กาสะลอง)'] || { lat: 14.88120, lng: 102.01950 };
   }
   if (normalized.includes('u-store') || normalized.includes('fresh me')) {
-    return SUT_LOCATIONS_MAP['U-Store / Fresh Me'];
+    return SUT_LOCATIONS_MAP['U-Store / Fresh Me @B1'] || { lat: 14.88320, lng: 102.02080 };
   }
-  if (normalized.includes('บริหาร')) {
-    return SUT_LOCATIONS_MAP['อาคารบริหาร มทส.'];
+  if (normalized.includes('บริหาร') || normalized.includes('อธิการ') || normalized.includes('reg')) {
+    return SUT_LOCATIONS_MAP['อาคารบริหาร มทส. (สำนักงานอธิการบดี)'] || { lat: 14.88400, lng: 102.01980 };
   }
-  if (normalized.includes('หอพัก')) {
-    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ'];
+  if (normalized.includes('โรงพยาบาล') || normalized.includes('รพ.') || normalized.includes('แพทย์')) {
+    return SUT_LOCATIONS_MAP['โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี (รพ.มทส.)'] || { lat: 14.87450, lng: 102.01450 };
+  }
+  if (normalized.includes('สุรเริงไชย') || normalized.includes('ยิม') || normalized.includes('กีฬา')) {
+    return SUT_LOCATIONS_MAP['อาคารสุรเริงไชย (โรงยิมเนเซียมหลัก)'] || { lat: 14.88580, lng: 102.02250 };
+  }
+  if (normalized.includes('หอพัก') || normalized.includes('สุรนิเวศ')) {
+    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 1 - 4 (หอพักชาย)'] || { lat: 14.88000, lng: 102.01800 };
+  }
+  if (normalized.includes('จอดรถ')) {
+    return SUT_LOCATIONS_MAP['ลานจอดรถอาคารเรียนรวม B1-B2'] || { lat: 14.88310, lng: 102.02220 };
   }
 
   return SUT_DEFAULT_CENTER;

@@ -17,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { SUTDropdown } from '../components/SUTDropdown';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
 import { CATEGORY_DROPDOWN_OPTIONS, SUT_CATEGORIES } from '../data/categoriesData';
+import { ALL_SUT_LOCATION_NAMES } from '../data/locationsData';
 import { PostType } from '../types';
 
 /**
@@ -163,19 +164,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     }
   };
 
-  const locations = [
-    'อาคารเรียนรวม 1 (B1)',
-    'อาคารเรียนรวม 2 (B2)',
-    'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)',
-    'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
-    'โรงอาหารเรียนรวม 2',
-    'อาคารบริหาร มทส.',
-    'U-Store / Fresh Me',
-    'กาแฟพันธุ์ไทย @B1',
-    'อาคารวิชาการ 1-2',
-    'หอพักสุรนิเวศ',
-    'ลานจอดรถ มทส.',
-  ];
+  const locations = ALL_SUT_LOCATION_NAMES;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
