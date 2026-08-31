@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,32 +6,31 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  RefreshControl,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { PostItem } from '../types';
 import { useShakeSensor } from '../hooks/useShakeSensor';
+import { PostItem, PostType } from '../types';
 
 const { width } = Dimensions.get('window');
 
 /**
  * =========================================================================
- * 🏠 หน้าหลัก (Home Screen - ตามแบบ หน้าหลัก.png)
+ * 🏠 หน้าหลัก (Home Screen - สะอาด สวยงาม โลโก้ชัดเจน)
  * =========================================================================
  * 💡 อธิบายการทำงาน:
- * 1. ส่วนหัวสีส้ม SUT Orange Gradient พร้อมนาฬิกาดิจิทัล Widget (08:00) และช่องค้นหา
- * 2. 2 ปุ่มใหญ่: "แจ้งของหาย" (สีชมพูอ่อน) & "แจ้งพบของ" (สีเขียวอ่อน)
- * 3. กริด 8 หมวดหมู่ (โทรศัพท์, กระเป๋า, บัตร, กุญแจ, หูฟัง, นาฬิกา, เสื้อผ้า, อื่นๆ)
- * 4. รายการโพสต์ล่าสุด พร้อมปุ่ม "ดูทั้งหมด"
+ * 1. แถบสีส้มด้านบนแสดงโลโก้ SUT LOST & FOUND และชื่อผู้ใช้คลีนๆ
+ * 2. 2 ปุ่มใหญ่: แจ้งของหาย (สีแดง) และ แจ้งพบของ (สีเขียว)
+ * 3. ฟีดโพสต์ล่าสุดทั้งหมด พร้อมระบบเขย่าเพื่อรีเฟรช (Shake Sensor)
  * =========================================================================
  */
 
 interface HomeScreenProps {
   onSelectPost: (post: PostItem) => void;
-  onNavigateToCreate: (type: 'lost' | 'found') => void;
+  onNavigateToCreate: (type: PostType) => void;
   onNavigateToSearch: (category?: string) => void;
 }
 
@@ -40,35 +39,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToCreate,
   onNavigateToSearch,
 }) => {
-  const { posts, refreshData, isLoading, user } = useApp();
+  const { posts, user, isLoading, refreshData } = useApp();
   const { colors, isDark } = useTheme();
 
-  const [search, setSearch] = useState('');
+  // State สำหรับแจ้งเตือนการเขย่าเครื่อง (Shake Sensor)
   const [showShakeBanner, setShowShakeBanner] = useState(false);
-  const [currentTime, setCurrentTime] = useState('08:00');
-  const [greeting, setGreeting] = useState('สวัสดีตอนเช้า');
 
-  // นาฬิกาดิจิทัลและคำทักทายตามเวลาจริง
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      setCurrentTime(`${hours}:${minutes}`);
-
-      const h = now.getHours();
-      if (h >= 5 && h < 12) setGreeting('สวัสดีตอนเช้า');
-      else if (h >= 12 && h < 17) setGreeting('สวัสดีตอนบ่าย');
-      else if (h >= 17 && h < 21) setGreeting('สวัสดีตอนเย็น');
-      else setGreeting('สวัสดีตอนดึก');
-    };
-
-    updateClock();
-    const interval = setInterval(updateClock, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 📳 Accelerometer Shake Sensor
+  // 📳 Accelerometer Shake Sensor (Hardware Sensor)
   useShakeSensor(async () => {
     setShowShakeBanner(true);
     await refreshData();
@@ -84,11 +61,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 1. SUT Orange Header */}
       <View style={[styles.orangeHeader, { backgroundColor: colors.primary }]}>
-        {/* Top Brand Logo & Digital Clock Row */}
-        <View style={styles.brandRow}>
+        <View style={styles.headerContentRow}>
+          {/* SUT Lost & Found Brand Logo Badge */}
           <View style={styles.brandBadge}>
             <View style={styles.brandLogoCircle}>
-              <Ionicons name="search" size={14} color="#FF7A00" />
+              <Ionicons name="search" size={15} color="#FF7A00" />
             </View>
             <Text style={styles.brandLogoText}>LOST & FOUND</Text>
             <View style={styles.sutPill}>
@@ -96,36 +73,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </View>
 
-          {/* Digital Clock Widget */}
-          <View style={styles.digitalClockWidget}>
-            <Text style={styles.clockDigitalText}>{currentTime}</Text>
-          </View>
-        </View>
-
-        {/* Greeting Row */}
-        <View style={styles.headerTopRow}>
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>{greeting}</Text>
+          {/* User Name Badge */}
+          <View style={styles.userBadge}>
+            <Ionicons name="person-circle" size={20} color="#FFFFFF" />
             <Text style={styles.userNameText} numberOfLines={1}>
               {user ? user.fullName : 'นักศึกษา มทส.'}
             </Text>
           </View>
         </View>
-
-        {/* Search Input Bar */}
-        <TouchableOpacity
-          style={styles.searchBarBox}
-          onPress={() => onNavigateToSearch(search)}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="search" size={18} color="#94A3B8" />
-          <Text style={styles.searchPlaceholder}>
-            {search ? search : 'ค้นหาของหาย / พบของใน มทส.'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
-      {/* 2. White Scrollable Body */}
+      {/* 2. Scrollable Body */}
       <ScrollView
         style={styles.mainScrollView}
         contentContainerStyle={styles.scrollContent}
@@ -199,7 +157,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 onPress={() => onSelectPost(post)}
                 activeOpacity={0.88}
               >
-                {/* Thumbnail */}
+                {/* Image Thumbnail */}
                 <View style={[styles.postThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
                   {post.imageUrl ? (
                     <Image source={{ uri: post.imageUrl }} style={styles.postThumbnail} resizeMode="cover" />
@@ -209,19 +167,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </View>
 
                 {/* Details */}
-                <View style={styles.postCardContent}>
-                  <Text style={[styles.postCardTitle, { color: colors.text }]} numberOfLines={1}>
-                    {post.title}
-                  </Text>
-                  <Text style={[styles.postCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                <View style={styles.postDetails}>
+                  <View style={styles.postTitleRow}>
+                    <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
+                      {post.title}
+                    </Text>
+                    {/* Status Badge */}
+                    <View
+                      style={[
+                        styles.statusBadgeMini,
+                        {
+                          backgroundColor:
+                            post.status === 'returned'
+                              ? '#10B981'
+                              : post.type === 'lost'
+                              ? '#EF4444'
+                              : '#10B981',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeTextMini}>
+                        {post.status === 'returned'
+                          ? 'ส่งคืนแล้ว'
+                          : post.type === 'lost'
+                          ? 'ของหาย'
+                          : 'พบของ'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.postLocation, { color: colors.textSecondary }]} numberOfLines={1}>
                     {post.location}
                   </Text>
-                  <Text style={[styles.postCardTime, { color: colors.textMuted }]}>
+                  <Text style={[styles.postTime, { color: colors.textMuted }]}>
                     {post.dateTime || 'เมื่อสักครู่'}
                   </Text>
                 </View>
 
-                {/* Chevron > */}
                 <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             ))
@@ -238,29 +220,28 @@ const styles = StyleSheet.create({
   },
   orangeHeader: {
     paddingTop: 54,
-    paddingBottom: 24,
+    paddingBottom: 18,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
-  brandRow: {
+  headerContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   brandBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 20,
     gap: 6,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
   },
   brandLogoCircle: {
@@ -273,7 +254,7 @@ const styles = StyleSheet.create({
   },
   brandLogoText: {
     color: '#0F172A',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -288,71 +269,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  headerTopRow: {
+  userBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  greetingContainer: {
-    flex: 1,
-  },
-  greetingText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 6,
+    maxWidth: '48%',
   },
   userNameText: {
     color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: 2,
-    letterSpacing: -0.2,
-  },
-  digitalClockWidget: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
-    elevation: 4,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  clockDigitalText: {
-    color: '#FF7A00',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    fontVariant: ['tabular-nums'],
-  },
-  searchBarBox: {
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 22,
-    gap: 8,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  searchPlaceholder: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '800',
   },
   mainScrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 18,
     paddingBottom: 40,
   },
   shakeBanner: {
@@ -382,49 +319,18 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 14,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   actionLargeBtn: {
     flex: 1,
-    paddingVertical: 22,
+    paddingVertical: 20,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionBtnText: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-  },
-  sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    marginBottom: 14,
-    letterSpacing: -0.2,
-  },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  categoryItem: {
-    width: (width - 40 - 36) / 4,
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  categorySquare: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  categoryLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   feedHeaderRow: {
     flexDirection: 'row',
@@ -432,8 +338,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
   viewAllText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   postsList: {
@@ -447,12 +357,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     elevation: 2,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
   },
   postThumbnailBox: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 12,
     overflow: 'hidden',
     justifyContent: 'center',
@@ -462,28 +372,46 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  postCardContent: {
+  postDetails: {
     flex: 1,
     marginLeft: 14,
     gap: 3,
   },
-  postCardTitle: {
+  postTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingRight: 6,
+  },
+  postTitle: {
     fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+  },
+  statusBadgeMini: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 6,
+  },
+  statusBadgeTextMini: {
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: '800',
   },
-  postCardLocation: {
+  postLocation: {
     fontSize: 12,
-    fontWeight: '500',
   },
-  postCardTime: {
+  postTime: {
     fontSize: 11,
   },
   emptyBox: {
-    paddingVertical: 36,
+    paddingVertical: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
     borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
     gap: 8,
   },
   emptyText: {
