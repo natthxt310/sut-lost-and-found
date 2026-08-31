@@ -77,15 +77,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }, 3500);
   });
 
-  // 8 หมวดหมู่ตามแบบ Mockup
+  // 8 หมวดหมู่ตามแบบ Mockup ที่เชื่อมโยงกับระบบแท็กละเอียด
   const categoryGrid = [
-    { id: 'phone', name: 'โทรศัพท์', icon: 'phone-portrait' },
-    { id: 'bag', name: 'กระเป๋า', icon: 'bag' },
-    { id: 'card', name: 'บัตร', icon: 'card' },
-    { id: 'key', name: 'กุญแจ', icon: 'key' },
-    { id: 'headset', name: 'หูฟัง', icon: 'headset' },
-    { id: 'watch', name: 'นาฬิกา', icon: 'watch' },
-    { id: 'shirt', name: 'เสื้อผ้า', icon: 'shirt' },
+    { id: 'phone', name: 'โทรศัพท์ & แท็บเล็ต', icon: 'phone-portrait' },
+    { id: 'bag', name: 'กระเป๋าเป้ & ถุงผ้า', icon: 'bag' },
+    { id: 'card', name: 'บัตรนักศึกษา & บัตร', icon: 'card' },
+    { id: 'key', name: 'กุญแจรถ & กุญแจ', icon: 'key' },
+    { id: 'headset', name: 'หูฟัง & AirPods', icon: 'headset' },
+    { id: 'it', name: 'โน้ตบุ๊ก & IT', icon: 'laptop-outline' },
+    { id: 'shirt', name: 'เสื้อผ้า & เสื้อช็อป', icon: 'shirt' },
     { id: 'other', name: 'อื่นๆ', icon: 'ellipsis-horizontal' },
   ];
 

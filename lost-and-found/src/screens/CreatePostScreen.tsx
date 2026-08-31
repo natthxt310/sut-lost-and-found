@@ -15,6 +15,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { SUTDropdown } from '../components/SUTDropdown';
+import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
+import { CATEGORY_DROPDOWN_OPTIONS, SUT_CATEGORIES } from '../data/categoriesData';
 import { PostType } from '../types';
 
 /**
@@ -24,8 +26,9 @@ import { PostType } from '../types';
  * 💡 อธิบายการทำงาน:
  * 1. สลับประเภท 'ของหาย' (สีแดง) หรือ 'ของที่พบ' (สีเขียว)
  * 2. กรอบเส้นประอัปโหลดรูปภาพสิ่งของ
- * 3. ฟอร์มครบถ้วน: ชื่อ, หมวดหมู่, สถานที่ มทส., วันที่, เวลา, รายละเอียด
- * 4. ปุ่มส้ม "โพสต์" บันทึกข้อมูลขึ้นระบบและค้นหา Auto-Match ทันที
+ * 3. หมวดหมู่และแท็กที่ละเอียดครบทุกหมวดใน มทส.
+ * 4. เลือกวันที่แบบ Calendar ปฏิทินภาษาไทย และเลือกเวลาแบบ Time Picker (ไม่ต้องพิมพ์เอง)
+ * 5. ปุ่มส้ม "โพสต์" บันทึกข้อมูลขึ้นระบบและค้นหา Auto-Match ทันที
  * =========================================================================
  */
 
@@ -47,6 +50,8 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
+  
+  // Date & Time States
   const [date, setDate] = useState(() => {
     const d = new Date();
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}`;
@@ -60,6 +65,9 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Picker Modals States
+  const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
 
   // เลือกรูปภาพจากคลังภาพ
   const pickImage = async () => {
@@ -155,26 +163,18 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     }
   };
 
-  const categories = [
-    'โทรศัพท์',
-    'กระเป๋า',
-    'บัตร / เอกสาร',
-    'กุญแจ',
-    'หูฟัง / AirPods',
-    'นาฬิกา',
-    'เสื้อผ้า',
-    'อื่นๆ',
-  ];
-
   const locations = [
     'อาคารเรียนรวม 1 (B1)',
     'อาคารเรียนรวม 2 (B2)',
     'ศูนย์บรรณสารและสื่อการศึกษา (หอสมุด)',
     'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
+    'โรงอาหารเรียนรวม 2',
     'อาคารบริหาร มทส.',
     'U-Store / Fresh Me',
+    'กาแฟพันธุ์ไทย @B1',
     'อาคารวิชาการ 1-2',
     'หอพักสุรนิเวศ',
+    'ลานจอดรถ มทส.',
   ];
 
   return (
@@ -248,23 +248,23 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         </TouchableOpacity>
 
         {/* 3. ชื่อ */}
-        <Text style={[styles.label, { color: colors.text }]}>ชื่อ</Text>
+        <Text style={[styles.label, { color: colors.text }]}>ชื่อสิ่งของ</Text>
         <TextInput
           style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-          placeholder="เช่น iPhone 13 สีดำ, กุญแจรถ Wave"
+          placeholder="เช่น iPhone 13 สีดำ, กุญแจรถ Honda Wave"
           placeholderTextColor="#94A3B8"
           value={title}
           onChangeText={setTitle}
         />
 
-        {/* 4. หมวดหมู่ */}
+        {/* 4. หมวดหมู่แบบละเอียด */}
         <Text style={[styles.label, { color: colors.text }]}>หมวดหมู่</Text>
         <SUTDropdown
           label=""
-          items={categories}
+          items={CATEGORY_DROPDOWN_OPTIONS}
           selectedValue={category}
           onSelect={setCategory}
-          placeholder="เลือกหมวดหมู่สิ่งของ"
+          placeholder="เลือกหมวดหมู่สิ่งของ (เช่น โทรศัพท์, บัตร, กุญแจ)"
         />
 
         {/* 5. สถานที่ */}
@@ -277,34 +277,36 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           placeholder="เลือกสถานที่ใน มทส."
         />
 
-        {/* 6. วันที่ & เวลา (2 Columns Row) */}
+        {/* 6. วันที่ & เวลา (Interactive Calendar & Time Buttons) */}
         <View style={styles.dateTimeRow}>
+          {/* Calendar Date Picker Button */}
           <View style={{ flex: 1 }}>
             <Text style={[styles.label, { color: colors.text }]}>วันที่</Text>
-            <View style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.inputInner, { color: colors.text }]}
-                value={date}
-                onChangeText={setDate}
-                placeholder="วว/ดด/ปปปป"
-                placeholderTextColor="#94A3B8"
-              />
-              <Ionicons name="calendar-outline" size={20} color="#64748B" />
-            </View>
+            <TouchableOpacity
+              style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setPickerMode('date')}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.pickerValueText, { color: colors.text }]}>
+                {date || 'เลือกวันที่'}
+              </Text>
+              <Ionicons name="calendar" size={20} color={colors.primary} />
+            </TouchableOpacity>
           </View>
 
+          {/* Time Picker Button */}
           <View style={{ flex: 1 }}>
             <Text style={[styles.label, { color: colors.text }]}>เวลา</Text>
-            <View style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.inputInner, { color: colors.text }]}
-                value={time}
-                onChangeText={setTime}
-                placeholder="00:00"
-                placeholderTextColor="#94A3B8"
-              />
-              <Ionicons name="time-outline" size={20} color="#64748B" />
-            </View>
+            <TouchableOpacity
+              style={[styles.inputBoxWithIcon, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setPickerMode('time')}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.pickerValueText, { color: colors.text }]}>
+                {time ? `${time} น.` : 'เลือกเวลา'}
+              </Text>
+              <Ionicons name="time" size={20} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -316,7 +318,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
             styles.textArea,
             { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
           ]}
-          placeholder="ระบุจุดสังเกต หรือรายละเอียดเพิ่มเติม..."
+          placeholder="ระบุจุดสังเกต, เคส, สติกเกอร์ หรือรายละเอียดเพิ่มเติม..."
           placeholderTextColor="#94A3B8"
           value={description}
           onChangeText={setDescription}
@@ -338,6 +340,20 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* ================= SUT DATE / TIME PICKER MODAL ================= */}
+      {pickerMode && (
+        <SUTDateTimePickerModal
+          visible={!!pickerMode}
+          mode={pickerMode}
+          currentValue={pickerMode === 'date' ? date : time}
+          onConfirm={(val) => {
+            if (pickerMode === 'date') setDate(val);
+            else setTime(val);
+          }}
+          onClose={() => setPickerMode(null)}
+        />
+      )}
     </View>
   );
 };
@@ -434,10 +450,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     justifyContent: 'space-between',
   },
-  inputInner: {
-    flex: 1,
+  pickerValueText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   dateTimeRow: {
     flexDirection: 'row',

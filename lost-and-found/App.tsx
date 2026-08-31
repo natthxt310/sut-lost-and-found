@@ -47,6 +47,7 @@ function MainAppContent() {
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [searchCategory, setSearchCategory] = useState<string | undefined>(undefined);
+  const [searchViewMode, setSearchViewMode] = useState<'map' | 'filter'>('filter');
 
   const openCreate = (type: PostType = 'lost') => {
     setCreateInitialType(type);
@@ -135,6 +136,7 @@ function MainAppContent() {
                 onNavigateToCreate={(type) => openCreate(type)}
                 onNavigateToSearch={(cat) => {
                   setSearchCategory(cat);
+                  setSearchViewMode('filter');
                   navigation.navigate('ค้นหา');
                 }}
               />
@@ -147,6 +149,7 @@ function MainAppContent() {
               <ExploreBoardScreen
                 onSelectPost={(post) => setSelectedPost(post)}
                 initialCategory={searchCategory}
+                initialViewMode={searchViewMode}
               />
             )}
           </Tab.Screen>
