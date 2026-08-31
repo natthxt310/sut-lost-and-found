@@ -82,6 +82,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         },
       },
     ]);
+  };
+
   const isAdmin =
     user?.role === 'admin' ||
     user?.studentId?.toUpperCase() === 'ADMIN' ||
