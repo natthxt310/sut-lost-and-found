@@ -1,19 +1,19 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { LatLng, getLocationCoords } from '../services/locationService';
+import { LatLng } from '../services/locationService';
 import { SUT_LOCATIONS_DATA } from '../data/locationsData';
 import { PostItem } from '../types';
 
 /**
  * =========================================================================
- * 🗺️ แผนที่ มทส. แบบ Interactive (SUT Comprehensive 28+ Map Component)
+ * 🗺️ แผนที่ มทส. แบบ Interactive พร้อมระบบ Zoom In / Zoom Out
  * =========================================================================
  * 💡 อธิบายการทำงาน:
- * 1. ปักหมุดทุกสถานที่ใน มทส. (28+ แห่ง 7 โซน) จากฐานข้อมูล locationsData.ts
- * 2. หากสถานที่ใดมี "ของหาย" หรือ "พบของ" จะแสดงหมุดสีแดง/เขียวกระพริบพร้อมชื่อสิ่งของและรูปภาพ
- * 3. แสดงหมุดสีฟ้ากระพริบ "ตำแหน่งของคุณ" (User GPS Live Location)
- * 4. เมื่อแตะหมุดสิ่งของ สามารถกดเปิดดูรายละเอียดโพสต์ได้ทันที
+ * 1. รองรับการซูมเข้า (Zoom In) / ซูมออก (Zoom Out) ทั้งแบบ Pinch-to-Zoom และปุ่มกดบนแผนที่
+ * 2. ปักหมุดทุกสถานที่ใน มทส. (28+ แห่ง 7 โซน) จากฐานข้อมูล locationsData.ts
+ * 3. จุดที่มีของหาย/พบของ จะขึ้นหมุดสีแดง/เขียวกระพริบพร้อมชื่อสิ่งของ
+ * 4. ปุ่มลัด 🎯 กลับไปตำแหน่งผู้ใช้ปัจจุบัน (Recenter GPS)
  * =========================================================================
  */
 
@@ -38,7 +38,6 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
     const matchingPosts = activePosts.filter((p) => {
       const pLoc = (p.location || '').toLowerCase();
       const locName = loc.name.toLowerCase();
-      const locDesc = (loc.desc || '').toLowerCase();
 
       return (
         pLoc === locName ||
@@ -85,7 +84,7 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -97,6 +96,7 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
       height: 100%;
       background: #0F172A;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      touch-action: pan-x pan-y pinch-zoom;
     }
     .user-pulse-dot {
       width: 18px;
@@ -113,9 +113,46 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 85, 212, 0); }
     }
 
+    /* Floating Zoom & Action Controls Bar */
+    .map-controls-bar {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ctrl-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1.5px solid #334155;
+      color: #FFFFFF;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .ctrl-btn:active {
+      transform: scale(0.92);
+      background: #FF7A00;
+      border-color: #FF7A00;
+    }
+    .ctrl-btn-gps {
+      color: #FF7A00;
+      font-size: 18px;
+    }
+
     /* Landmark Label Pins */
     .landmark-pin {
-      background: rgba(15, 23, 42, 0.88);
+      background: rgba(15, 23, 42, 0.9);
       color: #F8FAFC;
       border: 1.5px solid #FF7A00;
       border-radius: 12px;
@@ -223,18 +260,34 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
 </head>
 <body>
   <div id="map"></div>
+
+  <!-- 🔍 Floating Zoom & Location Controls -->
+  <div class="map-controls-bar">
+    <div class="ctrl-btn" onclick="zoomInMap()" title="ซูมเข้า (Zoom In)">+</div>
+    <div class="ctrl-btn" onclick="zoomOutMap()" title="ซูมออก (Zoom Out)">−</div>
+    <div class="ctrl-btn ctrl-btn-gps" onclick="recenterUserLocation()" title="ตำแหน่งของคุณ">🎯</div>
+  </div>
+
   <script>
     const userLat = ${userLocation.lat};
     const userLng = ${userLocation.lng};
     const locationsData = ${JSON.stringify(locationsWithItems)};
 
-    // เริ่มต้นแผนที่โฟกัสที่ มทส.
+    // เริ่มต้นแผนที่โฟกัสที่ มทส. พร้อมเปิดโหมด Zoom ทุกรูปแบบ
     const map = L.map('map', {
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
+      dragging: true,
+      touchZoom: true,
+      doubleClickZoom: true,
+      scrollWheelZoom: true,
+      boxZoom: true,
+      tap: true,
+      minZoom: 12,
+      maxZoom: 19
     }).setView([userLat, userLng], 16);
 
-    // OpenStreetMap CartoDB Dark/Voyager or standard OSM
+    // OpenStreetMap Standard Tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
     }).addTo(map);
@@ -246,7 +299,7 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
       iconSize: [18, 18],
       iconAnchor: [9, 9]
     });
-    L.marker([userLat, userLng], { icon: userIcon })
+    const userMarker = L.marker([userLat, userLng], { icon: userIcon })
       .bindPopup('<div class="popup-box"><div class="popup-title">📍 ตำแหน่งของคุณ</div><div class="popup-zone">มหาวิทยาลัยเทคโนโลยีสุรนารี</div></div>')
       .addTo(map);
 
@@ -294,14 +347,13 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
           .addTo(map);
 
         itemMarker.on('click', function() {
-          // ถ้ามี 1 ชิ้นและคลิกหมุด สามารถเปิดได้
           if (loc.items.length === 1 && window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(loc.items[0].id);
           }
         });
 
       } else {
-        // 🏛️ สถานที่ทั่วไปใน มทส. (ยังไม่มีของ) -> แสดงหมุด Landmark Label สวยงาม
+        // 🏛️ สถานที่ทั่วไปใน มทส. (ยังไม่มีของ) -> แสดงหมุด Landmark Label
         const landmarkHtml = '<div class="landmark-pin">' +
           '<span>📍 ' + loc.name + '</span>' +
         '</div>';
@@ -325,6 +377,22 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
           .addTo(map);
       }
     });
+
+    // ฟังก์ชันซูมเข้า (Zoom In)
+    function zoomInMap() {
+      map.zoomIn();
+    }
+
+    // ฟังก์ชันซูมออก (Zoom Out)
+    function zoomOutMap() {
+      map.zoomOut();
+    }
+
+    // ฟังก์ชันกลับไปตำแหน่งผู้ใช้ (Recenter GPS)
+    function recenterUserLocation() {
+      map.setView([userLat, userLng], 17, { animate: true });
+      userMarker.openPopup();
+    }
 
     function sendPostClick(postId) {
       if (window.ReactNativeWebView) {
@@ -357,6 +425,7 @@ export const SUTInteractiveMap: React.FC<SUTInteractiveMapProps> = ({
         onMessage={handleMessage}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        scalesPageToFit={false}
         scrollEnabled={false}
       />
     </View>
