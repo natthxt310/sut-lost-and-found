@@ -67,50 +67,53 @@ export const getLocationCoords = (locationName: string): LatLng => {
   if (normalized.includes('วิทย์') || normalized.includes('วิชาการ 2') || normalized.includes('วิชาการ2')) {
     return SUT_LOCATIONS_MAP['อาคารวิชาการ 2 (วิทย์ / แพทย์ / พยาบาล)'] || { lat: 14.879585, lng: 102.019869 };
   }
+  if (normalized.includes('รัฐสีมา') || normalized.includes('รัฐสีมาคุณากร') || normalized.includes('พยาบาล')) {
+    return SUT_LOCATIONS_MAP['อาคารรัฐสีมาคุณากร'] || { lat: 14.877714, lng: 102.014879 };
+  }
   if (normalized.includes('technopolis') || normalized.includes('เทคโน')) {
-    return SUT_LOCATIONS_MAP['อาคารสิรินธรวิทยวิถี (Technopolis)'] || { lat: 14.87800, lng: 102.00750 };
+    return SUT_LOCATIONS_MAP['เทคโนธานี'] || { lat: 14.876263, lng: 102.022375 };
   }
   if (normalized.includes('กาสะลอง') || (normalized.includes('อาหาร') && !normalized.includes('b2'))) {
-    return SUT_LOCATIONS_MAP['โรงอาหารสุรนิเวศน์ (กาสะลอง)'] || { lat: 14.87850, lng: 102.01520 };
+    return SUT_LOCATIONS_MAP['โรงอาหารกาสะลองคำ'] || { lat: 14.896621, lng: 102.012748 };
   }
   if (normalized.includes('u-store') || normalized.includes('fresh me')) {
-    return SUT_LOCATIONS_MAP['U-Store / Fresh Me @B1'] || { lat: 14.88165, lng: 102.01650 };
+    return SUT_LOCATIONS_MAP['U-Store / Fresh Me @B1'] || { lat: 14.881748, lng: 102.016610 };
   }
   if (normalized.includes('บริหาร') || normalized.includes('อธิการ') || normalized.includes('reg')) {
-    return SUT_LOCATIONS_MAP['อาคารบริหาร มทส. (สำนักงานอธิการบดี)'] || { lat: 14.88250, lng: 102.01450 };
+    return SUT_LOCATIONS_MAP['อาคารบริหาร มทส. (สำนักงานอธิการบดี)'] || { lat: 14.880823, lng: 102.020922 };
   }
   if (normalized.includes('โรงพยาบาล') || normalized.includes('รพ.') || normalized.includes('แพทย์')) {
-    return SUT_LOCATIONS_MAP['โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี (รพ.มทส.)'] || { lat: 14.87450, lng: 102.00900 };
+    return SUT_LOCATIONS_MAP['โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี (รพ.มทส.)'] || { lat: 14.864578, lng: 102.035497 };
   }
   if (normalized.includes('สุรเริงไชย') || normalized.includes('ยิม')) {
-    return SUT_LOCATIONS_MAP['อาคารสุรเริงไชย (โรงยิมเนเซียมหลัก)'] || { lat: 14.88450, lng: 102.02000 };
+    return SUT_LOCATIONS_MAP['อาคารสุรเริงไชย (โรงยิมเนเซียมหลัก)'] || { lat: 14.886587, lng: 102.018495 };
   }
   if (normalized.includes('ฟิตเนส') || normalized.includes('สระว่ายน้ำ') || normalized.includes('สุขภาพ')) {
-    return SUT_LOCATIONS_MAP['ศูนย์กีฬาและสุขภาพ (Fitness & สระว่ายน้ำ)'] || { lat: 14.88600, lng: 102.02150 };
+    return SUT_LOCATIONS_MAP['ศูนย์กีฬาและสุขภาพ (Fitness & สระว่ายน้ำ)'] || { lat: 14.886158, lng: 102.017971 };
   }
   if (normalized.includes('หอ 1') || normalized.includes('หอ 2') || normalized.includes('หอ 3') || normalized.includes('หอ 4') || normalized.includes('หอ 5') || normalized.includes('หอ 6') || normalized.includes('หญิง')) {
-    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 1 - 6 (หอพักหญิง)'] || { lat: 14.87700, lng: 102.01350 };
+    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 1 - 6 (หอพักหญิง)'] || { lat: 14.896847, lng: 102.014949 };
   }
   if (normalized.includes('หอ 7') || normalized.includes('หอ 8') || normalized.includes('หอ 9') || normalized.includes('หอ 10') || normalized.includes('หอ 11') || normalized.includes('หอ 12') || normalized.includes('หอ 13') || normalized.includes('ชาย')) {
-    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 7 - 13 (หอพักชาย)'] || { lat: 14.87600, lng: 102.01500 };
+    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 7 - 13 (หอพักชาย)'] || { lat: 14.896259, lng: 102.009599 };
   }
   if (normalized.includes('หอ 14') || normalized.includes('หอ 15') || normalized.includes('หอ 16') || normalized.includes('หอ 17') || normalized.includes('หอ 18')) {
-    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 14 - 18 (หอพักหญิง)'] || { lat: 14.87550, lng: 102.01650 };
+    return SUT_LOCATIONS_MAP['หอพักสุรนิเวศ 14 - 18 (หอพักหญิง)'] || { lat: 14.892740, lng: 102.012888 };
   }
   if (normalized.includes('จอดรถ')) {
-    return SUT_LOCATIONS_MAP['ลานจอดรถอาคารเรียนรวม B1-B2'] || { lat: 14.88140, lng: 102.01710 };
+    return SUT_LOCATIONS_MAP['ลานจอดรถอาคารเรียนรวม B1-B2'] || { lat: 14.882044, lng: 102.017504 };
   }
   if (normalized.includes('ประตู 1') || normalized.includes('ประตู1')) {
-    return SUT_LOCATIONS_MAP['ประตู 1 มทส. (ฝั่ง ถ.มหาวิทยาลัย - ประตูหลัก)'] || { lat: 14.88900, lng: 102.02550 };
+    return SUT_LOCATIONS_MAP['ประตู 1 มทส. (ฝั่ง ถ.มหาวิทยาลัย - ประตูหลัก)'] || { lat: 14.883852, lng: 102.024469 };
   }
   if (normalized.includes('ประตู 2') || normalized.includes('ประตู2')) {
-    return SUT_LOCATIONS_MAP['ประตู 2 มทส. (ฝั่ง ถ.มิตรภาพ / โคกกรวด)'] || { lat: 14.89300, lng: 102.00800 };
+    return SUT_LOCATIONS_MAP['ประตู 2 มทส. (ฝั่ง ถ.มิตรภาพ / โคกกรวด)'] || { lat: 14.862955, lng: 102.038860 };
   }
   if (normalized.includes('ประตู 3') || normalized.includes('ประตู3')) {
-    return SUT_LOCATIONS_MAP['ประตู 3 มทส. (ฝั่ง ถ.304 - สุรนารีวิลเลจ)'] || { lat: 14.86500, lng: 102.02200 };
+    return SUT_LOCATIONS_MAP['ประตู 3 มทส. (ฝั่ง ถ.304 - สุรนารีวิลเลจ)'] || { lat: 14.872608, lng: 102.008216 };
   }
   if (normalized.includes('ประตู 4') || normalized.includes('ประตู4') || normalized.includes('ห้วยยาง')) {
-    return SUT_LOCATIONS_MAP['ประตู 4 มทส. (ฝั่ง อ่างห้วยยาง)'] || { lat: 14.86800, lng: 102.01000 };
+    return SUT_LOCATIONS_MAP['ประตู 4 มทส. (ฝั่ง อ่างห้วยยาง)'] || { lat: 14.901037, lng: 102.009148 };
   }
 
   return SUT_DEFAULT_CENTER;

@@ -72,6 +72,14 @@ export const SUT_LOCATIONS_DATA: SUTLocationItem[] = [
     coords: { lat: 14.879585, lng: 102.019869 },
   },
   {
+    id: 'ratthasima',
+    name: 'อาคารรัฐสีมาคุณากร',
+    zone: 'อาคารเรียน & วิชาการ',
+    icon: 'school',
+    desc: 'อาคารรัฐสีมาคุณากร, สำนักวิชาพยาบาลศาสตร์, แพทยศาสตร์ มทส.',
+    coords: { lat: 14.877714, lng: 102.014879 },
+  },
+  {
     id: 'technopolis',
     name: 'เทคโนธานี',
     zone: 'อาคารเรียน & วิชาการ',
