@@ -50,22 +50,22 @@ export const getLocationCoords = (locationName: string): LatLng => {
 
   // 2. Matching by Keywords across all SUT areas
   if (normalized.includes('b1') || normalized.includes('เรียนรวม 1') || normalized.includes('เรียนรวม1') || normalized.includes('รวม 1')) {
-    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 1 (B1)'] || { lat: 14.88175, lng: 102.01662 };
+    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 1 (B1)'] || { lat: 14.880983, lng: 102.017208 };
   }
   if (normalized.includes('b2') || normalized.includes('เรียนรวม 2') || normalized.includes('เรียนรวม2') || normalized.includes('รวม 2')) {
-    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 2 (B2)'] || { lat: 14.88105, lng: 102.01755 };
+    return SUT_LOCATIONS_MAP['อาคารเรียนรวม 2 (B2)'] || { lat: 14.881870, lng: 102.014977 };
   }
   if (normalized.includes('สมุด') || normalized.includes('บรรณสาร')) {
-    return SUT_LOCATIONS_MAP['ศูนย์บรรณสารฯ (หอสมุดกลาง มทส.)'] || { lat: 14.88050, lng: 102.01580 };
+    return SUT_LOCATIONS_MAP['ศูนย์บรรณสารฯ (หอสมุดกลาง มทส.)'] || { lat: 14.878660, lng: 102.015913 };
   }
   if (normalized.includes('f1') || normalized.includes('f2') || normalized.includes('เครื่องมือ')) {
-    return SUT_LOCATIONS_MAP['อาคารเครื่องมือวิทยาศาสตร์ฯ (F1 - F10)'] || { lat: 14.87950, lng: 102.01920 };
+    return SUT_LOCATIONS_MAP['อาคารเครื่องมือวิทยาศาสตร์ฯ (F1 - F10)'] || { lat: 14.877862, lng: 102.017160 };
   }
   if (normalized.includes('วิศวะ') || normalized.includes('วิชาการ 1') || normalized.includes('วิชาการ1')) {
-    return SUT_LOCATIONS_MAP['อาคารวิชาการ 1 (สำนักวิชาวิศวกรรมศาสตร์)'] || { lat: 14.87850, lng: 102.01880 };
+    return SUT_LOCATIONS_MAP['อาคารวิชาการ 1 (สำนักวิชาวิศวกรรมศาสตร์)'] || { lat: 14.878850, lng: 102.018770 };
   }
   if (normalized.includes('วิทย์') || normalized.includes('วิชาการ 2') || normalized.includes('วิชาการ2')) {
-    return SUT_LOCATIONS_MAP['อาคารวิชาการ 2 (วิทย์ / แพทย์ / พยาบาล)'] || { lat: 14.87750, lng: 102.01800 };
+    return SUT_LOCATIONS_MAP['อาคารวิชาการ 2 (วิทย์ / แพทย์ / พยาบาล)'] || { lat: 14.879585, lng: 102.019869 };
   }
   if (normalized.includes('technopolis') || normalized.includes('เทคโน')) {
     return SUT_LOCATIONS_MAP['อาคารสิรินธรวิทยวิถี (Technopolis)'] || { lat: 14.87800, lng: 102.00750 };

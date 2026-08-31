@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,8 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -74,6 +76,78 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
   const [userLocation, setUserLocation] = useState<LatLng>(SUT_DEFAULT_CENTER);
   const [isLocating, setIsLocating] = useState(false);
   const [gpsToast, setGpsToast] = useState<string | null>(null);
+
+  // =========================================================================
+  // 🗺️ Bottom Sheet Drag & Expand/Collapse State (เลื่อนเปิด-ปิดแมพเต็มจอ)
+  // =========================================================================
+  const SHEET_COLLAPSED_HEIGHT = 64;
+  const SHEET_HALF_HEIGHT = 290;
+  const SHEET_EXPANDED_HEIGHT = Math.min(580, height * 0.72);
+
+  const [sheetState, setSheetState] = useState<'collapsed' | 'half' | 'expanded'>('half');
+  const sheetHeightAnim = useRef(new Animated.Value(SHEET_HALF_HEIGHT)).current;
+
+  const animateSheetTo = (targetHeight: number, nextState: 'collapsed' | 'half' | 'expanded') => {
+    setSheetState(nextState);
+    Animated.spring(sheetHeightAnim, {
+      toValue: targetHeight,
+      damping: 22,
+      stiffness: 170,
+      mass: 0.8,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const toggleSheet = () => {
+    if (sheetState === 'collapsed') {
+      animateSheetTo(SHEET_HALF_HEIGHT, 'half');
+    } else if (sheetState === 'half') {
+      animateSheetTo(SHEET_COLLAPSED_HEIGHT, 'collapsed');
+    } else {
+      animateSheetTo(SHEET_HALF_HEIGHT, 'half');
+    }
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+      onPanResponderMove: (_, gestureState) => {
+        let baseHeight =
+          sheetState === 'collapsed'
+            ? SHEET_COLLAPSED_HEIGHT
+            : sheetState === 'half'
+            ? SHEET_HALF_HEIGHT
+            : SHEET_EXPANDED_HEIGHT;
+        let newH = baseHeight - gestureState.dy;
+        if (newH < SHEET_COLLAPSED_HEIGHT - 10) newH = SHEET_COLLAPSED_HEIGHT - 10;
+        if (newH > SHEET_EXPANDED_HEIGHT + 20) newH = SHEET_EXPANDED_HEIGHT + 20;
+        sheetHeightAnim.setValue(newH);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 40) {
+          // เลื่อนลง -> ย่อ/ปิดแมพเต็มจอ
+          if (sheetState === 'expanded') {
+            animateSheetTo(SHEET_HALF_HEIGHT, 'half');
+          } else {
+            animateSheetTo(SHEET_COLLAPSED_HEIGHT, 'collapsed');
+          }
+        } else if (gestureState.dy < -40) {
+          // เลื่อนขึ้น -> ขยายดูรายการ
+          if (sheetState === 'collapsed') {
+            animateSheetTo(SHEET_HALF_HEIGHT, 'half');
+          } else {
+            animateSheetTo(SHEET_EXPANDED_HEIGHT, 'expanded');
+          }
+        } else {
+          // ปล่อยใกล้ตำแหน่งไหนให้ snap กลับตำแหน่งเดิม
+          if (sheetState === 'collapsed') animateSheetTo(SHEET_COLLAPSED_HEIGHT, 'collapsed');
+          else if (sheetState === 'half') animateSheetTo(SHEET_HALF_HEIGHT, 'half');
+          else animateSheetTo(SHEET_EXPANDED_HEIGHT, 'expanded');
+        }
+      },
+    })
+  ).current;
 
   // Sync initialCategory
   useEffect(() => {
@@ -275,19 +349,67 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
             onSelectPost={onSelectPost}
           />
 
-          {/* Near You Bottom Sheet */}
-          <View style={[styles.nearYouSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.nearYouHeaderRow}>
-              <Text style={[styles.nearYouTitle, { color: colors.text }]}>
-                ใกล้คุณ ({postsWithRealDistance.length} รายการ)
-              </Text>
-              <Text style={[styles.nearYouGpsBadge, { color: colors.primary }]}>
-                📍 คำนวณจาก GPS จริง
-              </Text>
+          {/* Near You Expandable / Collapsible Bottom Sheet */}
+          <Animated.View
+            style={[
+              styles.nearYouSheet,
+              {
+                height: sheetHeightAnim,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            {/* Draggable Handle & Header Bar */}
+            <View {...panResponder.panHandlers} style={styles.sheetHeaderTouchZone}>
+              <TouchableOpacity activeOpacity={0.7} onPress={toggleSheet} style={styles.sheetHandleWrapper}>
+                <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#64748B' : '#CBD5E1' }]} />
+              </TouchableOpacity>
+
+              <View style={styles.nearYouHeaderRow}>
+                <TouchableOpacity
+                  style={styles.nearYouHeaderLeft}
+                  onPress={toggleSheet}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.nearYouTitle, { color: colors.text }]}>
+                    ใกล้คุณ ({postsWithRealDistance.length} รายการ)
+                  </Text>
+                  {sheetState === 'collapsed' && (
+                    <Text style={[styles.tapToOpenHint, { color: colors.textSecondary }]}>
+                      • แตะหรือรูดขึ้นเพื่อดูรายการ
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.headerRightActions}>
+                  <Text style={[styles.nearYouGpsBadge, { color: colors.primary }]}>
+                    📍 GPS จริง
+                  </Text>
+                  <TouchableOpacity
+                    onPress={toggleSheet}
+                    style={[
+                      styles.sheetToggleBtn,
+                      { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={sheetState === 'collapsed' ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
-            <ScrollView contentContainerStyle={styles.nearYouList} showsVerticalScrollIndicator={false}>
+            {/* Content List (Visible when not collapsed or while dragging) */}
+            <ScrollView
+              contentContainerStyle={styles.nearYouList}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={sheetState === 'expanded'}
+            >
               {postsWithRealDistance.length === 0 ? (
                 <View style={styles.emptyNearYou}>
                   <Ionicons name="location-outline" size={36} color={colors.textMuted} />
@@ -335,7 +457,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
                 ))
               )}
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       ) : (
         /* ================= MODE 2: FILTER & SEARCH RESULTS (หน้าหลัก-1.png) ================= */
@@ -861,43 +983,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nearYouSheet: {
-    height: 290,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    elevation: 8,
+    paddingTop: 8,
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    overflow: 'hidden',
+  },
+  sheetHeaderTouchZone: {
+    paddingBottom: 6,
+  },
+  sheetHandleWrapper: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    width: '100%',
   },
   sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
     backgroundColor: '#CBD5E1',
     alignSelf: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   nearYouHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  nearYouHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
   },
   nearYouTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
+  },
+  tapToOpenHint: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   nearYouGpsBadge: {
     fontSize: 12,
     fontWeight: '700',
   },
+  sheetToggleBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   nearYouList: {
     gap: 10,
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
   nearYouCard: {
     flexDirection: 'row',
