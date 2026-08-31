@@ -9,6 +9,7 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -26,22 +27,22 @@ import { SUTInteractiveMap } from '../components/SUTInteractiveMap';
 import { POPULAR_TAG_CHIPS, SUT_CATEGORIES } from '../data/categoriesData';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-// รายการสถานที่ใน มทส. สำหรับแท็บเลือกสถานที่
-const SUT_LOCATION_CHIPS = [
-  'ทุกสถานที่',
-  'อาคารเรียนรวม 1 (B1)',
-  'อาคารเรียนรวม 2 (B2)',
-  'ศูนย์บรรณสารฯ (หอสมุด)',
-  'โรงอาหารสุรนิเวศน์ (กาสะลอง)',
-  'โรงอาหารเรียนรวม 2',
-  'U-Store / Fresh Me',
-  'กาแฟพันธุ์ไทย @B1',
-  'อาคารบริหาร มทส.',
-  'อาคารวิชาการ 1-2',
-  'หอพักสุรนิเวศ',
-  'ลานจอดรถ มทส.',
+// รายการสถานที่ใน มทส.
+const SUT_LOCATIONS_LIST = [
+  { name: 'ทุกสถานที่', icon: 'globe-outline', desc: 'ค้นหาทุกพื้นที่ใน มทส.' },
+  { name: 'อาคารเรียนรวม 1 (B1)', icon: 'school-outline', desc: 'ห้องเรียนรวม, ห้องบรรยาย B1' },
+  { name: 'อาคารเรียนรวม 2 (B2)', icon: 'school-outline', desc: 'ห้องเรียนรวม, ห้องปฏิบัติการ B2' },
+  { name: 'ศูนย์บรรณสารฯ (หอสมุด)', icon: 'book-outline', desc: 'หอสมุดกลาง, พื้นที่ Co-working Space' },
+  { name: 'โรงอาหารสุรนิเวศน์ (กาสะลอง)', icon: 'restaurant-outline', desc: 'โรงอาหารกลาง, โซนร้านค้า' },
+  { name: 'โรงอาหารเรียนรวม 2', icon: 'restaurant-outline', desc: 'โรงอาหารใต้อาคาร B2' },
+  { name: 'U-Store / Fresh Me', icon: 'bag-handle-outline', desc: 'ร้านค้า U-Store และ Fresh Me B1' },
+  { name: 'กาแฟพันธุ์ไทย @B1', icon: 'cafe-outline', desc: 'ร้านกาแฟพันธุ์ไทย ใต้อาคาร B1' },
+  { name: 'อาคารบริหาร มทส.', icon: 'business-outline', desc: 'สำนักงานอธิการบดี, งานทะเบียน' },
+  { name: 'อาคารวิชาการ 1-2', icon: 'flask-outline', desc: 'สำนักวิชาวิศวกรรมศาสตร์ / วิทยาศาสตร์' },
+  { name: 'หอพักสุรนิเวศ', icon: 'home-outline', desc: 'หอพักนักศึกษาภายในมหาวิทยาลัย' },
+  { name: 'ลานจอดรถ มทส.', icon: 'car-outline', desc: 'ลานจอดรถจักรยานยนต์และรถยนต์' },
 ];
 
 /**
@@ -49,9 +50,10 @@ const SUT_LOCATION_CHIPS = [
  * 🔍 หน้าค้นหา & แผนที่ มทส. (Search & Interactive SUT Map Screen)
  * =========================================================================
  * 💡 อธิบายการทำงาน:
- * 1. หมวดหมู่: แถบแท็บเลื่อนแนวนอน (Horizontal Swipeable Chips) กดเลือกได้ทันที
- * 2. สถานที่: แถบแท็บเลื่อนแนวนอน (Horizontal Swipeable Chips) กดเลือกได้ทันที
- * 3. ปุ่ม GPS ขวาบน: ปุ่มดึงพิกัดตำแหน่ง GPS ปัจจุบันของผู้ใช้จาก Sensor
+ * 1. แตะช่อง "สถานที่": เปิด Bottom Sheet แถบเลือกสถานที่ใน มทส. แบบมีไอคอนและคำอธิบาย
+ * 2. แตะช่อง "หมวดหมู่": เปิด Bottom Sheet แถบเลือกหมวดหมู่แบบละเอียด (17+ หมวด)
+ * 3. แตะช่อง "วันที่": เปิด Calendar Picker ปฏิทินภาษาไทย
+ * 4. ปุ่ม GPS ขวาบน: ดึงพิกัดจาก GPS Hardware Sensor จริง และจัดกึ่งกลางแผนที่
  * =========================================================================
  */
 
@@ -77,7 +79,9 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
   const [typeFilter, setTypeFilter] = useState<'all' | 'lost' | 'found'>('all');
   const [viewMode, setViewMode] = useState<'map' | 'filter'>(initialViewMode);
 
-  // Calendar Modal for Search
+  // Modal Sheet States
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
 
   // GPS Sensor & Toast States
@@ -189,7 +193,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Search Bar Input (กดแล้วสลับเข้าโหมดค้นหา/ตัวกรองทันที) */}
+        {/* Search Bar Input */}
         <TouchableOpacity
           style={[
             styles.searchBar,
@@ -219,7 +223,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
           ) : null}
         </TouchableOpacity>
 
-        {/* GPS Location Button (ปุ่มดึงพิกัดตำแหน่ง GPS ปัจจุบันของผู้ใช้) */}
+        {/* GPS Location Sensor Button (ปุ่มมุมขวาบน) */}
         <TouchableOpacity
           style={[
             styles.gpsBtn,
@@ -243,7 +247,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
         </View>
       )}
 
-      {/* 2. Horizontal Quick Tag Chips Bar (แท็กหมวดหมู่ยอดนิยม) */}
+      {/* 2. Horizontal Quick Tag Chips Bar */}
       <View style={[styles.tagsBarContainer, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsScrollContent}>
           {POPULAR_TAG_CHIPS.map((tag, idx) => {
@@ -284,7 +288,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
             onSelectPost={onSelectPost}
           />
 
-          {/* Near You Bottom Sheet (ระยะทางคำนวณจริงจากพิกัด GPS) */}
+          {/* Near You Bottom Sheet */}
           <View style={[styles.nearYouSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.nearYouHeaderRow}>
@@ -349,145 +353,115 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
       ) : (
         /* ================= MODE 2: FILTER & SEARCH RESULTS (หน้าหลัก-1.png) ================= */
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 1. ประเภท: ทั้งหมด / ของหาย / ของที่พบ */}
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>ประเภทรายการ</Text>
-          <View style={styles.typeChipsRow}>
+          {/* ตัวกรองการค้นหา Header */}
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ตัวกรองการค้นหา</Text>
+
+          <View style={styles.filterForm}>
+            {/* 1. ประเภท: ทั้งหมด / ของหาย / ของที่พบ */}
+            <View style={styles.typeChipsRow}>
+              <TouchableOpacity
+                style={[
+                  styles.typeChip,
+                  typeFilter === 'all'
+                    ? [styles.typeChipActive, { backgroundColor: colors.primary }]
+                    : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+                ]}
+                onPress={() => setTypeFilter('all')}
+              >
+                <Text style={[styles.typeChipText, typeFilter === 'all' ? { color: '#FFFFFF' } : { color: colors.text }]}>
+                  ทั้งหมด
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.typeChip,
+                  typeFilter === 'lost'
+                    ? [styles.typeChipActive, { backgroundColor: '#EF4444' }]
+                    : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+                ]}
+                onPress={() => setTypeFilter('lost')}
+              >
+                <Text style={[styles.typeChipText, typeFilter === 'lost' ? { color: '#FFFFFF' } : { color: colors.text }]}>
+                  🔴 ของหาย
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.typeChip,
+                  typeFilter === 'found'
+                    ? [styles.typeChipActive, { backgroundColor: '#10B981' }]
+                    : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
+                ]}
+                onPress={() => setTypeFilter('found')}
+              >
+                <Text style={[styles.typeChipText, typeFilter === 'found' ? { color: '#FFFFFF' } : { color: colors.text }]}>
+                  🟢 ของที่พบ
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 2. ช่องแตะเลือกสถานที่ (Location Selector Field) */}
             <TouchableOpacity
-              style={[
-                styles.typeChip,
-                typeFilter === 'all'
-                  ? [styles.typeChipActive, { backgroundColor: colors.primary }]
-                  : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
-              ]}
-              onPress={() => setTypeFilter('all')}
+              style={[styles.filterSelectorField, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setLocationModalVisible(true)}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.typeChipText, typeFilter === 'all' ? { color: '#FFFFFF' } : { color: colors.text }]}>
-                ทั้งหมด
-              </Text>
+              <View style={styles.fieldLeft}>
+                <Ionicons name="location" size={20} color={colors.primary} />
+                <View style={styles.fieldTextContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>สถานที่ (Location)</Text>
+                  <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={1}>
+                    {selectedLocation}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
 
+            {/* 3. ช่องแตะเลือกหมวดหมู่ (Category Selector Field) */}
             <TouchableOpacity
-              style={[
-                styles.typeChip,
-                typeFilter === 'lost'
-                  ? [styles.typeChipActive, { backgroundColor: '#EF4444' }]
-                  : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
-              ]}
-              onPress={() => setTypeFilter('lost')}
+              style={[styles.filterSelectorField, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setCategoryModalVisible(true)}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.typeChipText, typeFilter === 'lost' ? { color: '#FFFFFF' } : { color: colors.text }]}>
-                🔴 ของหาย
-              </Text>
+              <View style={styles.fieldLeft}>
+                <Ionicons name="folder-open" size={20} color={colors.primary} />
+                <View style={styles.fieldTextContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>หมวดหมู่สิ่งของ (Category)</Text>
+                  <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={1}>
+                    {selectedTag}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
 
+            {/* 4. ช่องแตะเลือกวันที่เกิดเหตุ (Calendar Picker Field) */}
             <TouchableOpacity
-              style={[
-                styles.typeChip,
-                typeFilter === 'found'
-                  ? [styles.typeChipActive, { backgroundColor: '#10B981' }]
-                  : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
-              ]}
-              onPress={() => setTypeFilter('found')}
+              style={[styles.filterSelectorField, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setCalendarVisible(true)}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.typeChipText, typeFilter === 'found' ? { color: '#FFFFFF' } : { color: colors.text }]}>
-                🟢 ของที่พบ
-              </Text>
+              <View style={styles.fieldLeft}>
+                <Ionicons name="calendar" size={20} color={colors.primary} />
+                <View style={styles.fieldTextContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>ช่วงเวลา / วันที่เกิดเหตุ</Text>
+                  <Text style={[styles.fieldValue, { color: timeFilter ? colors.text : colors.textMuted }]} numberOfLines={1}>
+                    {timeFilter ? `วันที่: ${timeFilter}` : 'ทุกช่วงเวลา (แตะเพื่อระบุวันที่)'}
+                  </Text>
+                </View>
+              </View>
+              {timeFilter ? (
+                <TouchableOpacity onPress={() => setTimeFilter('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : (
+                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+              )}
             </TouchableOpacity>
           </View>
-
-          {/* 2. สถานที่ใน มทส. (เลื่อนเลือกได้ทันที) */}
-          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
-            เลือกสถานที่ใน มทส. (Location)
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScrollRow}>
-            {SUT_LOCATION_CHIPS.map((loc, idx) => {
-              const isSelected = selectedLocation === loc;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  style={[
-                    styles.filterChipItem,
-                    isSelected
-                      ? [styles.filterChipActive, { backgroundColor: colors.primary }]
-                      : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
-                  ]}
-                  onPress={() => setSelectedLocation(loc)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="location-sharp"
-                    size={14}
-                    color={isSelected ? '#FFFFFF' : colors.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.filterChipItemText,
-                      isSelected ? styles.filterChipItemTextActive : { color: colors.text },
-                    ]}
-                  >
-                    {loc}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* 3. หมวดหมู่สิ่งของ (เลื่อนเลือกได้ทันที) */}
-          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
-            เลือกหมวดหมู่สิ่งของ (Category)
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScrollRow}>
-            {POPULAR_TAG_CHIPS.map((cat, idx) => {
-              const isSelected = selectedTag === cat;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  style={[
-                    styles.filterChipItem,
-                    isSelected
-                      ? [styles.filterChipActive, { backgroundColor: colors.primary }]
-                      : { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' },
-                  ]}
-                  onPress={() => setSelectedTag(cat)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="folder-open"
-                    size={14}
-                    color={isSelected ? '#FFFFFF' : colors.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.filterChipItemText,
-                      isSelected ? styles.filterChipItemTextActive : { color: colors.text },
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* 4. วันที่เกิดเหตุ (Calendar Picker) */}
-          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
-            ช่วงเวลา / วันที่เกิดเหตุ
-          </Text>
-          <TouchableOpacity
-            style={[styles.filterInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => setCalendarVisible(true)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="calendar" size={18} color={colors.primary} />
-            <Text style={[styles.filterTextInput, { color: timeFilter ? colors.text : '#94A3B8' }]}>
-              {timeFilter ? `วันที่: ${timeFilter}` : 'แตะเพื่อเลือกวันที่ (Calendar)'}
-            </Text>
-            {timeFilter ? (
-              <TouchableOpacity onPress={() => setTimeFilter('')}>
-                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
-            ) : null}
-          </TouchableOpacity>
 
           {/* 5. ผลการค้นหา Header */}
           <View style={styles.resultsHeaderRow}>
@@ -570,6 +544,145 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
         </ScrollView>
       )}
 
+      {/* ================= MODAL: LOCATION SELECTOR SHEET ================= */}
+      <Modal visible={locationModalVisible} animationType="slide" transparent={true}>
+        <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.pickerSheetCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderLeft}>
+                <Ionicons name="location" size={22} color={colors.primary} />
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>เลือกสถานที่ใน มทส.</Text>
+              </View>
+              <TouchableOpacity onPress={() => setLocationModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+              {SUT_LOCATIONS_LIST.map((loc, idx) => {
+                const isSelected = selectedLocation === loc.name;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.sheetOptionItem,
+                      isSelected
+                        ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
+                        : { borderBottomColor: colors.borderLight },
+                    ]}
+                    onPress={() => {
+                      setSelectedLocation(loc.name);
+                      setLocationModalVisible(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.sheetIconBox, { backgroundColor: isSelected ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
+                      <Ionicons name={loc.icon as any} size={20} color={isSelected ? '#FFFFFF' : colors.text} />
+                    </View>
+                    <View style={styles.sheetOptionTextContainer}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? colors.primary : colors.text }]}>
+                        {loc.name}
+                      </Text>
+                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                        {loc.desc}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ================= MODAL: CATEGORY SELECTOR SHEET ================= */}
+      <Modal visible={categoryModalVisible} animationType="slide" transparent={true}>
+        <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.pickerSheetCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderLeft}>
+                <Ionicons name="folder-open" size={22} color={colors.primary} />
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>เลือกหมวดหมู่สิ่งของ</Text>
+              </View>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+              {/* Option: ทั้งหมด */}
+              <TouchableOpacity
+                style={[
+                  styles.sheetOptionItem,
+                  selectedTag === 'ทั้งหมด'
+                    ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
+                    : { borderBottomColor: colors.borderLight },
+                ]}
+                onPress={() => {
+                  setSelectedTag('ทั้งหมด');
+                  setCategoryModalVisible(false);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.sheetIconBox, { backgroundColor: selectedTag === 'ทั้งหมด' ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
+                  <Ionicons name="apps" size={20} color={selectedTag === 'ทั้งหมด' ? '#FFFFFF' : colors.text} />
+                </View>
+                <View style={styles.sheetOptionTextContainer}>
+                  <Text style={[styles.sheetOptionTitle, { color: selectedTag === 'ทั้งหมด' ? colors.primary : colors.text }]}>
+                    ทั้งหมด (ทุกหมวดหมู่)
+                  </Text>
+                  <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                    แสดงสิ่งของทุกประเภทในระบบ
+                  </Text>
+                </View>
+                {selectedTag === 'ทั้งหมด' && (
+                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+
+              {/* All 17+ Categories with Subtags */}
+              {SUT_CATEGORIES.map((cat, idx) => {
+                const isSelected = selectedTag === cat.name;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.sheetOptionItem,
+                      isSelected
+                        ? [styles.sheetOptionActive, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]
+                        : { borderBottomColor: colors.borderLight },
+                    ]}
+                    onPress={() => {
+                      setSelectedTag(cat.name);
+                      setCategoryModalVisible(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.sheetIconBox, { backgroundColor: isSelected ? colors.primary : (isDark ? colors.surfaceAlt : '#F1F5F9') }]}>
+                      <Ionicons name={cat.icon as any} size={20} color={isSelected ? '#FFFFFF' : colors.text} />
+                    </View>
+                    <View style={styles.sheetOptionTextContainer}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? colors.primary : colors.text }]}>
+                        {cat.name}
+                      </Text>
+                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {cat.subtags.join(', ')}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* SUT Calendar Modal for Search */}
       <SUTDateTimePickerModal
         visible={calendarVisible}
@@ -633,7 +746,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gpsToastBanner: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     alignItems: 'center',
@@ -740,17 +853,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  filterForm: {
+    gap: 12,
+    marginBottom: 16,
   },
   typeChipsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 6,
   },
   typeChip: {
     flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -759,47 +875,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  chipsScrollRow: {
-    gap: 8,
-    paddingVertical: 4,
-    marginBottom: 6,
-  },
-  filterChipItem: {
+  filterSelectorField: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 56,
   },
-  filterChipActive: {},
-  filterChipItemText: {
-    fontSize: 13,
+  fieldLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    paddingRight: 10,
+  },
+  fieldTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  fieldLabel: {
+    fontSize: 11,
     fontWeight: '600',
   },
-  filterChipItemTextActive: {
-    color: '#FFFFFF',
+  fieldValue: {
+    fontSize: 14,
     fontWeight: '800',
-  },
-  filterInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  filterTextInput: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
   },
   resultsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 14,
     marginBottom: 12,
   },
   clearFilterText: {
@@ -874,5 +983,74 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  pickerSheetCard: {
+    height: height * 0.65,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  sheetHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  sheetScroll: {
+    paddingVertical: 10,
+  },
+  sheetOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderBottomWidth: 1,
+    gap: 12,
+    marginBottom: 4,
+  },
+  sheetOptionActive: {
+    borderWidth: 1,
+    borderBottomWidth: 1,
+  },
+  sheetIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetOptionTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  sheetOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  sheetOptionDesc: {
+    fontSize: 12,
   },
 });
