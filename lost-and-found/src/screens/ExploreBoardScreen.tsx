@@ -271,6 +271,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
           <SUTInteractiveMap
             userLocation={userLocation}
             posts={searchResults}
+            allPosts={posts}
             onSelectPost={onSelectPost}
           />
 
