@@ -178,12 +178,8 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           imageUrl: imageUrl || editingPost.imageUrl,
         });
 
-        Alert.alert('บันทึกสำเร็จ! 🎉', 'ข้อมูลโพสต์ของคุณได้รับการอัปเดตเรียบร้อยแล้ว', [
-          {
-            text: 'ตกลง',
-            onPress: onSuccess,
-          },
-        ]);
+        onSuccess();
+        Alert.alert('บันทึกสำเร็จ! 🎉', 'ข้อมูลโพสต์ของคุณได้รับการอัปเดตเรียบร้อยแล้ว');
       } else {
         await createPost({
           type,
@@ -206,12 +202,8 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         setDescription('');
         setImageUrl('');
 
-        Alert.alert('โพสต์สำเร็จ! 🎉', 'ข้อมูลสิ่งของของคุณถูกบันทึกขึ้นระบบเรียบร้อยแล้ว', [
-          {
-            text: 'ตกลง',
-            onPress: onSuccess,
-          },
-        ]);
+        onSuccess();
+        Alert.alert('โพสต์สำเร็จ! 🎉', 'ข้อมูลสิ่งของของคุณถูกบันทึกขึ้นระบบเรียบร้อยแล้ว');
       }
     } catch (e: any) {
       Alert.alert('ข้อผิดพลาด', e.message || 'ไม่สามารถบันทึกโพสต์ได้ กรุณาลองใหม่');

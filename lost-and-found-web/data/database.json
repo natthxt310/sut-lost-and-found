@@ -32,37 +32,15 @@
   ],
   "posts": [
     {
-      "type": "found",
-      "title": "Airpods pro 2",
-      "category": "หูฟัง & AirPods",
-      "color": "ขาว",
-      "location": "เทคโนธานี",
-      "dateTime": "2/9/2569 22:28",
-      "description": "",
-      "imageUrl": "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80",
-      "status": "returned",
-      "userId": "usr-1788359329630-68",
-      "userName": "Natthapat",
-      "userContact": "089-123-4567",
-      "userEmail": "Natthapat@gmail.com",
-      "isApproved": true,
-      "moderationStatus": "approved",
-      "moderationScore": 0.98,
-      "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
-      "id": "post-1788362922740-766",
-      "createdAt": "2026-09-02T15:28:42.740Z",
-      "updatedAt": "2026-09-02T15:34:02.183Z"
-    },
-    {
       "type": "lost",
-      "title": "Airpods pro 2",
-      "category": "หูฟัง & AirPods",
-      "color": "ขาว",
+      "title": "asdfghjk",
+      "category": "บัตร ATM & บัตรเครดิต",
+      "color": "ดำ",
       "location": "เทคโนธานี",
-      "dateTime": "2/9/2569 22:24",
+      "dateTime": "2/9/2569 22:44",
       "description": "",
-      "imageUrl": "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80",
-      "status": "returned",
+      "imageUrl": "/uploads/item-1788363898130-90.jpg",
+      "status": "lost",
       "userId": "usr-1788359333623-174",
       "userName": "Siwaphon",
       "userContact": "089-123-4567",
@@ -71,9 +49,8 @@
       "moderationStatus": "approved",
       "moderationScore": 0.98,
       "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
-      "id": "post-1788362881690-333",
-      "createdAt": "2026-09-02T15:28:01.690Z",
-      "updatedAt": "2026-09-02T15:34:27.994Z"
+      "id": "post-1788363898201-845",
+      "createdAt": "2026-09-02T15:44:58.201Z"
     }
   ],
   "favorites": [],
@@ -144,7 +121,18 @@
       "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
       "id": "msg-1788363698365-628",
       "createdAt": "2026-09-02T15:41:38.365Z"
+    },
+    {
+      "postId": "post-001",
+      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
+      "senderId": "usr-001",
+      "senderName": "ศิวะพร ภูดินทราย",
+      "receiverId": "usr-002",
+      "receiverName": "นัฐภัทร์ กตัญวิญญู",
+      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
+      "id": "msg-1788364144658-29",
+      "createdAt": "2026-09-02T15:49:04.658Z"
     }
   ],
-  "lastUpdated": "2026-09-02T15:41:38.365Z"
+  "lastUpdated": "2026-09-02T15:49:04.658Z"
 }

@@ -100,9 +100,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     refreshData();
 
-    // ซิงก์ข้อมูลแจ้งเตือน โพสต์ และแชทอัตโนมัติทุกๆ 3 วินาทีแบบ Real-Time
+    // ซิงก์ข้อมูลแจ้งเตือน โพสต์ และแชทอัตโนมัติในเบื้องหลังทุกๆ 7 วินาที
     const interval = setInterval(async () => {
       try {
+        if (!user) return;
         const [p, n, c] = await Promise.all([
           api.getPosts(),
           api.getNotifications(),
@@ -114,7 +115,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch {
         // offline silent
       }
-    }, 3000);
+    }, 7000);
 
     return () => clearInterval(interval);
   }, [user]);
