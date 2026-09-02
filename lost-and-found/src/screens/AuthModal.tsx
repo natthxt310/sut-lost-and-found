@@ -22,9 +22,9 @@ import { useTheme } from '../context/ThemeContext';
  * =========================================================================
  * 💡 ฟีเจอร์:
  * 1. สลับแท็บ เข้าสู่ระบบ / ลงทะเบียน
- * 2. หน้าลงทะเบียนใช้ 4 ฟิลด์ตามกำหนด: รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
- * 3. ระบบความปลอดภัยตรวจสอบรหัสผ่านตรงกัน และตรวจสอบรหัสนักศึกษา
- * 4. ตัดปุ่ม Google Login ออกตามคำขอ
+ * 2. หน้าลงทะเบียนใช้ 4 ฟิลด์: รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
+ * 3. ห้ามปิดหรือข้ามหน้าต่างนี้หากยังไม่ได้เข้าสู่ระบบ (allowDismiss: false)
+ * 4. Placeholder กระชับ คลีน ไม่มีคำว่า "เช่น"
  * =========================================================================
  */
 
@@ -32,9 +32,15 @@ interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
+  allowDismiss?: boolean;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialMode = 'login' }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({
+  visible,
+  onClose,
+  initialMode = 'login',
+  allowDismiss = true,
+}) => {
   const { login, register } = useApp();
   const { colors, isDark } = useTheme();
 
@@ -69,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
 
   const handleLogin = async () => {
     if (!loginStudentId.trim()) {
-      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา (เช่น B6802189)');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา');
       return;
     }
     if (!loginPassword) {
@@ -110,15 +116,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
     const confirmPwd = regConfirmPassword;
 
     if (!sId) {
-      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา (เช่น B6802189)');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา');
       return;
     }
     if (!email) {
-      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุอีเมล (เช่น b6802189@g.sut.ac.th)');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุอีเมล');
       return;
     }
     if (!pwd) {
-      Alert.alert('กรุณากรอกข้อมูล', 'โปรดตั้งรหัสผ่านสำหรับการเข้าสู่ระบบ');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดตั้งรหัสผ่าน');
       return;
     }
     if (pwd.length < 4) {
@@ -135,7 +141,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
       await register(sId, email, pwd);
       Alert.alert(
         'ลงทะเบียนสำเร็จ! 🎉',
-        `บัญชีรหัสนักศึกษา ${sId} ได้รับการลงทะเบียนเรียบร้อยแล้ว และเข้าสู่ระบบให้ทันที`,
+        `บัญชีรหัสนักศึกษา ${sId} ได้รับการลงทะเบียนเรียบร้อยแล้ว`,
         [{ text: 'เริ่มใช้งาน', onPress: onClose }]
       );
     } catch (e: any) {
@@ -167,10 +173,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Close Button on Top Left */}
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-            <Ionicons name="close" size={26} color={isDark ? colors.text : '#64748B'} />
-          </TouchableOpacity>
+          {/* Close Button on Top Left (แสดงเฉพาะเมื่ออนุญาตให้ปิดได้) */}
+          {allowDismiss ? (
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
+              <Ionicons name="close" size={26} color={isDark ? colors.text : '#64748B'} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ height: 20 }} />
+          )}
 
           {/* SUT Brand Logo (ส้ม มทส. พร้อมลูกศรเฉียงขวาบน) */}
           <View style={styles.logoContainer}>
@@ -261,7 +271,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                       color: colors.text,
                     },
                   ]}
-                  placeholder="เช่น B6802189 หรือ ADMIN-01"
+                  placeholder="รหัสนักศึกษา"
                   placeholderTextColor="#94A3B8"
                   value={loginStudentId}
                   onChangeText={setLoginStudentId}
@@ -283,7 +293,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                 >
                   <TextInput
                     style={[styles.passwordInput, { color: colors.text }]}
-                    placeholder="กรอกรหัสผ่าน"
+                    placeholder="รหัสผ่าน"
                     placeholderTextColor="#94A3B8"
                     value={loginPassword}
                     onChangeText={setLoginPassword}
@@ -373,7 +383,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                       color: colors.text,
                     },
                   ]}
-                  placeholder="เช่น B6802189"
+                  placeholder="รหัสนักศึกษา"
                   placeholderTextColor="#94A3B8"
                   value={regStudentId}
                   onChangeText={handleRegStudentIdChange}
@@ -395,7 +405,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                       color: colors.text,
                     },
                   ]}
-                  placeholder="เช่น b6802189@g.sut.ac.th"
+                  placeholder="อีเมลนักศึกษา"
                   placeholderTextColor="#94A3B8"
                   value={regEmail}
                   onChangeText={setRegEmail}
@@ -420,7 +430,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                 >
                   <TextInput
                     style={[styles.passwordInput, { color: colors.text }]}
-                    placeholder="ตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร"
+                    placeholder="รหัสผ่าน"
                     placeholderTextColor="#94A3B8"
                     value={regPassword}
                     onChangeText={setRegPassword}
@@ -455,7 +465,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialM
                 >
                   <TextInput
                     style={[styles.passwordInput, { color: colors.text }]}
-                    placeholder="กรอกรหัสผ่านซ้ำอีกครั้งเพื่อยืนยัน"
+                    placeholder="ยืนยันรหัสผ่าน"
                     placeholderTextColor="#94A3B8"
                     value={regConfirmPassword}
                     onChangeText={setRegConfirmPassword}

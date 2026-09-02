@@ -176,7 +176,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUser(updated);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await api.logout();
     setUser(null);
   };
 

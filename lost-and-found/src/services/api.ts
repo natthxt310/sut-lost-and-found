@@ -44,7 +44,7 @@ const safeStorage = {
 class PersistentApiService {
   private initialized: boolean = false;
   private posts: PostItem[] = [];
-  private user: User = { ...INITIAL_USER };
+  private user: User | null = null;
   private favorites: FavoriteItem[] = [];
   private notifications: MatchNotification[] = [];
 
@@ -63,11 +63,14 @@ class PersistentApiService {
         safeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS),
       ]);
 
-      if (storedUser) {
-        this.user = JSON.parse(storedUser);
+      if (storedUser && storedUser.trim() !== '') {
+        try {
+          this.user = JSON.parse(storedUser);
+        } catch {
+          this.user = null;
+        }
       } else {
-        this.user = { ...INITIAL_USER };
-        await safeStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(this.user));
+        this.user = null;
       }
 
       if (storedPosts) {
@@ -146,13 +149,20 @@ class PersistentApiService {
   // ==========================================
   // SOURCE 1: USERS & AUTH CRUD (REAL PERSISTENCE)
   // ==========================================
-  async getCurrentUser(): Promise<User> {
+  async getCurrentUser(): Promise<User | null> {
     await this.ensureInitialized();
     return this.user;
   }
 
-  async updateUserProfile(data: Partial<User>): Promise<User> {
+  async logout(): Promise<void> {
     await this.ensureInitialized();
+    this.user = null;
+    await safeStorage.setItem(STORAGE_KEYS.USER, '');
+  }
+
+  async updateUserProfile(data: Partial<User>): Promise<User | null> {
+    await this.ensureInitialized();
+    if (!this.user) return null;
     this.user = { ...this.user, ...data };
     await this.saveUserToStorage();
 

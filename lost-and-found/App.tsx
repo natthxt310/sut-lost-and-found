@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -34,7 +35,7 @@ const Tab = createBottomTabNavigator();
 const EmptyScreen = () => <View style={{ flex: 1 }} />;
 
 function MainAppContent() {
-  const { unreadNotifsCount, markAllNotificationsAsRead, posts } = useApp();
+  const { unreadNotifsCount, markAllNotificationsAsRead, posts, user, isLoading } = useApp();
   const { colors, isDark } = useTheme();
 
   // Navigation Overlay States
@@ -53,6 +54,30 @@ function MainAppContent() {
     setCreateInitialType(type);
     setCreateModalVisible(true);
   };
+
+  // 1. สถานะกำลังโหลดข้อมูล
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ActivityIndicator size="large" color="#FF7A00" />
+      </View>
+    );
+  }
+
+  // 2. 🔒 บังคับให้เข้าสู่ระบบก่อนเข้าใช้งานแอป (ถ้ายังไม่ Login จะไม่สามารถเข้าดูแอปได้)
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <AuthModal
+          visible={true}
+          onClose={() => {}}
+          allowDismiss={false}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
