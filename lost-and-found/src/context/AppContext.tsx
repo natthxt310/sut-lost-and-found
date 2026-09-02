@@ -163,18 +163,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const markNotificationAsRead = async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    );
     await api.markNotificationAsRead(id);
-    await refreshData();
   };
 
   const markAllNotificationsAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     await api.markAllNotificationsAsRead();
-    await refreshData();
   };
 
   const clearAllNotifications = async () => {
+    setNotifications([]);
     await api.clearAllNotifications();
-    await refreshData();
   };
 
   const login = async (studentId: string, password?: string) => {

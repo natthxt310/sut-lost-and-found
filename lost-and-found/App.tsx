@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -79,6 +79,44 @@ function MainAppContent() {
     );
   }
 
+  const renderHomeScreen = useCallback(({ navigation }: any) => (
+    <HomeScreen
+      onSelectPost={(post) => setSelectedPost(post)}
+      onNavigateToCreate={(type) => openCreate(type)}
+      onNavigateToSearch={(cat) => {
+        setSearchCategory(cat);
+        setSearchViewMode('filter');
+        navigation.navigate('ค้นหา');
+      }}
+    />
+  ), []);
+
+  const renderExploreScreen = useCallback(() => (
+    <ExploreBoardScreen
+      onSelectPost={(post) => setSelectedPost(post)}
+      initialCategory={searchCategory}
+      initialViewMode={searchViewMode}
+    />
+  ), [searchCategory, searchViewMode]);
+
+  const renderNotificationScreen = useCallback(() => (
+    <NotificationScreen
+      onSelectNotification={(n) => {
+        const targetPost = posts.find((p) => p.id === n.sourcePostId || p.id === n.matchedPostId);
+        if (targetPost) setSelectedPost(targetPost);
+      }}
+    />
+  ), [posts]);
+
+  const renderProfileScreen = useCallback(() => (
+    <ProfileScreen
+      onOpenMyPosts={() => setMyPostsVisible(true)}
+      onOpenFavorites={() => setFavoritesModalVisible(true)}
+      onOpenDashboard={() => setDashboardVisible(true)}
+      onOpenAuth={() => setAuthModalVisible(true)}
+    />
+  ), []);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -154,30 +192,10 @@ function MainAppContent() {
           })}
         >
           {/* 1. หน้าหลัก (Home) */}
-          <Tab.Screen name="หน้าหลัก">
-            {({ navigation }) => (
-              <HomeScreen
-                onSelectPost={(post) => setSelectedPost(post)}
-                onNavigateToCreate={(type) => openCreate(type)}
-                onNavigateToSearch={(cat) => {
-                  setSearchCategory(cat);
-                  setSearchViewMode('filter');
-                  navigation.navigate('ค้นหา');
-                }}
-              />
-            )}
-          </Tab.Screen>
+          <Tab.Screen name="หน้าหลัก" component={renderHomeScreen} />
 
           {/* 2. ค้นหา (Search / Explore) */}
-          <Tab.Screen name="ค้นหา">
-            {() => (
-              <ExploreBoardScreen
-                onSelectPost={(post) => setSelectedPost(post)}
-                initialCategory={searchCategory}
-                initialViewMode={searchViewMode}
-              />
-            )}
-          </Tab.Screen>
+          <Tab.Screen name="ค้นหา" component={renderExploreScreen} />
 
           {/* 3. ปุ่มส้มกลมตรงกลางขนาดใหญ่ '+' */}
           <Tab.Screen
@@ -195,28 +213,10 @@ function MainAppContent() {
           />
 
           {/* 4. แจ้งเตือน (Notifications) */}
-          <Tab.Screen name="แจ้งเตือน">
-            {() => (
-              <NotificationScreen
-                onSelectNotification={(n) => {
-                  const targetPost = posts.find((p) => p.id === n.sourcePostId || p.id === n.matchedPostId);
-                  if (targetPost) setSelectedPost(targetPost);
-                }}
-              />
-            )}
-          </Tab.Screen>
+          <Tab.Screen name="แจ้งเตือน" component={renderNotificationScreen} />
 
           {/* 5. โปรไฟล์ (Profile) */}
-          <Tab.Screen name="โปรไฟล์">
-            {() => (
-              <ProfileScreen
-                onOpenMyPosts={() => setMyPostsVisible(true)}
-                onOpenFavorites={() => setFavoritesModalVisible(true)}
-                onOpenDashboard={() => setDashboardVisible(true)}
-                onOpenAuth={() => setAuthModalVisible(true)}
-              />
-            )}
-          </Tab.Screen>
+          <Tab.Screen name="โปรไฟล์" component={renderProfileScreen} />
         </Tab.Navigator>
       </NavigationContainer>
 

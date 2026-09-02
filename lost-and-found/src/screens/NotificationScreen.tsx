@@ -45,9 +45,11 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   } = useApp();
   const { colors, isDark } = useTheme();
 
-  // มาร์กว่าอ่านแล้วทั้งหมดเมื่อเข้าหน้านี้
+  // มาร์กว่าอ่านแล้วทั้งหมดเมื่อเข้าหน้านี้ (เฉพาะเมื่อมีรายการที่ยังไม่ได้อ่าน)
   React.useEffect(() => {
-    markAllNotificationsAsRead();
+    if (unreadNotifsCount > 0) {
+      markAllNotificationsAsRead();
+    }
   }, []);
 
   const handlePress = async (n: MatchNotification) => {
