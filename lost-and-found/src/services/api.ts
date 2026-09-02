@@ -15,8 +15,11 @@ const STORAGE_KEYS = {
 // Base URL ของ Next.js Backend API ตาม Platform (รองรับทั้งมือถือจริง และ Emulator)
 const getApiBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  // ใช้ IP ของเครื่องคอมพิวเตอร์ในวง Wi-Fi เพื่อให้มือถือจริงสามารถเชื่อมต่อได้
-  return 'http://10.0.122.211:3000/api';
+  if (Platform.OS === 'android') {
+    // 10.0.2.2 เข้าถึง Backend localhost ของคอมพิวเตอร์จาก Android Emulator ได้ 100%
+    return 'http://10.0.2.2:3000/api';
+  }
+  return 'http://10.1.165.152:3000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -265,6 +268,21 @@ class PersistentApiService {
   // ==========================================
   async getPosts(filter?: { type?: 'lost' | 'found'; category?: string; location?: string; search?: string }): Promise<PostItem[]> {
     await this.ensureInitialized();
+
+    // ดึงข้อมูลล่าสุดจาก Next.js Backend API เพื่อให้ทุกเครื่องแสดงข้อมูลตรงกัน
+    try {
+      const res = await fetch(`${API_BASE_URL}/posts`, { method: 'GET' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          this.posts = data.data;
+          await this.savePostsToStorage();
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+
     let result = [...this.posts];
 
     if (filter?.type) {
