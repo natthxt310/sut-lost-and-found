@@ -195,14 +195,7 @@ function MainAppContent() {
           />
 
           {/* 4. แจ้งเตือน (Notifications) */}
-          <Tab.Screen
-            name="แจ้งเตือน"
-            listeners={{
-              tabPress: () => {
-                markAllNotificationsAsRead();
-              },
-            }}
-          >
+          <Tab.Screen name="แจ้งเตือน">
             {() => (
               <NotificationScreen
                 onSelectNotification={(n) => {

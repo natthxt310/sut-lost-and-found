@@ -47,6 +47,9 @@ export interface FavoriteItem {
 
 export interface MatchNotification {
   id: string;
+  targetUserId?: string;
+  targetUserEmail?: string;
+  type?: 'lost' | 'found' | 'match';
   sourcePostId: string;
   matchedPostId: string;
   sourcePostTitle: string;

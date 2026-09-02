@@ -74,9 +74,12 @@ export async function POST(request: NextRequest) {
       moderationNotes: modResult.reason,
     });
 
-    // 2. Auto-Matching check
+    // 2. Auto-Matching check & Save Notifications to database
     const allPosts = backendStore.getPosts();
     const matches = findMatchesForPost(createdPost, allPosts);
+    if (matches.length > 0) {
+      backendStore.saveNotifications(matches);
+    }
 
     return NextResponse.json(
       {

@@ -108,7 +108,7 @@ export function moderateContent(title: string, description: string, imageUrl?: s
   }
 
   if (imageUrl) {
-    const isUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('file://') || imageUrl.startsWith('data:image/');
+    const isUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('file://') || imageUrl.startsWith('data:image/') || imageUrl.startsWith('/uploads/');
     if (!isUrl) {
       return {
         isSafe: false,

@@ -439,25 +439,58 @@ export class PersistentDatabase {
   // ==========================================
   // NOTIFICATIONS (REAL PERSISTENCE)
   // ==========================================
-  getNotifications(): MatchNotification[] {
+  getNotifications(userId?: string, email?: string): MatchNotification[] {
     const db = this.readDb();
-    return db.notifications;
+    let notifs = db.notifications || [];
+    if (userId || email) {
+      notifs = notifs.filter(
+        (n) =>
+          !n.targetUserId ||
+          n.targetUserId === userId ||
+          (email && n.targetUserEmail?.toLowerCase() === email.toLowerCase())
+      );
+    }
+    return notifs;
   }
 
   saveNotifications(newNotifs: MatchNotification[]): void {
     if (newNotifs.length === 0) return;
     const db = this.readDb();
+    if (!db.notifications) db.notifications = [];
     db.notifications.unshift(...newNotifs);
     this.writeDb(db);
   }
 
   markNotificationAsRead(id: string): void {
     const db = this.readDb();
+    if (!db.notifications) return;
     const notif = db.notifications.find((n) => n.id === id);
     if (notif) {
       notif.isRead = true;
       this.writeDb(db);
     }
+  }
+
+  markAllNotificationsAsRead(userId?: string): void {
+    const db = this.readDb();
+    if (!db.notifications) return;
+    db.notifications.forEach((n) => {
+      if (!userId || n.targetUserId === userId) {
+        n.isRead = true;
+      }
+    });
+    this.writeDb(db);
+  }
+
+  clearNotifications(userId?: string): void {
+    const db = this.readDb();
+    if (!db.notifications) return;
+    if (userId) {
+      db.notifications = db.notifications.filter((n) => n.targetUserId !== userId);
+    } else {
+      db.notifications = [];
+    }
+    this.writeDb(db);
   }
 
   // ==========================================

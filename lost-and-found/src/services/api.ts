@@ -533,10 +533,36 @@ class PersistentApiService {
   }
 
   // ==========================================
-  // NOTIFICATIONS (REAL PERSISTENCE)
+  // NOTIFICATIONS (REAL PERSISTENCE & SYNC)
   // ==========================================
-  async getNotifications(): Promise<MatchNotification[]> {
+  async getNotifications(userId?: string, email?: string): Promise<MatchNotification[]> {
     await this.ensureInitialized();
+    const currentUserId = userId || this.user?.id;
+    const currentUserEmail = email || this.user?.email;
+
+    try {
+      const url = `${API_BASE_URL}/notifications?userId=${encodeURIComponent(currentUserId || '')}&email=${encodeURIComponent(currentUserEmail || '')}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          this.notifications = data.data;
+          await this.saveNotificationsToStorage();
+        }
+      }
+    } catch (e) {
+      // offline fallback
+    }
+
+    if (currentUserId || currentUserEmail) {
+      return this.notifications.filter(
+        (n) =>
+          !n.targetUserId ||
+          n.targetUserId === currentUserId ||
+          (currentUserEmail && n.targetUserEmail?.toLowerCase() === currentUserEmail.toLowerCase())
+      );
+    }
+
     return this.notifications;
   }
 
@@ -547,18 +573,43 @@ class PersistentApiService {
       notif.isRead = true;
       await this.saveNotificationsToStorage();
     }
+    try {
+      await fetch(`${API_BASE_URL}/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+    } catch {
+      // offline
+    }
   }
 
   async markAllNotificationsAsRead(): Promise<void> {
     await this.ensureInitialized();
     this.notifications.forEach((n) => (n.isRead = true));
     await this.saveNotificationsToStorage();
+    try {
+      await fetch(`${API_BASE_URL}/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true, userId: this.user?.id }),
+      });
+    } catch {
+      // offline
+    }
   }
 
   async clearAllNotifications(): Promise<void> {
     await this.ensureInitialized();
     this.notifications = [];
     await this.saveNotificationsToStorage();
+    try {
+      await fetch(`${API_BASE_URL}/notifications?userId=${encodeURIComponent(this.user?.id || '')}`, {
+        method: 'DELETE',
+      });
+    } catch {
+      // offline
+    }
   }
 
   // ==========================================

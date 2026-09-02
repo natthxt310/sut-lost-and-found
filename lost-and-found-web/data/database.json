@@ -32,14 +32,35 @@
   ],
   "posts": [
     {
-      "type": "lost",
-      "title": "กุญแจมอไซค์ยี่ห้อดัง",
+      "type": "found",
+      "title": "กุญแจมอไซค์ honda",
       "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
       "color": "ขาว",
       "location": "เทคโนธานี",
-      "dateTime": "1/9/2569 21:35",
+      "dateTime": "2/9/2569 21:48",
       "description": "",
-      "imageUrl": "/uploads/item-1787821427975-364.jpg",
+      "imageUrl": "/uploads/item-1788360666724-168.jpg",
+      "status": "found",
+      "userId": "usr-1788359329630-68",
+      "userName": "Natthapat",
+      "userContact": "089-123-4567",
+      "userEmail": "Natthapat@gmail.com",
+      "isApproved": true,
+      "moderationStatus": "approved",
+      "moderationScore": 0.98,
+      "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
+      "id": "post-1788360667259-795",
+      "createdAt": "2026-09-02T14:51:07.259Z"
+    },
+    {
+      "type": "lost",
+      "title": "กุญแจมอไซค์ honda",
+      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
+      "color": "ขาว",
+      "location": "เทคโนธานี",
+      "dateTime": "1/9/2569 21:46",
+      "description": "",
+      "imageUrl": "/uploads/item-1788360488230-185.jpg",
       "status": "lost",
       "userId": "usr-1788359332365-917",
       "userName": "Siwaphon",
@@ -49,12 +70,49 @@
       "moderationStatus": "approved",
       "moderationScore": 0.98,
       "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
-      "id": "post-1788359894725-243",
-      "createdAt": "2026-09-02T14:38:14.725Z"
+      "id": "post-1788360488624-292",
+      "createdAt": "2026-09-02T14:48:08.624Z"
     }
   ],
   "favorites": [],
-  "notifications": [],
+  "notifications": [
+    {
+      "id": "notif-lost-1788360667259-101",
+      "targetUserId": "usr-1788359332365-917",
+      "targetUserEmail": "Siwaphon@gmail.com",
+      "type": "found",
+      "sourcePostId": "post-1788360488624-292",
+      "matchedPostId": "post-1788360667259-795",
+      "sourcePostTitle": "กุญแจมอไซค์ honda",
+      "matchedPostTitle": "กุญแจมอไซค์ honda",
+      "matchScore": 100,
+      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
+      "color": "ขาว",
+      "location": "เทคโนธานี",
+      "matchedWithUserName": "Natthapat",
+      "matchedWithContact": "089-123-4567",
+      "isRead": false,
+      "createdAt": "2026-09-02T14:51:07.259Z"
+    },
+    {
+      "id": "notif-found-1788360667259-102",
+      "targetUserId": "usr-1788359329630-68",
+      "targetUserEmail": "Natthapat@gmail.com",
+      "type": "match",
+      "sourcePostId": "post-1788360667259-795",
+      "matchedPostId": "post-1788360488624-292",
+      "sourcePostTitle": "กุญแจมอไซค์ honda",
+      "matchedPostTitle": "กุญแจมอไซค์ honda",
+      "matchScore": 100,
+      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
+      "color": "ขาว",
+      "location": "เทคโนธานี",
+      "matchedWithUserName": "Siwaphon",
+      "matchedWithContact": "089-123-4567",
+      "isRead": false,
+      "createdAt": "2026-09-02T14:51:07.259Z"
+    }
+  ],
   "messages": [
     {
       "postId": "post-001",
@@ -64,20 +122,9 @@
       "receiverId": "usr-002",
       "receiverName": "นัฐภัทร์ กตัญวิญญู",
       "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
-      "id": "msg-1788360065693-331",
-      "createdAt": "2026-09-02T14:41:05.693Z"
-    },
-    {
-      "postId": "post-001",
-      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
-      "senderId": "usr-001",
-      "senderName": "ศิวะพร ภูดินทราย",
-      "receiverId": "usr-002",
-      "receiverName": "นัฐภัทร์ กตัญวิญญู",
-      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
-      "id": "msg-1788360290258-67",
-      "createdAt": "2026-09-02T14:44:50.258Z"
+      "id": "msg-1788361060944-422",
+      "createdAt": "2026-09-02T14:57:40.944Z"
     }
   ],
-  "lastUpdated": "2026-09-02T14:44:50.258Z"
+  "lastUpdated": "2026-09-02T14:57:40.944Z"
 }

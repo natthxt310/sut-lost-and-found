@@ -45,6 +45,11 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   } = useApp();
   const { colors, isDark } = useTheme();
 
+  // มาร์กว่าอ่านแล้วทั้งหมดเมื่อเข้าหน้านี้
+  React.useEffect(() => {
+    markAllNotificationsAsRead();
+  }, []);
+
   const handlePress = async (n: MatchNotification) => {
     await markNotificationAsRead(n.id);
     if (onSelectNotification) {
@@ -90,8 +95,9 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
           </View>
         ) : (
           notifications.map((n, idx) => {
-            // สลับสีไอคอน 3 แบบตาม Mockup: แดง (ของหาย) / น้ำเงิน (ข้อความ) / เขียว (จับคู่)
-            const iconType = idx % 3 === 0 ? 'red' : idx % 3 === 1 ? 'blue' : 'green';
+            const notifType = n.type || (idx % 3 === 0 ? 'found' : idx % 3 === 1 ? 'message' : 'match');
+            const iconColor = notifType === 'found' ? '#EF4444' : notifType === 'message' ? '#0055D4' : '#10B981';
+            const iconName = notifType === 'found' ? 'notifications' : notifType === 'message' ? 'chatbubble' : 'checkmark-circle';
 
             return (
               <TouchableOpacity
@@ -104,41 +110,24 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                 activeOpacity={0.88}
               >
                 {/* Colored Circle Icon */}
-                <View
-                  style={[
-                    styles.iconCircle,
-                    iconType === 'red'
-                      ? { backgroundColor: '#EF4444' }
-                      : iconType === 'blue'
-                      ? { backgroundColor: '#0055D4' }
-                      : { backgroundColor: '#10B981' },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      iconType === 'red'
-                        ? 'notifications'
-                        : iconType === 'blue'
-                        ? 'chatbubble'
-                        : 'copy'
-                    }
-                    size={26}
-                    color="#FFFFFF"
-                  />
+                <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
+                  <Ionicons name={iconName} size={26} color="#FFFFFF" />
                 </View>
 
                 {/* Content */}
                 <View style={styles.notifDetails}>
                   <Text style={[styles.notifTitle, { color: colors.text }]} numberOfLines={1}>
-                    {iconType === 'red'
-                      ? 'มีคนพบของที่คุณแจ้งหาย'
-                      : iconType === 'blue'
+                    {notifType === 'found'
+                      ? '🎉 มีคนพบของที่คุณแจ้งหาย!'
+                      : notifType === 'message'
                       ? `${n.matchedWithUserName || 'ผู้ใช้ มทส.'} ส่งข้อความถึงคุณ`
-                      : 'ระบบจับคู่สิ่งของที่อาจตรงกัน'}
+                      : '✨ พบสิ่งของที่ตรงกับที่คุณแจ้ง!'}
                   </Text>
 
-                  <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {n.sourcePostTitle || n.matchedPostTitle || 'สิ่งของที่อาจตรงกัน'}
+                  <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {notifType === 'found'
+                      ? `มีผู้พบ "${n.matchedPostTitle}" ที่ ${n.location} (ตรงกับที่คุณตามหา)`
+                      : `"${n.sourcePostTitle}" ตรงกับโพสต์ของ ${n.matchedWithUserName || 'นักศึกษา มทส.'}`}
                   </Text>
 
                   <Text style={[styles.notifTime, { color: colors.textMuted }]}>

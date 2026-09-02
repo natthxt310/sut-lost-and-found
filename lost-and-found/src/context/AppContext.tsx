@@ -99,7 +99,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     refreshData();
-  }, []);
+
+    // ซิงก์ข้อมูลแจ้งเตือน โพสต์ และแชทอัตโนมัติทุกๆ 3 วินาทีแบบ Real-Time
+    const interval = setInterval(async () => {
+      try {
+        const [p, n, c] = await Promise.all([
+          api.getPosts(),
+          api.getNotifications(),
+          api.getConversations(),
+        ]);
+        setPosts(p);
+        setNotifications(n);
+        setConversations(c);
+      } catch {
+        // offline silent
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   const createPost = async (data: Omit<PostItem, 'id' | 'createdAt'>) => {
     const result = await api.createPost(data);

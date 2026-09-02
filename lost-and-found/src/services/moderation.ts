@@ -131,7 +131,7 @@ export function moderatePostContent(title: string, description: string, imageUrl
 
   // 4. ตรวจสอบความถูกต้องของ URL รูปภาพ
   if (imageUrl) {
-    const isUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('file://') || imageUrl.startsWith('data:image/');
+    const isUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('file://') || imageUrl.startsWith('data:image/') || imageUrl.startsWith('/uploads/');
     if (!isUrl) {
       return {
         isSafe: false,
