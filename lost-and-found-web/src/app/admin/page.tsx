@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { PostItem, User, MonthlyStats, QuarterlyStats } from '../../types';
 
 export default function AdminPage() {
@@ -291,23 +290,6 @@ export default function AdminPage() {
             >
               🔄 รีเฟรชข้อมูล
             </button>
-
-            {/* Link to Home */}
-            <Link
-              href="/"
-              style={{
-                backgroundColor: 'rgba(255, 122, 0, 0.15)',
-                color: '#FF7A00',
-                border: '1px solid rgba(255, 122, 0, 0.4)',
-                padding: '10px 16px',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textDecoration: 'none',
-              }}
-            >
-              🏠 ไปหน้าแรกผู้ใช้
-            </Link>
           </div>
         </div>
 

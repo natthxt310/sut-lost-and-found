@@ -2,23 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
-
-  // Theme state: defaults to dark if on admin, or reads from localStorage
+  // Theme state: defaults to dark, or reads from localStorage
   const [isDark, setIsDark] = useState<boolean>(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('sut_theme');
     if (savedTheme) {
       setIsDark(savedTheme === 'dark');
-    } else {
-      setIsDark(isAdmin);
     }
-  }, [isAdmin]);
+  }, []);
 
   // Listen to custom theme change event across components
   useEffect(() => {
@@ -56,11 +50,30 @@ export default function Navbar() {
           <div className="brand-text">
             <h1 style={{ color: isDark ? '#FFFFFF' : '#111827', margin: 0 }}>Lost & Found</h1>
             <span style={{ color: isDark ? '#94A3B8' : '#6B7280' }}>
-              ระบบของหายชุมชน มทส. (กลุ่ม 7)
+              ศูนย์ควบคุมผู้ดูแลระบบ มทส. (Admin Portal)
             </span>
           </div>
         </Link>
-        <div className="nav-links">
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Status Badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+              border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+              padding: '6px 12px',
+              borderRadius: '10px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: isDark ? '#94A3B8' : '#64748B',
+            }}
+          >
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+            <span>Admin Online</span>
+          </div>
+
           {/* Theme Switcher Button */}
           <button
             onClick={toggleTheme}
@@ -82,33 +95,6 @@ export default function Navbar() {
           >
             {isDark ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด'}
           </button>
-
-          <Link
-            href="/"
-            className="nav-btn nav-btn-outline"
-            style={
-              isDark
-                ? {
-                    backgroundColor: '#1E293B',
-                    borderColor: '#334155',
-                    color: '#F1F5F9',
-                  }
-                : undefined
-            }
-          >
-            🔍 สำรวจของหาย
-          </Link>
-          <Link
-            href="/admin"
-            className="nav-btn nav-btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #FF7A00, #E65100)',
-              color: '#FFFFFF',
-              boxShadow: '0 4px 12px rgba(255, 122, 0, 0.3)',
-            }}
-          >
-            ⚙️ Admin Dashboard
-          </Link>
         </div>
       </div>
     </nav>
