@@ -16,7 +16,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { SUTDropdown } from '../components/SUTDropdown';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
-import { CATEGORY_DROPDOWN_OPTIONS, SUT_CATEGORIES } from '../data/categoriesData';
+import { CATEGORY_DROPDOWN_OPTIONS, SUT_CATEGORIES, SUT_COLOR_OPTIONS } from '../data/categoriesData';
 import { ALL_SUT_LOCATION_NAMES } from '../data/locationsData';
 import { PostType } from '../types';
 
@@ -28,8 +28,9 @@ import { PostType } from '../types';
  * 1. สลับประเภท 'ของหาย' (สีแดง) หรือ 'ของที่พบ' (สีเขียว)
  * 2. กรอบเส้นประอัปโหลดรูปภาพสิ่งของ
  * 3. หมวดหมู่และแท็กที่ละเอียดครบทุกหมวดใน มทส.
- * 4. เลือกวันที่แบบ Calendar ปฏิทินภาษาไทย และเลือกเวลาแบบ Time Picker (ไม่ต้องพิมพ์เอง)
- * 5. ปุ่มส้ม "โพสต์" บันทึกข้อมูลขึ้นระบบและค้นหา Auto-Match ทันที
+ * 4. เลือกสี / โทนสีของสิ่งของ (Palette Chips)
+ * 5. เลือกวันที่แบบ Calendar ปฏิทินภาษาไทย และเลือกเวลาแบบ Time Picker (ไม่ต้องพิมพ์เอง)
+ * 6. ปุ่มส้ม "โพสต์" บันทึกข้อมูลขึ้นระบบและค้นหา Auto-Match ทันที
  * =========================================================================
  */
 
@@ -50,6 +51,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   const [type, setType] = useState<PostType>(initialType);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
+  const [selectedColor, setSelectedColor] = useState('ดำ');
   const [location, setLocation] = useState('');
   
   // Date & Time States
@@ -139,7 +141,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         type,
         title: title.trim(),
         category,
-        color: 'ไม่ระบุ',
+        color: selectedColor || 'ไม่ระบุ',
         location,
         dateTime: `${date} ${time}`,
         description: description.trim(),
@@ -157,8 +159,8 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           onPress: onSuccess,
         },
       ]);
-    } catch (error) {
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถสร้างโพสต์ได้ กรุณาลองใหม่อีกครั้ง');
+    } catch (e: any) {
+      Alert.alert('ข้อผิดพลาด', e.message || 'ไม่สามารถสร้างโพสต์ได้ กรุณาลองใหม่');
     } finally {
       setIsSubmitting(false);
     }
@@ -169,13 +171,17 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.blackCircleBtn}
-          onPress={onBack}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: isDark ? colors.surface : colors.background,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={onBack} style={styles.blackCircleBtn} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>โพสต์</Text>
         <View style={{ width: 40 }} />
@@ -256,7 +262,60 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           placeholder="เลือกหมวดหมู่สิ่งของ (เช่น โทรศัพท์, บัตร, กุญแจ)"
         />
 
-        {/* 5. สถานที่ */}
+        {/* 5. สี / โทนสี (Color Palette Chips) */}
+        <Text style={[styles.label, { color: colors.text }]}>
+          สี / โทนสี {selectedColor ? `(เลือก: สี${selectedColor})` : ''}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.colorChipsScroll}
+        >
+          {SUT_COLOR_OPTIONS.map((c) => {
+            const isSelected = selectedColor === c.name;
+            return (
+              <TouchableOpacity
+                key={c.name}
+                style={[
+                  styles.colorChip,
+                  {
+                    backgroundColor: isSelected
+                      ? (isDark ? '#334155' : '#FFF7ED')
+                      : (isDark ? colors.surface : '#FFFFFF'),
+                    borderColor: isSelected ? colors.primary : (isDark ? colors.border : '#E2E8F0'),
+                    borderWidth: isSelected ? 2 : 1,
+                  },
+                ]}
+                onPress={() => setSelectedColor(c.name)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.colorDot,
+                    {
+                      backgroundColor: c.hex,
+                      borderColor: c.border || (c.hex === '#FFFFFF' ? '#CBD5E1' : 'transparent'),
+                      borderWidth: c.hex === '#FFFFFF' || c.border ? 1 : 0,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.colorChipText,
+                    {
+                      color: isSelected ? colors.primary : colors.text,
+                      fontWeight: isSelected ? '800' : '600',
+                    },
+                  ]}
+                >
+                  {c.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* 6. สถานที่ */}
         <Text style={[styles.label, { color: colors.text }]}>สถานที่</Text>
         <SUTDropdown
           label=""
@@ -469,5 +528,25 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
+  },
+  colorChipsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  colorChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  colorChipText: {
+    fontSize: 13,
   },
 });

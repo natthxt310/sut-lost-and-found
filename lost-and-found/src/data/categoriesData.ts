@@ -143,6 +143,27 @@ export const POPULAR_TAG_CHIPS = [
   'แว่นตา',
   'เสื้อช็อป / เสื้อผ้า',
   'แก้วเก็บความเย็น',
-  'ร่ม & เสื้อกันฝน',
-  'เครื่องเขียน & หนังสือ',
+// รายการโทนสีสำหรับเลือกในหน้าสร้างโพสต์และตัวกรอง
+export interface SUTColorOption {
+  name: string;
+  hex: string;
+  border?: string;
+}
+
+export const SUT_COLOR_OPTIONS: SUTColorOption[] = [
+  { name: 'ดำ', hex: '#1E293B' },
+  { name: 'ขาว', hex: '#FFFFFF', border: '#CBD5E1' },
+  { name: 'เทา', hex: '#64748B' },
+  { name: 'แดง', hex: '#EF4444' },
+  { name: 'น้ำเงิน', hex: '#3B82F6' },
+  { name: 'ฟ้า', hex: '#0EA5E9' },
+  { name: 'เขียว', hex: '#10B981' },
+  { name: 'เหลือง', hex: '#FACC15' },
+  { name: 'ส้ม', hex: '#FF7A00' },
+  { name: 'ชมพู', hex: '#EC4899' },
+  { name: 'ม่วง', hex: '#8B5CF6' },
+  { name: 'น้ำตาล', hex: '#78350F' },
+  { name: 'ทอง', hex: '#D97706' },
+  { name: 'เงิน', hex: '#94A3B8' },
+  { name: 'หลากสี/อื่นๆ', hex: '#A855F7' },
 ];
