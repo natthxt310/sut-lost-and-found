@@ -2,30 +2,45 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { PostItem, User, MonthlyStats } from '../../types';
+import { PostItem, User, MonthlyStats, QuarterlyStats } from '../../types';
 
 export default function AdminPage() {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<MonthlyStats | null>(null);
+  const [quarterlyStats, setQuarterlyStats] = useState<QuarterlyStats | null>(null);
+  const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'stats' | 'posts' | 'users'>('stats');
+  const [activeTab, setActiveTab] = useState<'quarterly' | 'stats' | 'posts' | 'users'>('quarterly');
+
+  const loadQuarterly = async (q: number) => {
+    try {
+      const res = await fetch(`/api/stats/quarterly?quarter=${q}`);
+      const json = await res.json();
+      if (json.success) setQuarterlyStats(json.data);
+    } catch (err) {
+      console.error('Failed to load quarterly stats', err);
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [resPosts, resUsers, resStats] = await Promise.all([
+      const [resPosts, resUsers, resStats, resQuarterly] = await Promise.all([
         fetch('/api/posts'),
         fetch('/api/users'),
         fetch('/api/stats'),
+        fetch(`/api/stats/quarterly?quarter=${selectedQuarter}`),
       ]);
       const dataPosts = await resPosts.json();
       const dataUsers = await resUsers.json();
       const dataStats = await resStats.json();
+      const dataQuarterly = await resQuarterly.json();
 
       if (dataPosts.success) setPosts(dataPosts.data);
       if (dataUsers.success) setUsers(dataUsers.data);
       if (dataStats.success) setStats(dataStats.data);
+      if (dataQuarterly.success) setQuarterlyStats(dataQuarterly.data);
     } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
@@ -36,6 +51,11 @@ export default function AdminPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleQuarterChange = async (q: number) => {
+    setSelectedQuarter(q);
+    await loadQuarterly(q);
+  };
 
   const handleDeletePost = async (id: string) => {
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้ (Admin Moderation)?')) return;
@@ -101,18 +121,24 @@ export default function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button
+          className={`nav-btn ${activeTab === 'quarterly' ? 'nav-btn-primary' : 'nav-btn-outline'}`}
+          onClick={() => setActiveTab('quarterly')}
+        >
+          📅 รายงานประจำไตรมาส (Quarterly Analytics)
+        </button>
         <button
           className={`nav-btn ${activeTab === 'stats' ? 'nav-btn-primary' : 'nav-btn-outline'}`}
           onClick={() => setActiveTab('stats')}
         >
-          📊 สถิติรายเดือน (Monthly Dashboard - RQ-014)
+          📊 สถิติภาพรวม/รายเดือน (Monthly Dashboard)
         </button>
         <button
           className={`nav-btn ${activeTab === 'posts' ? 'nav-btn-primary' : 'nav-btn-outline'}`}
           onClick={() => setActiveTab('posts')}
         >
-          📝 จัดการโพสต์และคัดกรองเนื้อหา (Post Moderation - RQ-012/013)
+          📝 จัดการโพสต์และคัดกรองเนื้อหา (Post Moderation)
         </button>
         <button
           className={`nav-btn ${activeTab === 'users' ? 'nav-btn-primary' : 'nav-btn-outline'}`}
@@ -126,6 +152,194 @@ export default function AdminPage() {
         <div style={{ textAlign: 'center', padding: '3rem' }}>กำลังโหลดข้อมูล...</div>
       ) : (
         <>
+          {/* TAB: QUARTERLY ANALYTICS (รายงานประจำไตรมาส) */}
+          {activeTab === 'quarterly' && quarterlyStats && (
+            <div>
+              {/* Quarter Selector Header */}
+              <div style={{ background: '#FFFFFF', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    📅 รายงานวิเคราะห์สถิติประจำไตรมาส: {quarterlyStats.quarterName} ปี 2569
+                  </h3>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                    สรุปยอดของหาย ของที่พบ การส่งคืน และ 5 อันดับหมวดหมู่ที่หายบ่อยที่สุด
+                  </p>
+                </div>
+
+                {/* Quarter Switcher Buttons */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { q: 1, label: 'Q1 (ม.ค. - มี.ค.)' },
+                    { q: 2, label: 'Q2 (เม.ย. - มิ.ย.)' },
+                    { q: 3, label: 'Q3 (ก.ค. - ก.ย.)' },
+                    { q: 4, label: 'Q4 (ต.ค. - ธ.ค.)' },
+                  ].map((item) => (
+                    <button
+                      key={item.q}
+                      onClick={() => handleQuarterChange(item.q)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: selectedQuarter === item.q ? '2px solid #FF7A00' : '1px solid #CBD5E1',
+                        background: selectedQuarter === item.q ? '#FFF7ED' : '#FFFFFF',
+                        color: selectedQuarter === item.q ? '#FF7A00' : '#475569',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4 Main Requested Metric Cards + Return Rate */}
+              <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', marginBottom: '1.5rem' }}>
+                {/* 1. จำนวนของหายทั้งหมดในไตรมาสนั้น */}
+                <div className="stat-card" style={{ borderLeft: '4px solid #EF4444' }}>
+                  <div className="stat-info">
+                    <h3 style={{ fontSize: '0.9rem' }}>1. ของหายทั้งหมดในไตรมาส</h3>
+                    <p style={{ color: '#EF4444', fontSize: '2rem', fontWeight: 900 }}>
+                      {quarterlyStats.totalLost} <span style={{ fontSize: '1rem', fontWeight: 600 }}>ชิ้น</span>
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ background: '#FEE2E2', color: '#EF4444' }}>🔴</div>
+                </div>
+
+                {/* 2. จำนวนของที่ถูกส่งคืนทั้งหมดในไตรมาสนั้น */}
+                <div className="stat-card" style={{ borderLeft: '4px solid #10B981' }}>
+                  <div className="stat-info">
+                    <h3 style={{ fontSize: '0.9rem' }}>2. ส่งคืนสำเร็จในไตรมาส</h3>
+                    <p style={{ color: '#10B981', fontSize: '2rem', fontWeight: 900 }}>
+                      {quarterlyStats.totalReturned} <span style={{ fontSize: '1rem', fontWeight: 600 }}>ชิ้น</span>
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ background: '#DCFCE7', color: '#10B981' }}>🟢</div>
+                </div>
+
+                {/* 3. จำนวนของที่หาพบแล้วแต่ยังไม่ถูกส่งคืนในไตรมาสนั้น */}
+                <div className="stat-card" style={{ borderLeft: '4px solid #F59E0B' }}>
+                  <div className="stat-info">
+                    <h3 style={{ fontSize: '0.9rem' }}>3. พบแล้วยังไม่ส่งคืน</h3>
+                    <p style={{ color: '#F59E0B', fontSize: '2rem', fontWeight: 900 }}>
+                      {quarterlyStats.foundNotReturned} <span style={{ fontSize: '1rem', fontWeight: 600 }}>ชิ้น</span>
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ background: '#FEF3C7', color: '#F59E0B' }}>🟡</div>
+                </div>
+
+                {/* 4. จำนวนของที่ยังหาไม่เจอทั้งหมดในไตรมาสนั้น */}
+                <div className="stat-card" style={{ borderLeft: '4px solid #6366F1' }}>
+                  <div className="stat-info">
+                    <h3 style={{ fontSize: '0.9rem' }}>4. ยังหาไม่เจอทั้งหมด</h3>
+                    <p style={{ color: '#6366F1', fontSize: '2rem', fontWeight: 900 }}>
+                      {quarterlyStats.unfoundLost} <span style={{ fontSize: '1rem', fontWeight: 600 }}>ชิ้น</span>
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ background: '#EEF2FF', color: '#6366F1' }}>🔍</div>
+                </div>
+
+                {/* Extra: Return Rate Percentage */}
+                <div className="stat-card" style={{ borderLeft: '4px solid #FF7A00' }}>
+                  <div className="stat-info">
+                    <h3 style={{ fontSize: '0.9rem' }}>อัตราส่งคืนสำเร็จ (% Return Rate)</h3>
+                    <p style={{ color: '#FF7A00', fontSize: '2rem', fontWeight: 900 }}>
+                      {quarterlyStats.returnRatePercentage}%
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ background: '#FFF7ED', color: '#FF7A00' }}>📈</div>
+                </div>
+              </div>
+
+              {/* 5. 5 อันดับแรกของหมวดหมู่ของของที่หายบ่อยที่สุด */}
+              <div className="table-container" style={{ marginBottom: '2rem' }}>
+                <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem' }}>
+                      🏆 5 อันดับแรกของหมวดหมู่ของของที่หายบ่อยที่สุด ({quarterlyStats.quarterName})
+                    </h3>
+                    <p style={{ color: '#64748B', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                      วิเคราะห์ความถี่ตามหมวดหมู่สิ่งของที่มีการแจ้งของหายเข้ามามากที่สุด
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.85rem', background: '#FFF7ED', color: '#FF7A00', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>
+                    TOP 5 CATEGORIES
+                  </span>
+                </div>
+
+                {quarterlyStats.top5LostCategories.length === 0 ? (
+                  <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
+                    ยังไม่มีข้อมูลของหายในไตรมาสนี้
+                  </div>
+                ) : (
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '80px', textAlign: 'center' }}>อันดับ</th>
+                        <th>หมวดหมู่สิ่งของ</th>
+                        <th style={{ width: '150px', textAlign: 'center' }}>จำนวนที่หาย (ชิ้น)</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>สัดส่วน (%)</th>
+                        <th style={{ width: '220px' }}>แถบเปรียบเทียบ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quarterlyStats.top5LostCategories.map((cat) => {
+                        const rankBadges = ['🥇 อันดับ 1', '🥈 อันดับ 2', '🥉 อันดับ 3', 'อันดับ 4', 'อันดับ 5'];
+                        const rankColors = ['#D97706', '#64748B', '#B45309', '#334155', '#475569'];
+                        return (
+                          <tr key={cat.rank}>
+                            <td style={{ textAlign: 'center' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem',
+                                  background: cat.rank <= 3 ? '#FEF3C7' : '#F1F5F9',
+                                  color: rankColors[cat.rank - 1],
+                                }}
+                              >
+                                {rankBadges[cat.rank - 1]}
+                              </span>
+                            </td>
+                            <td>
+                              <strong style={{ fontSize: '1rem', color: '#0F172A' }}>{cat.category}</strong>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#DC2626' }}>
+                                {cat.count}
+                              </span>{' '}
+                              <span style={{ fontSize: '0.85rem', color: '#64748B' }}>รายการ</span>
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: 800, color: '#FF7A00' }}>
+                              {cat.percentage}%
+                            </td>
+                            <td>
+                              <div style={{ background: '#E2E8F0', borderRadius: '6px', height: '12px', width: '100%', overflow: 'hidden' }}>
+                                <div
+                                  style={{
+                                    background: cat.rank === 1 ? '#EF4444' : cat.rank === 2 ? '#FF7A00' : '#F59E0B',
+                                    height: '100%',
+                                    width: `${Math.max(cat.percentage, 8)}%`,
+                                    borderRadius: '6px',
+                                    transition: 'width 0.5s ease-in-out',
+                                  }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: STATS DASHBOARD (RQ-014) */}
           {activeTab === 'stats' && stats && (
             <div>

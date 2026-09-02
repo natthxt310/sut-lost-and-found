@@ -98,3 +98,22 @@ export interface MonthlyStats {
   locationBreakdown: { location: string; count: number }[];
   monthlyTrend: { month: string; lost: number; found: number; returned: number }[];
 }
+
+export interface TopCategoryStat {
+  rank: number;
+  category: string;
+  count: number;
+  percentage: number;
+}
+
+export interface QuarterlyStats {
+  quarter: number;
+  quarterName: string;
+  year: number;
+  totalLost: number;
+  totalReturned: number;
+  foundNotReturned: number;
+  unfoundLost: number;
+  top5LostCategories: TopCategoryStat[];
+  returnRatePercentage: number;
+}

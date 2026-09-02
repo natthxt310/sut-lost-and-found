@@ -88,6 +88,10 @@ class BackendDataStore {
   getStats(): MonthlyStats {
     return persistentDb.getStats();
   }
+
+  getQuarterlyStats(quarter?: number, year?: number) {
+    return persistentDb.getQuarterlyStats(quarter, year);
+  }
 }
 
 export const backendStore = new BackendDataStore();

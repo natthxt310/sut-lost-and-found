@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, MonthlyStats } from '../types';
+import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, MonthlyStats, QuarterlyStats, TopCategoryStat } from '../types';
 
 interface DatabaseSchema {
   users: User[];
@@ -572,6 +572,82 @@ export class PersistentDatabase {
       categoryBreakdown,
       locationBreakdown,
       monthlyTrend,
+    };
+  }
+
+  // ==========================================
+  // QUARTERLY STATS DASHBOARD (รายงานประจำไตรมาส)
+  // ==========================================
+  getQuarterlyStats(selectedQuarter: number = 3, selectedYear: number = 2569): QuarterlyStats {
+    const db = this.readDb();
+    const quarterNames: { [key: number]: string } = {
+      1: 'ไตรมาส 1 (ม.ค. - มี.ค.)',
+      2: 'ไตรมาส 2 (เม.ย. - มิ.ย.)',
+      3: 'ไตรมาส 3 (ก.ค. - ก.ย.)',
+      4: 'ไตรมาส 4 (ต.ค. - ธ.ค.)',
+    };
+
+    // คัดกรองโพสต์ที่อยู่ในไตรมาสที่เลือก
+    const quarterPosts = db.posts.filter((p) => {
+      let d = new Date(p.createdAt);
+      if (isNaN(d.getTime()) && p.dateTime) {
+        const parts = p.dateTime.split(' ')[0]?.split('/');
+        if (parts && parts.length === 3) {
+          const month = parseInt(parts[1], 10) - 1;
+          const q = Math.floor(month / 3) + 1;
+          return q === selectedQuarter;
+        }
+      }
+      const month = isNaN(d.getTime()) ? 8 : d.getMonth(); // default September (month 8, Q3)
+      const q = Math.floor(month / 3) + 1;
+      return q === selectedQuarter;
+    });
+
+    // 1. จำนวนของหายทั้งหมดในไตรมาสนั้น
+    const totalLost = quarterPosts.filter((p) => p.type === 'lost').length;
+    // 2. จำนวนของที่ถูกส่งคืนทั้งหมดในไตรมาสนั้น
+    const totalReturned = quarterPosts.filter((p) => p.status === 'returned').length;
+    // 3. จำนวนของที่หาพบแล้วแต่ยังไม่ถูกส่งคืนในไตรมาสนั้น
+    const foundNotReturned = quarterPosts.filter((p) => p.type === 'found' && p.status !== 'returned').length;
+    // 4. จำนวนของที่ยังหาไม่เจอทั้งหมดในไตรมาสนั้น
+    const unfoundLost = quarterPosts.filter((p) => p.type === 'lost' && p.status === 'lost').length;
+
+    // 5. 5 อันดับแรกของหมวดหมู่ของของที่หายบ่อยที่สุด
+    const lostCategoryCountMap: { [cat: string]: number } = {};
+    quarterPosts
+      .filter((p) => p.type === 'lost')
+      .forEach((p) => {
+        const cat = p.category || 'อื่นๆ';
+        lostCategoryCountMap[cat] = (lostCategoryCountMap[cat] || 0) + 1;
+      });
+
+    const sortedLostCats = Object.entries(lostCategoryCountMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const top5LostCategories: TopCategoryStat[] = sortedLostCats.map(([category, count], idx) => ({
+      rank: idx + 1,
+      category,
+      count,
+      percentage: totalLost > 0 ? Math.round((count / totalLost) * 100) : 0,
+    }));
+
+    const totalFoundInQ = quarterPosts.filter((p) => p.type === 'found').length;
+    const returnRatePercentage =
+      totalLost + totalFoundInQ > 0
+        ? Math.round((totalReturned / (totalLost + totalFoundInQ)) * 100)
+        : 0;
+
+    return {
+      quarter: selectedQuarter,
+      quarterName: quarterNames[selectedQuarter] || `ไตรมาส ${selectedQuarter}`,
+      year: selectedYear,
+      totalLost,
+      totalReturned,
+      foundNotReturned,
+      unfoundLost,
+      top5LostCategories,
+      returnRatePercentage,
     };
   }
 }

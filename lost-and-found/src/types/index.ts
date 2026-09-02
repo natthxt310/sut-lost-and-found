@@ -90,6 +90,25 @@ export interface ChatConversation {
   unreadCount: number;
 }
 
+export interface TopCategoryStat {
+  rank: number;
+  category: string;
+  count: number;
+  percentage: number;
+}
+
+export interface QuarterlyStats {
+  quarter: number;
+  quarterName: string;
+  year: number;
+  totalLost: number;
+  totalReturned: number;
+  foundNotReturned: number;
+  unfoundLost: number;
+  top5LostCategories: TopCategoryStat[];
+  returnRatePercentage: number;
+}
+
 export const SUT_LOCATIONS = [
   'อาคารเรียนรวม 1 (B1)',
   'อาคารเรียนรวม 2 (B2)',

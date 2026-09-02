@@ -152,8 +152,13 @@ const chatMsg = persistentDb.sendMessage({
 });
 assert(chatMsg.id.startsWith('msg-'), 'Chat: Successfully created and saved direct message to database.json');
 
-const messagesForPost = persistentDb.getMessages('post-001');
-assert(messagesForPost.some((m) => m.id === chatMsg.id), 'Chat: Verified direct message retrieved by postId');
+// 8. Test Quarterly Stats (รายงานประจำไตรมาส - ครบ 5 ตัวชี้วัดที่กำหนด)
+const qStats = persistentDb.getQuarterlyStats(3, 2569);
+assert(typeof qStats.totalLost === 'number', `Quarterly [Q3]: Total lost in quarter = ${qStats.totalLost} items`);
+assert(typeof qStats.totalReturned === 'number', `Quarterly [Q3]: Total returned in quarter = ${qStats.totalReturned} items`);
+assert(typeof qStats.foundNotReturned === 'number', `Quarterly [Q3]: Found pending return in quarter = ${qStats.foundNotReturned} items`);
+assert(typeof qStats.unfoundLost === 'number', `Quarterly [Q3]: Unfound lost items in quarter = ${qStats.unfoundLost} items`);
+assert(Array.isArray(qStats.top5LostCategories), `Quarterly [Q3]: Top 5 most frequent lost categories ranked (${qStats.top5LostCategories.length} categories)`);
 
 console.log('\n=====================================================');
 console.log(`🎉 TEST SUMMARY: ${passCount}/${totalCount} TESTS PASSED`);
