@@ -191,23 +191,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          {/* 🛡️ แผงควบคุมและสถิติผู้ดูแลระบบ (Admin Only - ซ่อนสำหรับผู้ใช้ทั่วไป) */}
-          {isAdmin && (
-            <TouchableOpacity
-              style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
-              onPress={onOpenDashboard}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
-                <Text style={[styles.menuItemLabel, { color: colors.text }]}>แผงสถิติผู้ดูแลระบบ</Text>
-                <View style={[styles.adminBadgeSmall, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]}>
-                  <Text style={[styles.adminBadgeSmallText, { color: colors.primary }]}>ADMIN</Text>
-                </View>
+          {/* 🛡️ แผงควบคุมและสถิติผู้ดูแลระบบ (Admin Dashboard) */}
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+            onPress={onOpenDashboard}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
+              <Text style={[styles.menuItemLabel, { color: colors.text }]}>แผงสถิติผู้ดูแลระบบ</Text>
+              <View style={[styles.adminBadgeSmall, { backgroundColor: isDark ? 'rgba(255, 122, 0, 0.2)' : '#FFF7ED', borderColor: colors.primary }]}>
+                <Text style={[styles.adminBadgeSmallText, { color: colors.primary }]}>ADMIN</Text>
               </View>
-              <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
 
           {/* การตั้งค่า (Settings & Sensors) */}
           <TouchableOpacity
