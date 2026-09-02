@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    if (!body.studentId || !body.fullName) {
+    if (!body.studentId) {
       return NextResponse.json(
-        { success: false, error: 'กรุณากรอกรหัสนักศึกษาและชื่อ-นามสกุล' },
+        { success: false, error: 'กรุณากรอกรหัสนักศึกษา' },
         { status: 400 }
       );
     }

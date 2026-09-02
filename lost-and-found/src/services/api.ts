@@ -214,17 +214,19 @@ class PersistentApiService {
     return this.user;
   }
 
-  async register(fullName: string, studentId: string, password?: string, phone?: string): Promise<User> {
+  async register(studentId: string, email?: string, password?: string, fullName?: string, phone?: string): Promise<User> {
     await this.ensureInitialized();
     const sId = studentId.trim().toUpperCase();
+    const userEmail = email?.trim() || `${sId.toLowerCase()}@g.sut.ac.th`;
+    const userFullName = fullName?.trim() || `นักศึกษา ${sId}`;
 
     const newUser: User = {
       id: `usr-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      fullName: fullName.trim(),
+      fullName: userFullName,
       studentId: sId,
       password: password || '123456',
-      email: `${sId.toLowerCase()}@g.sut.ac.th`,
-      phone: phone?.trim() || '08x-xxx-xxxx',
+      email: userEmail,
+      phone: phone?.trim() || '',
       role: 'student',
     };
 
@@ -234,7 +236,7 @@ class PersistentApiService {
     // บันทึกลง Local Registered Users List
     try {
       const storedUsersRaw = await safeStorage.getItem('@sut_registered_users_v1');
-      let registeredUsers: User[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [INITIAL_USER];
+      let registeredUsers: User[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
       registeredUsers = registeredUsers.filter((u) => u.studentId.toUpperCase() !== sId);
       registeredUsers.push(newUser);
       await safeStorage.setItem('@sut_registered_users_v1', JSON.stringify(registeredUsers));

@@ -18,69 +18,143 @@ import { useTheme } from '../context/ThemeContext';
 
 /**
  * =========================================================================
- * 🔐 หน้าต่างเข้าสู่ระบบ (Auth / Login Screen - ตามแบบ ลอกอิน.png)
+ * 🔐 หน้าต่างเข้าสู่ระบบ & ลงทะเบียนสมาชิก (Auth Modal - Login & Register)
  * =========================================================================
- * 💡 อธิบายการทำงาน:
- * 1. โลโก้ SUT สีส้ม
- * 2. ช่องกรอกรหัสนักศึกษา และรหัสผ่าน (พร้อมปุ่มเปิด/ปิดตา)
- * 3. ตัวเลือก 'จดจำผู้ใช้'
- * 4. ปุ่มส้ม 'เข้าสู่ระบบ', ปุ่ม 'Login with Google', ลิงก์ 'ลืมรหัสผ่าน?'
+ * 💡 ฟีเจอร์:
+ * 1. สลับแท็บ เข้าสู่ระบบ / ลงทะเบียน
+ * 2. หน้าลงทะเบียนใช้ 4 ฟิลด์ตามกำหนด: รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
+ * 3. ระบบความปลอดภัยตรวจสอบรหัสผ่านตรงกัน และตรวจสอบรหัสนักศึกษา
+ * 4. ตัดปุ่ม Google Login ออกตามคำขอ
  * =========================================================================
  */
 
 interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose, initialMode = 'login' }) => {
   const { login, register } = useApp();
   const { colors, isDark } = useTheme();
 
-  const [studentId, setStudentId] = useState('B6802189');
-  const [password, setPassword] = useState('123456');
-  const [showPassword, setShowPassword] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
+
+  // Login States
+  const [loginStudentId, setLoginStudentId] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Register States (4 ฟิลด์ตามต้องการ)
+  const [regStudentId, setRegStudentId] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
 
+  // Auto-fill student email when studentId changes
+  const handleRegStudentIdChange = (text: string) => {
+    setRegStudentId(text);
+    const clean = text.trim().toLowerCase();
+    if (clean) {
+      setRegEmail(`${clean}@g.sut.ac.th`);
+    } else {
+      setRegEmail('');
+    }
+  };
+
   const handleLogin = async () => {
-    if (!studentId.trim()) {
+    if (!loginStudentId.trim()) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา (เช่น B6802189)');
+      return;
+    }
+    if (!loginPassword) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสผ่าน');
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(studentId.trim().toUpperCase(), password);
+      await login(loginStudentId.trim().toUpperCase(), loginPassword);
+      Alert.alert('เข้าสู่ระบบสำเร็จ! 👋', `ยินดีต้อนรับรหัสนักศึกษา ${loginStudentId.trim().toUpperCase()}`);
       onClose();
-    } catch {
-      Alert.alert('เข้าสู่ระบบไม่สำเร็จ', 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง');
+    } catch (e: any) {
+      if (e.message && e.message.startsWith('NOT_REGISTERED:')) {
+        Alert.alert('ยังไม่ได้ลงทะเบียน', e.message.replace('NOT_REGISTERED:', ''), [
+          { text: 'ยกเลิก', style: 'cancel' },
+          {
+            text: 'ลงทะเบียนตอนนี้',
+            onPress: () => {
+              setRegStudentId(loginStudentId.trim().toUpperCase());
+              setRegEmail(`${loginStudentId.trim().toLowerCase()}@g.sut.ac.th`);
+              setAuthMode('register');
+            },
+          },
+        ]);
+      } else {
+        Alert.alert('เข้าสู่ระบบไม่สำเร็จ', e.message || 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleRegister = async () => {
+    const sId = regStudentId.trim().toUpperCase();
+    const email = regEmail.trim();
+    const pwd = regPassword;
+    const confirmPwd = regConfirmPassword;
+
+    if (!sId) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา (เช่น B6802189)');
+      return;
+    }
+    if (!email) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุอีเมล (เช่น b6802189@g.sut.ac.th)');
+      return;
+    }
+    if (!pwd) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดตั้งรหัสผ่านสำหรับการเข้าสู่ระบบ');
+      return;
+    }
+    if (pwd.length < 4) {
+      Alert.alert('รหัสผ่านสั้นเกินไป', 'รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+      return;
+    }
+    if (pwd !== confirmPwd) {
+      Alert.alert('รหัสผ่านไม่ตรงกัน', 'กรุณากรอกยืนยันรหัสผ่านให้ตรงกับรหัสผ่านที่ตั้งไว้');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await login('B6802189', 'google-auth');
-      onClose();
-    } catch {
-      //
+      await register(sId, email, pwd);
+      Alert.alert(
+        'ลงทะเบียนสำเร็จ! 🎉',
+        `บัญชีรหัสนักศึกษา ${sId} ได้รับการลงทะเบียนเรียบร้อยแล้ว และเข้าสู่ระบบให้ทันที`,
+        [{ text: 'เริ่มใช้งาน', onPress: onClose }]
+      );
+    } catch (e: any) {
+      Alert.alert('ลงทะเบียนไม่สำเร็จ', e.message || 'เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
+    const target = (loginStudentId || regStudentId).trim().toLowerCase();
     Alert.alert(
       'กู้คืนรหัสผ่าน (Password Recovery)',
-      `ระบบจะส่งรหัส OTP สำหรับตั้งค่ารหัสผ่านใหม่ไปยังอีเมลนักศึกษา: ${studentId ? studentId.toLowerCase() : 'student'}@g.sut.ac.th`,
+      `ระบบจะส่งลิงก์สำหรับตั้งค่ารหัสผ่านใหม่ไปยังอีเมลนักศึกษา: ${target ? `${target}@g.sut.ac.th` : 'your_email@g.sut.ac.th'}`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
         {
           text: 'ส่งอีเมลรีเซ็ต',
-          onPress: () => Alert.alert('สำเร็จ', 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลนักศึกษาเรียบร้อยแล้ว'),
+          onPress: () => Alert.alert('สำเร็จ', 'ส่งคำขอรีเซ็ตรหัสผ่านไปยังอีเมลนักศึกษาเรียบร้อยแล้ว'),
         },
       ]
     );
@@ -89,13 +163,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: '#FFFFFF' }]}
+        style={[styles.container, { backgroundColor: isDark ? colors.background : '#FFFFFF' }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Close Button on Top Left */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-            <Ionicons name="close" size={24} color="#64748B" />
+            <Ionicons name="close" size={26} color={isDark ? colors.text : '#64748B'} />
           </TouchableOpacity>
 
           {/* SUT Brand Logo (ส้ม มทส. พร้อมลูกศรเฉียงขวาบน) */}
@@ -108,93 +182,323 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 <View style={styles.arrowRight} />
               </View>
             </View>
+            <Text style={[styles.appSubTitle, { color: isDark ? colors.textSecondary : '#64748B' }]}>
+              LOST & FOUND SYSTEM
+            </Text>
           </View>
 
-          {/* Input 1: รหัสนักศึกษา */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.inputBox}
-              placeholder="รหัสนักศึกษา"
-              placeholderTextColor="#94A3B8"
-              value={studentId}
-              onChangeText={setStudentId}
-              autoCapitalize="characters"
-            />
-          </View>
-
-          {/* Input 2: รหัสผ่าน with Eye Icon */}
-          <View style={styles.inputContainer}>
-            <View style={styles.passwordBox}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="รหัสผ่าน"
-                placeholderTextColor="#94A3B8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          {/* Mode Tabs: เข้าสู่ระบบ / ลงทะเบียน */}
+          <View style={[styles.tabContainer, { backgroundColor: isDark ? colors.surfaceAlt : '#F1F5F9' }]}>
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                authMode === 'login' && {
+                  backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                },
+              ]}
+              onPress={() => setAuthMode('login')}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  authMode === 'login'
+                    ? { color: '#FF7A00', fontWeight: '800' }
+                    : { color: isDark ? colors.textSecondary : '#64748B' },
+                ]}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                  color="#94A3B8"
+                เข้าสู่ระบบ
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                authMode === 'register' && {
+                  backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                },
+              ]}
+              onPress={() => setAuthMode('register')}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  authMode === 'register'
+                    ? { color: '#FF7A00', fontWeight: '800' }
+                    : { color: isDark ? colors.textSecondary : '#64748B' },
+                ]}
+              >
+                ลงทะเบียน
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* =========================================================================
+              FORM: เข้าสู่ระบบ (LOGIN)
+             ========================================================================= */}
+          {authMode === 'login' && (
+            <View style={styles.formContainer}>
+              {/* Input 1: รหัสนักศึกษา */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>รหัสนักศึกษา</Text>
+                <TextInput
+                  style={[
+                    styles.inputBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder="เช่น B6802189 หรือ ADMIN-01"
+                  placeholderTextColor="#94A3B8"
+                  value={loginStudentId}
+                  onChangeText={setLoginStudentId}
+                  autoCapitalize="characters"
                 />
+              </View>
+
+              {/* Input 2: รหัสผ่าน with Eye Icon */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>รหัสผ่าน</Text>
+                <View
+                  style={[
+                    styles.passwordBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.passwordInput, { color: colors.text }]}
+                    placeholder="กรอกรหัสผ่าน"
+                    placeholderTextColor="#94A3B8"
+                    value={loginPassword}
+                    onChangeText={setLoginPassword}
+                    secureTextEntry={!showLoginPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowLoginPassword(!showLoginPassword)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={showLoginPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={22}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Remember Me & Forgot Password Row */}
+              <View style={styles.rememberAndForgotRow}>
+                <TouchableOpacity
+                  style={styles.rememberRow}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      rememberMe && styles.checkboxActive,
+                      { borderColor: rememberMe ? '#FF7A00' : (isDark ? colors.border : '#CBD5E1') },
+                    ]}
+                  >
+                    {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                  </View>
+                  <Text style={[styles.rememberText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
+                    จดจำผู้ใช้
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+                  <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Orange Login Button */}
+              <TouchableOpacity
+                style={styles.orangeSubmitBtn}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.88}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.orangeSubmitBtnText}>เข้าสู่ระบบ</Text>
+                )}
               </TouchableOpacity>
+
+              {/* Toggle to Register */}
+              <View style={styles.switchAuthRow}>
+                <Text style={[styles.switchAuthText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
+                  ยังไม่มีบัญชีใช่หรือไม่?{' '}
+                </Text>
+                <TouchableOpacity onPress={() => setAuthMode('register')} activeOpacity={0.7}>
+                  <Text style={styles.switchAuthLink}>ลงทะเบียนใหม่</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
 
-          {/* Remember Me Checkbox */}
-          <TouchableOpacity
-            style={styles.rememberRow}
-            onPress={() => setRememberMe(!rememberMe)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-              {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+          {/* =========================================================================
+              FORM: ลงทะเบียน (REGISTER - 4 ฟิลด์ตามกำหนด)
+             ========================================================================= */}
+          {authMode === 'register' && (
+            <View style={styles.formContainer}>
+              {/* Field 1: รหัสนักศึกษา */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  1. รหัสนักศึกษา <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.inputBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder="เช่น B6802189"
+                  placeholderTextColor="#94A3B8"
+                  value={regStudentId}
+                  onChangeText={handleRegStudentIdChange}
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              {/* Field 2: อีเมล */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  2. อีเมลนักศึกษา <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.inputBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder="เช่น b6802189@g.sut.ac.th"
+                  placeholderTextColor="#94A3B8"
+                  value={regEmail}
+                  onChangeText={setRegEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Field 3: ตั้งรหัสผ่าน */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  3. ตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <View
+                  style={[
+                    styles.passwordBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.passwordInput, { color: colors.text }]}
+                    placeholder="ตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร"
+                    placeholderTextColor="#94A3B8"
+                    value={regPassword}
+                    onChangeText={setRegPassword}
+                    secureTextEntry={!showRegPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowRegPassword(!showRegPassword)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={showRegPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={22}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Field 4: ยืนยันตั้งรหัสผ่าน */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  4. ยืนยันตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <View
+                  style={[
+                    styles.passwordBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.passwordInput, { color: colors.text }]}
+                    placeholder="กรอกรหัสผ่านซ้ำอีกครั้งเพื่อยืนยัน"
+                    placeholderTextColor="#94A3B8"
+                    value={regConfirmPassword}
+                    onChangeText={setRegConfirmPassword}
+                    secureTextEntry={!showRegConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={showRegConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={22}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Orange Register Button */}
+              <TouchableOpacity
+                style={styles.orangeSubmitBtn}
+                onPress={handleRegister}
+                disabled={isLoading}
+                activeOpacity={0.88}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.orangeSubmitBtnText}>ลงทะเบียนสมาชิก</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Toggle to Login */}
+              <View style={styles.switchAuthRow}>
+                <Text style={[styles.switchAuthText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
+                  มีบัญชีอยู่แล้วใช่หรือไม่?{' '}
+                </Text>
+                <TouchableOpacity onPress={() => setAuthMode('login')} activeOpacity={0.7}>
+                  <Text style={styles.switchAuthLink}>เข้าสู่ระบบ</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.rememberText}>จดจำผู้ใช้</Text>
-          </TouchableOpacity>
-
-          {/* Orange Login Button */}
-          <TouchableOpacity
-            style={styles.orangeLoginBtn}
-            onPress={handleLogin}
-            disabled={isLoading}
-            activeOpacity={0.88}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.orangeLoginBtnText}>เข้าสู่ระบบ</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Or Login With Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>หรือเข้าสู่ระบบด้วย</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Login with Google Button */}
-          <TouchableOpacity
-            style={styles.googleBtn}
-            onPress={handleGoogleLogin}
-            activeOpacity={0.85}
-          >
-            <View style={styles.googleGLogo}>
-              <Text style={styles.googleGText}>G</Text>
-            </View>
-            <Text style={styles.googleBtnText}>Login with Google</Text>
-          </TouchableOpacity>
-
-          {/* Forgot Password Link */}
-          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn} activeOpacity={0.7}>
-            <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
-          </TouchableOpacity>
+          )}
 
           {/* SUT Building Silhouette Footer Illustration */}
           <View style={styles.silhouetteContainer}>
@@ -213,35 +517,35 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 28,
-    paddingTop: 54,
-    paddingBottom: 20,
+    paddingTop: 50,
+    paddingBottom: 40,
     minHeight: '100%',
   },
   closeBtn: {
     width: 36,
     height: 36,
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 44,
+    marginTop: 10,
+    marginBottom: 24,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   sutText: {
-    fontSize: 72,
+    fontSize: 64,
     fontWeight: '900',
     color: '#FF7A00',
     letterSpacing: -2,
-    lineHeight: 78,
+    lineHeight: 70,
   },
   arrowBox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     marginLeft: 4,
     marginTop: 4,
     position: 'relative',
@@ -251,7 +555,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 6,
+    height: 5,
     backgroundColor: '#FF7A00',
   },
   arrowRight: {
@@ -259,47 +563,84 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     right: 0,
-    width: 6,
+    width: 5,
     backgroundColor: '#FF7A00',
+  },
+  appSubTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
+  tabBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  formContainer: {
+    width: '100%',
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  requiredStar: {
+    color: '#EF4444',
   },
   inputContainer: {
     marginBottom: 16,
   },
   inputBox: {
-    height: 50,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 16,
-    fontSize: 15,
-    color: '#0F172A',
+    paddingHorizontal: 14,
+    fontSize: 14,
+    fontWeight: '500',
   },
   passwordBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 50,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   passwordInput: {
     flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  rememberAndForgotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    marginTop: 2,
   },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 24,
   },
   checkbox: {
     width: 18,
     height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#CBD5E1',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -309,108 +650,74 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     fontSize: 13,
-    color: '#64748B',
     fontWeight: '500',
   },
-  orangeLoginBtn: {
+  forgotText: {
+    color: '#FF7A00',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  orangeSubmitBtn: {
     height: 50,
     backgroundColor: '#FF7A00',
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
     shadowColor: '#FF7A00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    marginTop: 6,
   },
-  orangeLoginBtnText: {
+  orangeSubmitBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
   },
-  dividerRow: {
+  switchAuthRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 28,
-    gap: 12,
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 30,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    color: '#64748B',
-    fontSize: 12,
+  switchAuthText: {
+    fontSize: 13,
     fontWeight: '500',
   },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    gap: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  googleGLogo: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#EA4335',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleGText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
+  switchAuthLink: {
     fontSize: 13,
-  },
-  googleBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  forgotBtn: {
-    alignSelf: 'center',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-  forgotText: {
-    color: '#0055D4',
-    fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: '#FF7A00',
   },
   silhouetteContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
-    opacity: 0.12,
+    height: 80,
+    opacity: 0.08,
     pointerEvents: 'none',
   },
   towerShape: {
     position: 'absolute',
     bottom: 0,
     left: 20,
-    width: 30,
-    height: 80,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    width: 26,
+    height: 70,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     backgroundColor: '#64748B',
   },
   mainBuildingShape: {
     position: 'absolute',
     bottom: 0,
-    left: 60,
+    left: 54,
     right: 20,
-    height: 50,
+    height: 44,
     backgroundColor: '#64748B',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
 });

@@ -38,7 +38,7 @@ interface AppContextType {
   markAllNotificationsAsRead: () => Promise<void>;
   clearAllNotifications: () => Promise<void>;
   login: (studentId: string, password?: string) => Promise<void>;
-  register: (fullName: string, studentId: string, password?: string, phone?: string) => Promise<void>;
+  register: (studentId: string, email?: string, password?: string, fullName?: string, phone?: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   logout: () => void;
 }
@@ -165,8 +165,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshData();
   };
 
-  const register = async (fullName: string, studentId: string, password?: string, phone?: string) => {
-    const registered = await api.register(fullName, studentId, password, phone);
+  const register = async (studentId: string, email?: string, password?: string, fullName?: string, phone?: string) => {
+    const registered = await api.register(studentId, email, password, fullName, phone);
     setUser(registered);
     await refreshData();
   };
