@@ -70,19 +70,10 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
           },
         },
         {
-          text: '🗑️ ลบโพสต์นี้',
+          text: '🗑️ ยืนยันลบโพสต์นี้',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('ยืนยันการลบ', 'คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้?', [
-              { text: 'ยกเลิก', style: 'cancel' },
-              {
-                text: 'ลบ',
-                style: 'destructive',
-                onPress: async () => {
-                  await deletePost(post.id);
-                },
-              },
-            ]);
+          onPress: async () => {
+            await deletePost(post.id);
           },
         },
       ]

@@ -62,23 +62,20 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         text: 'ยืนยัน',
         onPress: async () => {
           await updatePost(post.id, { status: nextStatus });
-          Alert.alert('สำเร็จ! 🎉', isReturned ? 'เปิดโพสต์ใหม่อีกครั้งแล้ว' : 'บันทึกสถานะส่งคืนเรียบร้อยแล้ว');
         },
       },
     ]);
   };
 
   const handleDeletePost = () => {
-    Alert.alert('ยืนยันการลบโพสต์ 🗑️', `คุณต้องการลบโพสต์ "${post.title}" ออกจากระบบถาวรใช่หรือไม่?`, [
+    Alert.alert('ยืนยันการลบโพสต์ 🗑️', `คุณต้องการลบโพสต์ "${post.title}" ออกจากระบบใช่หรือไม่?`, [
       { text: 'ยกเลิก', style: 'cancel' },
       {
         text: 'ลบโพสต์',
         style: 'destructive',
         onPress: async () => {
+          onBack();
           await deletePost(post.id);
-          Alert.alert('ลบโพสต์สำเร็จ', 'โพสต์ของคุณถูกลบออกจากระบบเรียบร้อยแล้ว', [
-            { text: 'ตกลง', onPress: onBack },
-          ]);
         },
       },
     ]);
