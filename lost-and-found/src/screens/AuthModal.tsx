@@ -65,15 +65,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-fill student email only if email is currently empty
-  const handleRegStudentIdChange = (text: string) => {
-    setRegStudentId(text);
-    const clean = text.trim().toLowerCase();
-    if (clean && !regEmail) {
-      setRegEmail(`${clean}@g.sut.ac.th`);
-    }
-  };
-
   const handleLogin = async () => {
     if (!loginStudentId.trim()) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา');
@@ -97,7 +88,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             text: 'ลงทะเบียนตอนนี้',
             onPress: () => {
               setRegStudentId(loginStudentId.trim().toUpperCase());
-              if (!regEmail) setRegEmail(`${loginStudentId.trim().toLowerCase()}@g.sut.ac.th`);
               setAuthMode('register');
             },
           },
@@ -400,7 +390,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Field 1: ชื่อ-นามสกุล / ชื่อผู้ใช้งาน */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  1. ชื่อ-นามสกุล / ชื่อผู้ใช้งาน <Text style={styles.requiredStar}>*</Text>
+                  1. ชื่อผู้ใช้ <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <TextInput
                   style={[
@@ -411,7 +401,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       color: colors.text,
                     },
                   ]}
-                  placeholder="ชื่อ-นามสกุล หรือชื่อที่ใช้แสดง"
+                  placeholder="ชื่อผู้ใช้"
                   placeholderTextColor="#94A3B8"
                   value={regFullName}
                   onChangeText={setRegFullName}
@@ -435,7 +425,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   placeholder="รหัสนักศึกษา"
                   placeholderTextColor="#94A3B8"
                   value={regStudentId}
-                  onChangeText={handleRegStudentIdChange}
+                  onChangeText={setRegStudentId}
                   autoCapitalize="characters"
                 />
               </View>
