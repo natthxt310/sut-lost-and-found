@@ -624,22 +624,9 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
                     </View>
 
                     <View style={styles.resultDetails}>
-                      <View style={styles.resultTitleRow}>
-                        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
-                          {post.title}
-                        </Text>
-                        <View
-                          style={[
-                            styles.miniBadge,
-                            { backgroundColor: post.type === 'lost' ? '#EF4444' : '#10B981' },
-                          ]}
-                        >
-                          <Text style={styles.miniBadgeText}>
-                            {post.type === 'lost' ? 'ของหาย' : 'พบของ'}
-                          </Text>
-                        </View>
-                      </View>
-
+                      <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+                        {post.title}
+                      </Text>
                       <Text style={[styles.resultLocation, { color: colors.textSecondary }]} numberOfLines={1}>
                         {post.location}
                       </Text>
@@ -649,6 +636,17 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
                     </View>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View
+                        style={[
+                          styles.miniBadge,
+                          { backgroundColor: post.type === 'lost' ? '#EF4444' : '#10B981' },
+                        ]}
+                      >
+                        <Text style={styles.miniBadgeText}>
+                          {post.type === 'lost' ? 'ของหาย' : 'พบของ'}
+                        </Text>
+                      </View>
+
                       <TouchableOpacity
                         style={{ padding: 6 }}
                         onPress={(e) => {

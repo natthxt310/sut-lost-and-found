@@ -194,34 +194,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                   {/* Details */}
                   <View style={styles.postDetails}>
-                    <View style={styles.postTitleRow}>
-                      <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
-                        {post.title}
-                      </Text>
-                      {/* Status Badge */}
-                      <View
-                        style={[
-                          styles.statusBadgeMini,
-                          {
-                            backgroundColor:
-                              post.status === 'returned'
-                                ? '#10B981'
-                                : post.type === 'lost'
-                                  ? '#EF4444'
-                                  : '#10B981',
-                          },
-                        ]}
-                      >
-                        <Text style={styles.statusBadgeTextMini}>
-                          {post.status === 'returned'
-                            ? 'ส่งคืนแล้ว'
-                            : post.type === 'lost'
-                              ? 'ของหาย'
-                              : 'พบของ'}
-                        </Text>
-                      </View>
-                    </View>
-
+                    <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
+                      {post.title}
+                    </Text>
                     <Text style={[styles.postLocation, { color: colors.textSecondary }]} numberOfLines={1}>
                       {post.location}
                     </Text>
@@ -230,8 +205,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </Text>
                   </View>
 
-                  {/* Action Column: Heart Button + Chevron */}
+                  {/* Action Column: Status Badge + Heart Button + Chevron */}
                   <View style={styles.cardActionCol}>
+                    <View
+                      style={[
+                        styles.statusBadgeMini,
+                        {
+                          backgroundColor:
+                            post.status === 'returned'
+                              ? '#10B981'
+                              : post.type === 'lost'
+                                ? '#EF4444'
+                                : '#10B981',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeTextMini}>
+                        {post.status === 'returned'
+                          ? 'ส่งคืนแล้ว'
+                          : post.type === 'lost'
+                            ? 'ของหาย'
+                            : 'พบของ'}
+                      </Text>
+                    </View>
+
                     <TouchableOpacity
                       style={[styles.favHeartBtn, favorited && { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FFF0F0' }]}
                       onPress={(e) => {
