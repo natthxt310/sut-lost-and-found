@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { persistentDb } from '../../../lib/db';
+import { moderateChatMessage } from '../../../lib/moderation';
 
 // =========================================================================
 // 💬 API สำหรับจัดการข้อความแชท (Persistent In-App Chat API)
@@ -39,6 +40,15 @@ export async function POST(request: NextRequest) {
     if (!body.postId || !body.senderId || !body.receiverId || !body.text) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields (postId, senderId, receiverId, text)' },
+        { status: 400 }
+      );
+    }
+
+    // 🛡️ ตรวจสอบคำไม่เหมาะสม / คำหยาบในข้อความแชท
+    const modCheck = moderateChatMessage(body.text);
+    if (!modCheck.isSafe) {
+      return NextResponse.json(
+        { success: false, error: modCheck.reason || 'ข้อความมีคำไม่เหมาะสม' },
         { status: 400 }
       );
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backendStore } from '../../../lib/store';
+import { moderateUserName } from '../../../lib/moderation';
 
 // GET /api/users - ดึงรายชื่อผู้ใช้ทั้งหมด (Source 1 Retrieve)
 export async function GET(request: NextRequest) {
@@ -35,6 +36,17 @@ export async function POST(request: NextRequest) {
 
     const sId = body.studentId.trim().toUpperCase();
 
+    // 🛡️ ตรวจสอบความเหมาะสมของชื่อ
+    if (body.fullName) {
+      const nameCheck = moderateUserName(body.fullName);
+      if (!nameCheck.isSafe) {
+        return NextResponse.json(
+          { success: false, error: nameCheck.reason || 'ชื่อมีคำไม่เหมาะสม' },
+          { status: 400 }
+        );
+      }
+    }
+
     // ตรวจสอบว่ารหัสนักศึกษานี้เคยลงทะเบียนแล้วหรือไม่
     const existing = backendStore.getUserByStudentId(sId);
     if (existing) {
@@ -46,10 +58,10 @@ export async function POST(request: NextRequest) {
 
     const newUser = backendStore.createUser({
       studentId: sId,
-      fullName: body.fullName.trim(),
+      fullName: body.fullName ? body.fullName.trim() : `นักศึกษา ${sId}`,
       password: body.password || '123456',
       email: body.email || `${sId.toLowerCase()}@g.sut.ac.th`,
-      phone: body.phone || '08x-xxx-xxxx',
+      phone: body.phone || '',
       role: body.role || 'student',
     });
 

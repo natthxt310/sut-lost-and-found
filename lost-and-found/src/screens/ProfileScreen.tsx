@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PostItem } from '../types';
+import { moderateUserName } from '../services/moderation';
 
 const { width } = Dimensions.get('window');
 
@@ -61,8 +62,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const myReturnedCount = myPosts.filter((p) => p.status === 'returned').length;
 
   const handleSaveProfile = async () => {
+    // 🛡️ ตรวจสอบคำไม่เหมาะสมในการตั้งชื่อ
+    if (fullName.trim()) {
+      const nameCheck = moderateUserName(fullName);
+      if (!nameCheck.isSafe) {
+        Alert.alert(
+          'ชื่อไม่เหมาะสม ⚠️',
+          nameCheck.reason || 'ตรวจพบคำไม่เหมาะสมในชื่อ กรุณาใช้ชื่อที่สุภาพ'
+        );
+        return;
+      }
+    }
+
     try {
-      await updateProfile({ fullName, phone, email });
+      await updateProfile({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim() });
       setEditModalVisible(false);
       Alert.alert('สำเร็จ', 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว');
     } catch {

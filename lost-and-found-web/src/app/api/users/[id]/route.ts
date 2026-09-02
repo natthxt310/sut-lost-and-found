@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backendStore } from '../../../../lib/store';
+import { moderateUserName } from '../../../../lib/moderation';
 
 // GET /api/users/[id]
 export async function GET(
@@ -22,6 +23,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+
+    if (body.fullName) {
+      const nameCheck = moderateUserName(body.fullName);
+      if (!nameCheck.isSafe) {
+        return NextResponse.json(
+          { success: false, error: nameCheck.reason || 'ชื่อมีคำไม่เหมาะสม' },
+          { status: 400 }
+        );
+      }
+    }
+
     const updated = backendStore.updateUser(id, body);
     if (!updated) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -15,6 +16,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PostItem, ChatMessage } from '../types';
 import { api } from '../services/api';
+import { moderateChatMessage } from '../services/moderation';
 
 /**
  * =========================================================================
@@ -56,7 +58,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
   }, [post.id]);
 
   const handleSend = async () => {
-    if (!inputText.trim()) return;
+    const textToSend = inputText.trim();
+    if (!textToSend) return;
+
+    // 🛡️ ตรวจสอบคำไม่เหมาะสม / คำหยาบในข้อความแชท
+    const modCheck = moderateChatMessage(textToSend);
+    if (!modCheck.isSafe) {
+      Alert.alert(
+        'ข้อความไม่เหมาะสม ⚠️',
+        modCheck.reason || 'ตรวจพบคำไม่สุภาพในข้อความแชท กรุณาใช้ถ้อยคำที่สุภาพ'
+      );
+      return;
+    }
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -65,7 +78,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
     }
 
     setIsSending(true);
-    const textToSend = inputText.trim();
     setInputText('');
 
     const newMsg = await api.sendMessage(
