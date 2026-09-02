@@ -14,6 +14,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { useShakeSensor } from '../hooks/useShakeSensor';
 import { PostItem, PostType } from '../types';
+import { getMediaUrl } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -181,7 +182,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {/* Image Thumbnail */}
                 <View style={[styles.postThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
                   {post.imageUrl ? (
-                    <Image source={{ uri: post.imageUrl }} style={styles.postThumbnail} resizeMode="cover" />
+                    <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.postThumbnail} resizeMode="cover" />
                   ) : (
                     <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
                   )}

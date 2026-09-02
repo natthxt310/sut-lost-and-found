@@ -24,6 +24,21 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+/**
+ * แปลง URL ของรูปภาพให้แสดงผลได้ถูกต้องทุกอุปกรณ์ (รวมถึงไฟล์จาก /uploads)
+ */
+export const getMediaUrl = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
+    return url;
+  }
+  if (url.startsWith('/uploads/')) {
+    const serverHost = API_BASE_URL.replace(/\/api$/, '');
+    return `${serverHost}${url}`;
+  }
+  return url;
+};
+
 const safeStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
@@ -329,8 +344,27 @@ class PersistentApiService {
   async createPost(postData: Omit<PostItem, 'id' | 'createdAt'>): Promise<{ post: PostItem; matches: MatchNotification[] }> {
     await this.ensureInitialized();
 
+    let postToSave = { ...postData };
+
+    // 📷 ถ้าเป็นรูปภาพ Base64 ให้อัปโหลดไปยัง /api/upload เพื่อบันทึกเป็นไฟล์ลง public/uploads บนเซิร์ฟเวอร์
+    if (postToSave.imageUrl && postToSave.imageUrl.startsWith('data:image/')) {
+      try {
+        const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: postToSave.imageUrl }),
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success && uploadData.url) {
+          postToSave.imageUrl = uploadData.url;
+        }
+      } catch (e) {
+        // fallback to base64
+      }
+    }
+
     const newPost: PostItem = {
-      ...postData,
+      ...postToSave,
       id: `post-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       createdAt: new Date().toISOString(),
     };

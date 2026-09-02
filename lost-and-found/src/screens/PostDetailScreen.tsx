@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PostItem } from '../types';
+import { getMediaUrl } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -78,7 +79,7 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         {/* Top Hero Image */}
         <View style={styles.heroImageContainer}>
           {post.imageUrl ? (
-            <Image source={{ uri: post.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+            <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.heroImage} resizeMode="cover" />
           ) : (
             <View style={[styles.heroPlaceholder, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
               <Ionicons name="image-outline" size={72} color={colors.textMuted} />

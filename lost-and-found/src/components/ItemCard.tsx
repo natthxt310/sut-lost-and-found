@@ -11,6 +11,7 @@ import { PostItem } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { FavoriteButton } from './FavoriteButton';
 import { useTheme } from '../context/ThemeContext';
+import { getMediaUrl } from '../services/api';
 
 interface ItemCardProps {
   item: PostItem;
@@ -35,7 +36,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       {/* Top Image Box with Floating Badges */}
       <View style={[styles.imageBox, { backgroundColor: colors.surfaceAlt }]}>
         <Image
-          source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80' }}
+          source={{ uri: getMediaUrl(item.imageUrl) || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80' }}
           style={styles.coverImage}
           resizeMode="cover"
         />
