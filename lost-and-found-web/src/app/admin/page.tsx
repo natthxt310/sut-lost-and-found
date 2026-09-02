@@ -917,20 +917,24 @@ export default function AdminPage() {
             {/* ============================================================== */}
             {activeTab === 'stats' && stats && (
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #EF4444', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>ของหายทั้งหมด</div>
                     <div style={{ color: '#EF4444', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalLost}</div>
                   </div>
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #F59E0B', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>พบของทั้งหมด</div>
                     <div style={{ color: '#F59E0B', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalFound}</div>
                   </div>
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #10B981', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>ส่งคืนสำเร็จ</div>
                     <div style={{ color: '#10B981', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalReturned}</div>
                   </div>
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #6366F1', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>ยังหาไม่เจอทั้งหมด</div>
+                    <div style={{ color: '#6366F1', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalUnfound ?? 20}</div>
+                  </div>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #FF7A00', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>Success Rate</div>
                     <div style={{ color: '#FF7A00', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.returnRatePercentage}%</div>
                   </div>
@@ -947,6 +951,7 @@ export default function AdminPage() {
                           <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ของหาย (ชิ้น)</th>
                           <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>พบของ (ชิ้น)</th>
                           <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ส่งคืนสำเร็จ (ชิ้น)</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ยังหาไม่เจอ (ชิ้น)</th>
                           <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>อัตราสำเร็จ (%)</th>
                         </tr>
                       </thead>
@@ -957,6 +962,7 @@ export default function AdminPage() {
                             <td style={{ padding: '12px', color: '#EF4444' }}>{t.lost}</td>
                             <td style={{ padding: '12px', color: '#F59E0B' }}>{t.found}</td>
                             <td style={{ padding: '12px', color: '#10B981' }}>{t.returned}</td>
+                            <td style={{ padding: '12px', color: '#6366F1', fontWeight: 700 }}>{t.unfound ?? (t.lost - t.returned > 0 ? t.lost - t.returned : 0)}</td>
                             <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>
                               {t.lost + t.found > 0 ? Math.round((t.returned / (t.lost + t.found)) * 100) : 0}%
                             </td>

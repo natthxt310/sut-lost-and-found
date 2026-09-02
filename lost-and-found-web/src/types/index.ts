@@ -93,10 +93,11 @@ export interface MonthlyStats {
   totalLost: number;
   totalFound: number;
   totalReturned: number;
+  totalUnfound?: number;
   returnRatePercentage: number;
   categoryBreakdown: { category: string; count: number }[];
   locationBreakdown: { location: string; count: number }[];
-  monthlyTrend: { month: string; lost: number; found: number; returned: number }[];
+  monthlyTrend: { month: string; lost: number; found: number; returned: number; unfound?: number }[];
 }
 
 export interface TopCategoryStat {

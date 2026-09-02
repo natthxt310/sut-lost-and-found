@@ -567,6 +567,7 @@ export class PersistentDatabase {
     const totalLost = db.posts.filter((p) => p.type === 'lost').length;
     const totalFound = db.posts.filter((p) => p.type === 'found').length;
     const totalReturned = db.posts.filter((p) => p.status === 'returned').length;
+    const totalUnfound = db.posts.filter((p) => p.type === 'lost' && p.status === 'lost').length;
     const returnRatePercentage =
       totalLost + totalFound > 0
         ? Math.round((totalReturned / (totalLost + totalFound)) * 100)
@@ -616,13 +617,15 @@ export class PersistentDatabase {
       const lost = postsInMonth.filter((p) => p.type === 'lost').length;
       const found = postsInMonth.filter((p) => p.type === 'found').length;
       const returned = postsInMonth.filter((p) => p.status === 'returned').length;
-      return { month: name, lost, found, returned };
+      const unfound = postsInMonth.filter((p) => p.type === 'lost' && p.status === 'lost').length;
+      return { month: name, lost, found, returned, unfound };
     });
 
     return {
       totalLost,
       totalFound,
       totalReturned,
+      totalUnfound,
       returnRatePercentage,
       categoryBreakdown,
       locationBreakdown,
