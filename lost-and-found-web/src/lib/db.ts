@@ -590,11 +590,34 @@ export class PersistentDatabase {
       count,
     }));
 
-    const monthlyTrend = [
-      { month: 'มิ.ย. 69', lost: 12, found: 8, returned: 6 },
-      { month: 'ก.ค. 69', lost: 18, found: 14, returned: 11 },
-      { month: 'ส.ค. 69', lost: totalLost, found: totalFound, returned: totalReturned },
+    const monthDefs = [
+      { name: 'ม.ค. 69', m: 0 },
+      { name: 'ก.พ. 69', m: 1 },
+      { name: 'มี.ค. 69', m: 2 },
+      { name: 'เม.ย. 69', m: 3 },
+      { name: 'พ.ค. 69', m: 4 },
+      { name: 'มิ.ย. 69', m: 5 },
+      { name: 'ก.ค. 69', m: 6 },
+      { name: 'ส.ค. 69', m: 7 },
+      { name: 'ก.ย. 69', m: 8 },
     ];
+
+    const monthlyTrend = monthDefs.map(({ name, m }) => {
+      const postsInMonth = db.posts.filter((p) => {
+        let d = new Date(p.createdAt);
+        if (isNaN(d.getTime()) && p.dateTime) {
+          const parts = p.dateTime.split(' ')[0]?.split('/');
+          if (parts && parts.length === 3) {
+            return parseInt(parts[1], 10) - 1 === m;
+          }
+        }
+        return !isNaN(d.getTime()) && d.getMonth() === m;
+      });
+      const lost = postsInMonth.filter((p) => p.type === 'lost').length;
+      const found = postsInMonth.filter((p) => p.type === 'found').length;
+      const returned = postsInMonth.filter((p) => p.status === 'returned').length;
+      return { month: name, lost, found, returned };
+    });
 
     return {
       totalLost,
