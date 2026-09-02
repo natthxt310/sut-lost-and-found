@@ -55,30 +55,6 @@ function MainAppContent() {
     setCreateModalVisible(true);
   };
 
-  // 1. สถานะกำลังโหลดข้อมูล
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <ActivityIndicator size="large" color="#FF7A00" />
-      </View>
-    );
-  }
-
-  // 2. 🔒 บังคับให้เข้าสู่ระบบก่อนเข้าใช้งานแอป (ถ้ายังไม่ Login จะไม่สามารถเข้าดูแอปได้)
-  if (!user) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <AuthModal
-          visible={true}
-          onClose={() => {}}
-          allowDismiss={false}
-        />
-      </View>
-    );
-  }
-
   const renderHomeScreen = useCallback(({ navigation }: any) => (
     <HomeScreen
       onSelectPost={(post) => setSelectedPost(post)}
@@ -116,6 +92,30 @@ function MainAppContent() {
       onOpenAuth={() => setAuthModalVisible(true)}
     />
   ), []);
+
+  // 1. สถานะกำลังโหลดข้อมูล
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ActivityIndicator size="large" color="#FF7A00" />
+      </View>
+    );
+  }
+
+  // 2. 🔒 บังคับให้เข้าสู่ระบบก่อนเข้าใช้งานแอป (ถ้ายังไม่ Login จะไม่สามารถเข้าดูแอปได้)
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <AuthModal
+          visible={true}
+          onClose={() => {}}
+          allowDismiss={false}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
