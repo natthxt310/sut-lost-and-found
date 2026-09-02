@@ -29,6 +29,7 @@ import { SUTInteractiveMap } from '../components/SUTInteractiveMap';
 import { POPULAR_TAG_CHIPS, SUT_CATEGORIES } from '../data/categoriesData';
 import { SUT_LOCATION_GROUPS, SUT_LOCATIONS_DATA } from '../data/locationsData';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
+import { getMediaUrl } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,7 +55,7 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
   initialCategory,
   initialViewMode = 'map',
 }) => {
-  const { posts } = useApp();
+  const { posts, toggleFavorite, isFavorite } = useApp();
   const { colors, isDark } = useTheme();
 
   // สถานะการค้นหาและตัวกรอง
@@ -602,52 +603,72 @@ export const ExploreBoardScreen: React.FC<ExploreBoardScreenProps> = ({
                 </Text>
               </View>
             ) : (
-              searchResults.map((post) => (
-                <TouchableOpacity
-                  key={post.id}
-                  style={[
-                    styles.resultCard,
-                    { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
-                  ]}
-                  onPress={() => onSelectPost(post)}
-                  activeOpacity={0.88}
-                >
-                  <View style={[styles.resultThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
-                    {post.imageUrl ? (
-                      <Image source={{ uri: post.imageUrl }} style={styles.resultThumbnail} resizeMode="cover" />
-                    ) : (
-                      <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
-                    )}
-                  </View>
-
-                  <View style={styles.resultDetails}>
-                    <View style={styles.resultTitleRow}>
-                      <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
-                        {post.title}
-                      </Text>
-                      <View
-                        style={[
-                          styles.miniBadge,
-                          { backgroundColor: post.type === 'lost' ? '#EF4444' : '#10B981' },
-                        ]}
-                      >
-                        <Text style={styles.miniBadgeText}>
-                          {post.type === 'lost' ? 'ของหาย' : 'พบของ'}
-                        </Text>
-                      </View>
+              searchResults.map((post) => {
+                const favorited = isFavorite(post.id);
+                return (
+                  <TouchableOpacity
+                    key={post.id}
+                    style={[
+                      styles.resultCard,
+                      { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
+                    ]}
+                    onPress={() => onSelectPost(post)}
+                    activeOpacity={0.88}
+                  >
+                    <View style={[styles.resultThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
+                      {post.imageUrl ? (
+                        <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.resultThumbnail} resizeMode="cover" />
+                      ) : (
+                        <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
+                      )}
                     </View>
 
-                    <Text style={[styles.resultLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {post.location}
-                    </Text>
-                    <Text style={[styles.resultTime, { color: colors.textMuted }]}>
-                      {post.dateTime || 'เมื่อสักครู่'}
-                    </Text>
-                  </View>
+                    <View style={styles.resultDetails}>
+                      <View style={styles.resultTitleRow}>
+                        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+                          {post.title}
+                        </Text>
+                        <View
+                          style={[
+                            styles.miniBadge,
+                            { backgroundColor: post.type === 'lost' ? '#EF4444' : '#10B981' },
+                          ]}
+                        >
+                          <Text style={styles.miniBadgeText}>
+                            {post.type === 'lost' ? 'ของหาย' : 'พบของ'}
+                          </Text>
+                        </View>
+                      </View>
 
-                  <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
-                </TouchableOpacity>
-              ))
+                      <Text style={[styles.resultLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {post.location}
+                      </Text>
+                      <Text style={[styles.resultTime, { color: colors.textMuted }]}>
+                        {post.dateTime || 'เมื่อสักครู่'}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <TouchableOpacity
+                        style={{ padding: 6 }}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(post.id);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={favorited ? 'heart' : 'heart-outline'}
+                          size={20}
+                          color={favorited ? '#EF4444' : colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
             )}
           </View>
         </ScrollView>

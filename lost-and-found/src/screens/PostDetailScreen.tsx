@@ -41,12 +41,13 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
   onOpenChat,
   onEditPost,
 }) => {
-  const { user, updatePost, deletePost } = useApp();
+  const { user, updatePost, deletePost, toggleFavorite, isFavorite } = useApp();
   const { colors, isDark } = useTheme();
 
   const isLost = post.type === 'lost';
   const isOwner = user?.id === post.userId || user?.email === post.userEmail;
   const isReturned = post.status === 'returned';
+  const favorited = isFavorite(post.id);
 
   const handleToggleStatus = () => {
     const nextStatus = isReturned ? (isLost ? 'lost' : 'found') : 'returned';
@@ -116,6 +117,22 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
             activeOpacity={0.85}
           >
             <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Floating Favorite Button */}
+          <TouchableOpacity
+            style={[
+              styles.floatingFavBtn,
+              favorited && { backgroundColor: isDark ? '#334155' : '#FFFFFF' },
+            ]}
+            onPress={() => toggleFavorite(post.id)}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name={favorited ? 'heart' : 'heart-outline'}
+              size={22}
+              color={favorited ? '#EF4444' : '#FFFFFF'}
+            />
           </TouchableOpacity>
         </View>
 
@@ -279,6 +296,22 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  floatingFavBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,

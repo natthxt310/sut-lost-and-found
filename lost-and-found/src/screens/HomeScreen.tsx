@@ -40,7 +40,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToCreate,
   onNavigateToSearch,
 }) => {
-  const { posts, user, isLoading, refreshData } = useApp();
+  const { posts, user, isLoading, refreshData, toggleFavorite, isFavorite } = useApp();
   const { colors, isDark } = useTheme();
 
   // State สำหรับแจ้งเตือนการเขย่าเครื่อง (Shake Sensor)
@@ -66,8 +66,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           styles.orangeHeader,
           {
             backgroundColor: isDark ? colors.surface : colors.primary,
-            borderBottomColor: isDark ? colors.primaryBorder : 'transparent',
-            borderBottomWidth: isDark ? 1 : 0,
           },
         ]}
       >
@@ -76,7 +74,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View
             style={[
               styles.brandBadge,
-              { backgroundColor: isDark ? colors.surfaceAlt : '#FFFFFF', borderColor: isDark ? colors.border : 'transparent', borderWidth: isDark ? 1 : 0 },
+              { backgroundColor: isDark ? colors.surfaceAlt : '#FFFFFF' },
             ]}
           >
             <View style={[styles.brandLogoCircle, { backgroundColor: isDark ? 'rgba(255,122,0,0.2)' : '#FFF7ED' }]}>
@@ -99,7 +97,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           >
             <Ionicons name="person-circle" size={20} color={isDark ? colors.primary : '#FFFFFF'} />
             <Text style={[styles.userNameText, { color: isDark ? colors.text : '#FFFFFF' }]} numberOfLines={1}>
-              {user ? user.fullName : 'นักศึกษา มทส.'}
+              {user?.fullName || 'ศิวะพร ภูดินทราย'}
             </Text>
           </View>
         </View>
@@ -107,16 +105,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* 2. Scrollable Body */}
       <ScrollView
-        style={styles.mainScrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refreshData} colors={[colors.primary]} />
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refreshData}
+            colors={['#FF7A00']}
+            tintColor={colors.primary}
+          />
         }
       >
         {/* 📳 Shake Sensor Banner */}
         {showShakeBanner && (
-          <View style={[styles.shakeBanner, { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder }]}>
+          <View style={[styles.shakeBanner, { backgroundColor: isDark ? colors.surface : '#FFF7ED', borderColor: colors.primary }]}>
             <View style={styles.shakeBannerLeft}>
               <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
               <View style={{ flex: 1 }}>
@@ -155,9 +157,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* โพสต์ล่าสุด Header with ดูทั้งหมด link */}
         <View style={styles.feedHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>โพสต์ล่าสุด</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>โพสต์ล่าสุด</Text>
           <TouchableOpacity onPress={() => onNavigateToSearch()} activeOpacity={0.7}>
-            <Text style={[styles.viewAllText, { color: colors.actionBlue }]}>ดูทั้งหมด ({posts.length})</Text>
+            <Text style={[styles.viewAllText, { color: colors.primary }]}>ดูทั้งหมด ({posts.length})</Text>
           </TouchableOpacity>
         </View>
 
@@ -169,66 +171,87 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>ยังไม่มีโพสต์ล่าสุด</Text>
             </View>
           ) : (
-            latestPosts.map((post) => (
-              <TouchableOpacity
-                key={post.id}
-                style={[
-                  styles.postCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
-                ]}
-                onPress={() => onSelectPost(post)}
-                activeOpacity={0.88}
-              >
-                {/* Image Thumbnail */}
-                <View style={[styles.postThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
-                  {post.imageUrl ? (
-                    <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.postThumbnail} resizeMode="cover" />
-                  ) : (
-                    <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
-                  )}
-                </View>
-
-                {/* Details */}
-                <View style={styles.postDetails}>
-                  <View style={styles.postTitleRow}>
-                    <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
-                      {post.title}
-                    </Text>
-                    {/* Status Badge */}
-                    <View
-                      style={[
-                        styles.statusBadgeMini,
-                        {
-                          backgroundColor:
-                            post.status === 'returned'
-                              ? '#10B981'
-                              : post.type === 'lost'
-                                ? '#EF4444'
-                                : '#10B981',
-                        },
-                      ]}
-                    >
-                      <Text style={styles.statusBadgeTextMini}>
-                        {post.status === 'returned'
-                          ? 'ส่งคืนแล้ว'
-                          : post.type === 'lost'
-                            ? 'ของหาย'
-                            : 'พบของ'}
-                      </Text>
-                    </View>
+            latestPosts.map((post) => {
+              const favorited = isFavorite(post.id);
+              return (
+                <TouchableOpacity
+                  key={post.id}
+                  style={[
+                    styles.postCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: colors.shadowColor },
+                  ]}
+                  onPress={() => onSelectPost(post)}
+                  activeOpacity={0.88}
+                >
+                  {/* Image Thumbnail */}
+                  <View style={[styles.postThumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
+                    {post.imageUrl ? (
+                      <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.postThumbnail} resizeMode="cover" />
+                    ) : (
+                      <Ionicons name="cube-outline" size={28} color={colors.textMuted} />
+                    )}
                   </View>
 
-                  <Text style={[styles.postLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {post.location}
-                  </Text>
-                  <Text style={[styles.postTime, { color: colors.textMuted }]}>
-                    {post.dateTime || 'เมื่อสักครู่'}
-                  </Text>
-                </View>
+                  {/* Details */}
+                  <View style={styles.postDetails}>
+                    <View style={styles.postTitleRow}>
+                      <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
+                        {post.title}
+                      </Text>
+                      {/* Status Badge */}
+                      <View
+                        style={[
+                          styles.statusBadgeMini,
+                          {
+                            backgroundColor:
+                              post.status === 'returned'
+                                ? '#10B981'
+                                : post.type === 'lost'
+                                  ? '#EF4444'
+                                  : '#10B981',
+                          },
+                        ]}
+                      >
+                        <Text style={styles.statusBadgeTextMini}>
+                          {post.status === 'returned'
+                            ? 'ส่งคืนแล้ว'
+                            : post.type === 'lost'
+                              ? 'ของหาย'
+                              : 'พบของ'}
+                        </Text>
+                      </View>
+                    </View>
 
-                <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
-              </TouchableOpacity>
-            ))
+                    <Text style={[styles.postLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {post.location}
+                    </Text>
+                    <Text style={[styles.postTime, { color: colors.textMuted }]}>
+                      {post.dateTime || 'เมื่อสักครู่'}
+                    </Text>
+                  </View>
+
+                  {/* Action Column: Heart Button + Chevron */}
+                  <View style={styles.cardActionCol}>
+                    <TouchableOpacity
+                      style={[styles.favHeartBtn, favorited && { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FFF0F0' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(post.id);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={favorited ? 'heart' : 'heart-outline'}
+                        size={20}
+                        color={favorited ? '#EF4444' : colors.textMuted}
+                      />
+                    </TouchableOpacity>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -249,34 +272,26 @@ const styles = StyleSheet.create({
   },
   headerContentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   brandBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 6,
+    gap: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
-    gap: 6,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
+    paddingVertical: 7,
+    borderRadius: 22,
   },
   brandLogoCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFF7ED',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandLogoText: {
-    color: '#0F172A',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -289,40 +304,34 @@ const styles = StyleSheet.create({
   sutPillText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   userBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
     gap: 6,
-    maxWidth: '48%',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    maxWidth: 160,
   },
   userNameText: {
-    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '800',
-  },
-  mainScrollView: {
-    flex: 1,
+    fontWeight: '700',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 100,
   },
   shakeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   shakeBannerLeft: {
     flexDirection: 'row',
@@ -332,26 +341,31 @@ const styles = StyleSheet.create({
   },
   shakeBannerTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   shakeBannerSubtitle: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 14,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   actionLargeBtn: {
     flex: 1,
-    paddingVertical: 20,
+    height: 60,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
   actionBtnText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
   },
   feedHeaderRow: {
@@ -361,11 +375,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   postsList: {
@@ -426,6 +441,18 @@ const styles = StyleSheet.create({
   },
   postTime: {
     fontSize: 11,
+  },
+  cardActionCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 6,
+  },
+  favHeartBtn: {
+    padding: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyBox: {
     paddingVertical: 40,
