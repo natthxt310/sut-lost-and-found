@@ -23,7 +23,7 @@ import { moderateUserName } from '../services/moderation';
  * =========================================================================
  * 💡 ฟีเจอร์:
  * 1. สลับแท็บ เข้าสู่ระบบ / ลงทะเบียน
- * 2. หน้าลงทะเบียนมีช่องกรอก: ชื่อ-นามสกุล, รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
+ * 2. รองรับการตั้งชื่อและอีเมลรูปแบบใดก็ได้ที่เหมาะสม (Gmail, Hotmail, SUT Mail ฯลฯ)
  * 3. ระบบตรวจจับและแบนคำไม่เหมาะสมในชื่อ (Name Moderation)
  * 4. ห้ามปิดหรือข้ามหน้าต่างนี้หากยังไม่ได้เข้าสู่ระบบ (allowDismiss: false)
  * 5. Placeholder กระชับ คลีน ไม่มีคำว่า "เช่น"
@@ -65,14 +65,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-fill student email when studentId changes
+  // Auto-fill student email only if email is currently empty
   const handleRegStudentIdChange = (text: string) => {
     setRegStudentId(text);
     const clean = text.trim().toLowerCase();
-    if (clean) {
+    if (clean && !regEmail) {
       setRegEmail(`${clean}@g.sut.ac.th`);
-    } else {
-      setRegEmail('');
     }
   };
 
@@ -89,7 +87,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     try {
       await login(loginStudentId.trim().toUpperCase(), loginPassword);
-      Alert.alert('เข้าสู่ระบบสำเร็จ! 👋', `ยินดีต้อนรับรหัสนักศึกษา ${loginStudentId.trim().toUpperCase()}`);
+      Alert.alert('เข้าสู่ระบบสำเร็จ! 👋', `ยินดีต้อนรับ ${loginStudentId.trim().toUpperCase()}`);
       onClose();
     } catch (e: any) {
       if (e.message && e.message.startsWith('NOT_REGISTERED:')) {
@@ -99,7 +97,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             text: 'ลงทะเบียนตอนนี้',
             onPress: () => {
               setRegStudentId(loginStudentId.trim().toUpperCase());
-              setRegEmail(`${loginStudentId.trim().toLowerCase()}@g.sut.ac.th`);
+              if (!regEmail) setRegEmail(`${loginStudentId.trim().toLowerCase()}@g.sut.ac.th`);
               setAuthMode('register');
             },
           },
@@ -119,8 +117,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const pwd = regPassword;
     const confirmPwd = regConfirmPassword;
 
+    // 1. ตรวจสอบชื่อ
     if (!fullName) {
-      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุชื่อ-นามสกุล หรือชื่อผู้ใช้งาน');
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุชื่อ-นามสกุล หรือชื่อที่ต้องการใช้');
       return;
     }
 
@@ -134,14 +133,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    // 2. ตรวจสอบรหัสนักศึกษา / ID
     if (!sId) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา');
       return;
     }
+
+    // 3. ตรวจสอบอีเมล (อีเมลอะไรก็ได้ที่มีรูปแบบถูกต้อง)
     if (!email) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุอีเมล');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('รูปแบบอีเมลไม่ถูกต้อง', 'กรุณาระบุอีเมลให้ถูกต้อง');
+      return;
+    }
+
+    // 4. ตรวจสอบรหัสผ่าน
     if (!pwd) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดตั้งรหัสผ่าน');
       return;
@@ -160,7 +169,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       await register(sId, email, pwd, fullName);
       Alert.alert(
         'ลงทะเบียนสำเร็จ! 🎉',
-        `ยินดีต้อนรับ ${fullName} (รหัสนักศึกษา ${sId}) ได้รับการลงทะเบียนเรียบร้อยแล้ว`,
+        `ยินดีต้อนรับ ${fullName} ได้รับการลงทะเบียนเรียบร้อยแล้ว`,
         [{ text: 'เริ่มใช้งาน', onPress: onClose }]
       );
     } catch (e: any) {
@@ -171,15 +180,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleForgotPassword = () => {
-    const target = (loginStudentId || regStudentId).trim().toLowerCase();
+    const target = regEmail.trim() || (loginStudentId || regStudentId).trim().toLowerCase();
     Alert.alert(
       'กู้คืนรหัสผ่าน (Password Recovery)',
-      `ระบบจะส่งลิงก์สำหรับตั้งค่ารหัสผ่านใหม่ไปยังอีเมลนักศึกษา: ${target ? `${target}@g.sut.ac.th` : 'your_email@g.sut.ac.th'}`,
+      `ระบบจะส่งลิงก์สำหรับตั้งค่ารหัสผ่านใหม่ไปยังอีเมล: ${target ? (target.includes('@') ? target : `${target}@g.sut.ac.th`) : 'email@domain.com'}`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
         {
           text: 'ส่งอีเมลรีเซ็ต',
-          onPress: () => Alert.alert('สำเร็จ', 'ส่งคำขอรีเซ็ตรหัสผ่านไปยังอีเมลนักศึกษาเรียบร้อยแล้ว'),
+          onPress: () => Alert.alert('สำเร็จ', 'ส่งคำขอรีเซ็ตรหัสผ่านไปยังอีเมลเรียบร้อยแล้ว'),
         },
       ]
     );
@@ -384,7 +393,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* =========================================================================
-              FORM: ลงทะเบียน (REGISTER - รวมช่องตั้งชื่อ)
+              FORM: ลงทะเบียน (REGISTER)
              ========================================================================= */}
           {authMode === 'register' && (
             <View style={styles.formContainer}>
@@ -434,7 +443,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Field 3: อีเมล */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  3. อีเมลนักศึกษา <Text style={styles.requiredStar}>*</Text>
+                  3. อีเมล <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <TextInput
                   style={[
@@ -445,7 +454,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       color: colors.text,
                     },
                   ]}
-                  placeholder="อีเมลนักศึกษา"
+                  placeholder="อีเมล"
                   placeholderTextColor="#94A3B8"
                   value={regEmail}
                   onChangeText={setRegEmail}
