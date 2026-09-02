@@ -274,7 +274,7 @@ class PersistentApiService {
       const res = await fetch(`${API_BASE_URL}/posts`, { method: 'GET' });
       if (res.ok) {
         const data = await res.json();
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        if (data.success && Array.isArray(data.data)) {
           this.posts = data.data;
           await this.savePostsToStorage();
         }
