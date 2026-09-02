@@ -779,7 +779,7 @@ export default function AdminPage() {
                 {/* 4 Main Requested Metric Cards + Return Rate */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   {/* 1. จำนวนของหายทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #EF4444', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #EF4444', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>1. ของหายทั้งหมดในไตรมาส</div>
                     <div style={{ color: '#EF4444', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.totalLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
@@ -788,7 +788,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* 2. จำนวนของที่ถูกส่งคืนทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #10B981', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #10B981', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>2. ส่งคืนสำเร็จในไตรมาส</div>
                     <div style={{ color: '#10B981', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.totalReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
@@ -797,7 +797,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* 3. จำนวนของที่หาพบแล้วแต่ยังไม่ถูกส่งคืนในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #F59E0B', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #F59E0B', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>3. พบแล้วยังไม่ส่งคืน</div>
                     <div style={{ color: '#F59E0B', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.foundNotReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
@@ -806,7 +806,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* 4. จำนวนของที่ยังหาไม่เจอทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #6366F1', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #6366F1', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>4. ยังหาไม่เจอทั้งหมด</div>
                     <div style={{ color: '#6366F1', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.unfoundLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
@@ -815,7 +815,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Return Rate Percentage */}
-                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #FF7A00', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ backgroundColor: theme.card, borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, borderLeft: '4px solid #FF7A00', borderRadius: '16px', padding: '1.25rem' }}>
                     <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>อัตราส่งคืนสำเร็จ (% Return Rate)</div>
                     <div style={{ color: '#FF7A00', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.returnRatePercentage}%
