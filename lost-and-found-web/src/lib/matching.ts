@@ -10,15 +10,18 @@ export function calculateMatchScore(postA: PostItem, postB: PostItem): number {
   if (postA.type === postB.type) return 0;
 
   let score = 0;
-  if (postA.category === postB.category) score += 40;
+  // 1. หมวดหมู่: 45 คะแนน (เพิ่มจาก 40 ขึ้นมา 5 จากการเฉลี่ยส่วนลดสถานที่)
+  if (postA.category === postB.category) score += 45;
   
+  // 2. สีสิ่งของ: 35 คะแนน (เพิ่มจาก 30 ขึ้นมา 5 จากการเฉลี่ยส่วนลดสถานที่)
   if (postA.color === postB.color) {
-    score += 30;
+    score += 35;
   } else if (postA.color.includes(postB.color) || postB.color.includes(postA.color)) {
-    score += 20;
+    score += 25;
   }
   
-  if (postA.location === postB.location) score += 30;
+  // 3. สถานที่: 20 คะแนน (ลดจาก 30 เหลือ 20 ตามที่ผู้ใช้กำหนด)
+  if (postA.location === postB.location) score += 20;
 
   return score;
 }

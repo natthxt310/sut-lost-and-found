@@ -48,6 +48,20 @@ a {
   position: sticky;
   top: 0;
   z-index: 50;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.navbar.navbar-dark {
+  background: #0B132B !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+.navbar.navbar-dark .brand-text h1 {
+  color: #FFFFFF !important;
+}
+
+.navbar.navbar-dark .brand-text span {
+  color: #94A3B8 !important;
 }
 
 .nav-container {

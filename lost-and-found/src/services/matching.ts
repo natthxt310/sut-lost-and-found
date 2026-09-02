@@ -24,24 +24,24 @@ export function calculateMatchScore(postA: PostItem, postB: PostItem): number {
 
   let score = 0;
 
-  // 1. ตรวจสอบหมวดหมู่ (น้ำหนัก 40 คะแนน)
+  // 1. ตรวจสอบหมวดหมู่ (น้ำหนัก 45 คะแนน - ปรับเพิ่ม 5 จากการเฉลี่ยส่วนลดสถานที่)
   if (postA.category === postB.category) {
-    score += 40;
+    score += 45;
   }
 
-  // 2. ตรวจสอบสีสิ่งของ (น้ำหนัก 30 คะแนน)
+  // 2. ตรวจสอบสีสิ่งของ (น้ำหนัก 35 คะแนน - ปรับเพิ่ม 5 จากการเฉลี่ยส่วนลดสถานที่)
   if (postA.color === postB.color) {
-    score += 30; // สีตรงกันเป๊ะ
+    score += 35; // สีตรงกันเป๊ะ
   } else if (
     postA.color.includes(postB.color) ||
     postB.color.includes(postA.color)
   ) {
-    score += 20; // สีคล้ายคลึงกัน
+    score += 25; // สีคล้ายคลึงกัน
   }
 
-  // 3. ตรวจสอบพิกัดสถานที่ใน มทส. (น้ำหนัก 30 คะแนน)
+  // 3. ตรวจสอบพิกัดสถานที่ใน มทส. (น้ำหนัก 20 คะแนน - ลดจาก 30 เหลือ 20 ตามที่ผู้ใช้กำหนด)
   if (postA.location === postB.location) {
-    score += 30;
+    score += 20;
   }
 
   return score;

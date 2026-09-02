@@ -66,7 +66,17 @@ const postFoundMatching = {
 };
 
 const matchScoreHigh = calculateMatchScore(postLost, postFoundMatching);
-assert(matchScoreHigh === 100, `Auto-Matching calculation is 100% for matched tags`);
+assert(matchScoreHigh === 100, `Auto-Matching calculation is 100% for matched tags (45 + 35 + 20)`);
+
+// Test new matching weight redistribution: Location reduced from 30 to 20, distributed to Category (45) and Color (35)
+const scoreCategoryOnly = calculateMatchScore({ ...postLost, color: 'ขาว', location: 'C1' }, postFoundMatching);
+assert(scoreCategoryOnly === 45, `Auto-Matching Category weight is 45 points (increased by 5)`);
+
+const scoreColorOnly = calculateMatchScore({ ...postLost, category: 'ร่ม', location: 'C1' }, postFoundMatching);
+assert(scoreColorOnly === 35, `Auto-Matching Color weight is 35 points (increased by 5)`);
+
+const scoreLocationOnly = calculateMatchScore({ ...postLost, category: 'ร่ม', color: 'ขาว' }, postFoundMatching);
+assert(scoreLocationOnly === 20, `Auto-Matching Location weight is 20 points (reduced from 30)`);
 
 // 3. Test Persistent Source 1 CRUD (Users on Disk)
 const initialUsers = persistentDb.getUsers();

@@ -11,9 +11,36 @@ export default function AdminPage() {
   const [quarterlyStats, setQuarterlyStats] = useState<QuarterlyStats | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'approval' | 'quarterly' | 'stats' | 'posts' | 'users'>('approval');
+  const [activeTab, setActiveTab] = useState<'approval' | 'quarterly' | 'stats' | 'users'>('approval');
   const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
+
+  // Dark / Light Theme State (สลับโหมดมืด / โหมดสว่าง)
+  const [isDark, setIsDark] = useState<boolean>(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sut_theme');
+    if (saved) {
+      setIsDark(saved === 'dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleThemeChange = (e: any) => {
+      if (e.detail && typeof e.detail.isDark === 'boolean') {
+        setIsDark(e.detail.isDark);
+      }
+    };
+    window.addEventListener('sut_theme_change', handleThemeChange);
+    return () => window.removeEventListener('sut_theme_change', handleThemeChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDark;
+    setIsDark(nextDark);
+    localStorage.setItem('sut_theme', nextDark ? 'dark' : 'light');
+    window.dispatchEvent(new CustomEvent('sut_theme_change', { detail: { isDark: nextDark } }));
+  };
 
   const loadQuarterly = async (q: number) => {
     try {
@@ -100,23 +127,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateStatus = async (id: string, status: 'lost' | 'found' | 'returned') => {
-    try {
-      const res = await fetch(`/api/posts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('🔄 อัปเดตสถานะสิ่งของเรียบร้อย');
-        loadData();
-      }
-    } catch (err) {
-      alert('ไม่สามารถอัปเดตสถานะได้');
-    }
-  };
-
   const handleDeleteUser = async (id: string) => {
     if (!confirm('คุณต้องการระงับ/ลบบัญชีผู้ใช้นี้หรือไม่?')) return;
     try {
@@ -142,8 +152,30 @@ export default function AdminPage() {
     return true;
   });
 
+  // Dynamic Theme Colors (สลับสีตาม isDark)
+  const theme = {
+    bg: isDark ? '#0B132B' : '#F8F9FA',
+    card: isDark ? '#1E293B' : '#FFFFFF',
+    cardHeader: isDark ? 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)' : 'linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%)',
+    cardAlt: isDark ? '#0F172A' : '#F1F5F9',
+    border: isDark ? '#334155' : '#E2E8F0',
+    borderAlt: isDark ? '#475569' : '#CBD5E1',
+    text: isDark ? '#FFFFFF' : '#0F172A',
+    textMuted: isDark ? '#94A3B8' : '#64748B',
+    textSub: isDark ? '#CBD5E1' : '#334155',
+  };
+
   return (
-    <div style={{ backgroundColor: '#0B132B', minHeight: '100vh', color: '#F1F5F9', padding: '2rem 1.5rem', fontFamily: 'inherit' }}>
+    <div
+      style={{
+        backgroundColor: theme.bg,
+        minHeight: '100vh',
+        color: theme.text,
+        padding: '2rem 1.5rem',
+        fontFamily: 'inherit',
+        transition: 'background-color 0.25s ease, color 0.25s ease',
+      }}
+    >
       <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
         
         {/* Toast Alert */}
@@ -171,11 +203,11 @@ export default function AdminPage() {
           </div>
         ) : null}
 
-        {/* Top Header Card (SUT Dark & Orange Theme) */}
+        {/* Top Header Card */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-            border: '1px solid #334155',
+            background: theme.cardHeader,
+            border: `1px solid ${theme.border}`,
             borderRadius: '20px',
             padding: '1.75rem 2rem',
             marginBottom: '1.75rem',
@@ -184,7 +216,8 @@ export default function AdminPage() {
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '1.25rem',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+            boxShadow: isDark ? '0 10px 25px -5px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.06)',
+            transition: 'background 0.25s ease, border-color 0.25s ease',
           }}
         >
           <div>
@@ -202,26 +235,50 @@ export default function AdminPage() {
               >
                 🛡️ SUT ADMIN CONSOLE
               </span>
-              <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+              <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>
                 ศูนย์ตรวจสอบ & อนุมัติเนื้อหา มทส.
               </span>
             </div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', margin: 0, letterSpacing: '-0.5px' }}>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: theme.text, margin: 0, letterSpacing: '-0.5px' }}>
               ระบบจัดการและอนุมัติโพสต์ (Admin Portal)
             </h1>
-            <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '6px 0 0 0' }}>
+            <p style={{ color: theme.textMuted, fontSize: '0.85rem', margin: '6px 0 0 0' }}>
               ตรวจสอบความถูกต้องและอนุมัติโพสต์ก่อนแสดงผลสู่สาธารณะ พร้อมรายงานสถิติประจำไตรมาส
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                color: isDark ? '#F59E0B' : '#D97706',
+                border: `1px solid ${theme.border}`,
+                padding: '10px 16px',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.05)',
+              }}
+              title="สลับโหมดมืด / โหมดสว่าง"
+            >
+              {isDark ? '☀️ โหมดสว่าง (Light)' : '🌙 โหมดมืด (Dark)'}
+            </button>
+
+            {/* Refresh Button */}
             <button
               onClick={loadData}
               style={{
-                backgroundColor: '#334155',
-                color: '#FFFFFF',
-                border: '1px solid #475569',
-                padding: '10px 18px',
+                backgroundColor: isDark ? '#334155' : '#FFFFFF',
+                color: theme.text,
+                border: `1px solid ${theme.borderAlt}`,
+                padding: '10px 16px',
                 borderRadius: '12px',
                 fontWeight: 700,
                 fontSize: '0.85rem',
@@ -234,13 +291,15 @@ export default function AdminPage() {
             >
               🔄 รีเฟรชข้อมูล
             </button>
+
+            {/* Link to Home */}
             <Link
               href="/"
               style={{
                 backgroundColor: 'rgba(255, 122, 0, 0.15)',
                 color: '#FF7A00',
                 border: '1px solid rgba(255, 122, 0, 0.4)',
-                padding: '10px 18px',
+                padding: '10px 16px',
                 borderRadius: '12px',
                 fontWeight: 800,
                 fontSize: '0.85rem',
@@ -252,7 +311,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Navigation Tabs (Style matching User UI) */}
+        {/* Navigation Tabs */}
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
           {/* TAB 1: ตรวจสอบและอนุมัติโพสต์ */}
           <button
@@ -263,9 +322,9 @@ export default function AdminPage() {
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
-              border: activeTab === 'approval' ? '2px solid #FF7A00' : '1px solid #334155',
-              backgroundColor: activeTab === 'approval' ? '#FF7A00' : '#1E293B',
-              color: '#FFFFFF',
+              border: activeTab === 'approval' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
+              backgroundColor: activeTab === 'approval' ? '#FF7A00' : theme.card,
+              color: activeTab === 'approval' ? '#FFFFFF' : theme.text,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -298,9 +357,9 @@ export default function AdminPage() {
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
-              border: activeTab === 'quarterly' ? '2px solid #FF7A00' : '1px solid #334155',
-              backgroundColor: activeTab === 'quarterly' ? '#FF7A00' : '#1E293B',
-              color: '#FFFFFF',
+              border: activeTab === 'quarterly' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
+              backgroundColor: activeTab === 'quarterly' ? '#FF7A00' : theme.card,
+              color: activeTab === 'quarterly' ? '#FFFFFF' : theme.text,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -319,9 +378,9 @@ export default function AdminPage() {
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
-              border: activeTab === 'stats' ? '2px solid #FF7A00' : '1px solid #334155',
-              backgroundColor: activeTab === 'stats' ? '#FF7A00' : '#1E293B',
-              color: '#FFFFFF',
+              border: activeTab === 'stats' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
+              backgroundColor: activeTab === 'stats' ? '#FF7A00' : theme.card,
+              color: activeTab === 'stats' ? '#FFFFFF' : theme.text,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -340,9 +399,9 @@ export default function AdminPage() {
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
-              border: activeTab === 'users' ? '2px solid #FF7A00' : '1px solid #334155',
-              backgroundColor: activeTab === 'users' ? '#FF7A00' : '#1E293B',
-              color: '#FFFFFF',
+              border: activeTab === 'users' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
+              backgroundColor: activeTab === 'users' ? '#FF7A00' : theme.card,
+              color: activeTab === 'users' ? '#FFFFFF' : theme.text,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -354,7 +413,7 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#94A3B8' }}>
+          <div style={{ textAlign: 'center', padding: '4rem', color: theme.textMuted }}>
             ⏳ กำลังโหลดข้อมูล...
           </div>
         ) : (
@@ -367,8 +426,8 @@ export default function AdminPage() {
                 {/* Status Filter Bar */}
                 <div
                   style={{
-                    backgroundColor: '#1E293B',
-                    border: '1px solid #334155',
+                    backgroundColor: theme.card,
+                    border: `1px solid ${theme.border}`,
                     borderRadius: '16px',
                     padding: '1.2rem 1.5rem',
                     marginBottom: '1.5rem',
@@ -380,10 +439,10 @@ export default function AdminPage() {
                   }}
                 >
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: theme.text }}>
                       🛡️ คิวตรวจสอบและอนุมัติโพสต์ (Post Moderation Queue)
                     </h3>
-                    <p style={{ margin: '4px 0 0 0', color: '#94A3B8', fontSize: '0.85rem' }}>
+                    <p style={{ margin: '4px 0 0 0', color: theme.textMuted, fontSize: '0.85rem' }}>
                       โพสต์ที่สร้างใหม่จะต้องได้รับการอนุมัติจาก Admin ก่อน จึงจะแสดงให้ผู้ใช้อื่นเห็นในหน้าฟีด
                     </p>
                   </div>
@@ -397,9 +456,9 @@ export default function AdminPage() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         cursor: 'pointer',
-                        border: postFilter === 'pending' ? '2px solid #F59E0B' : '1px solid #475569',
-                        backgroundColor: postFilter === 'pending' ? 'rgba(245, 158, 11, 0.2)' : '#0F172A',
-                        color: postFilter === 'pending' ? '#F59E0B' : '#94A3B8',
+                        border: postFilter === 'pending' ? '2px solid #F59E0B' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: postFilter === 'pending' ? 'rgba(245, 158, 11, 0.15)' : theme.cardAlt,
+                        color: postFilter === 'pending' ? '#F59E0B' : theme.textMuted,
                       }}
                     >
                       ⏳ รออนุมัติ ({pendingPosts.length})
@@ -412,9 +471,9 @@ export default function AdminPage() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         cursor: 'pointer',
-                        border: postFilter === 'approved' ? '2px solid #10B981' : '1px solid #475569',
-                        backgroundColor: postFilter === 'approved' ? 'rgba(16, 185, 129, 0.2)' : '#0F172A',
-                        color: postFilter === 'approved' ? '#10B981' : '#94A3B8',
+                        border: postFilter === 'approved' ? '2px solid #10B981' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: postFilter === 'approved' ? 'rgba(16, 185, 129, 0.15)' : theme.cardAlt,
+                        color: postFilter === 'approved' ? '#10B981' : theme.textMuted,
                       }}
                     >
                       ✅ อนุมัติแล้ว ({approvedPosts.length})
@@ -427,9 +486,9 @@ export default function AdminPage() {
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         cursor: 'pointer',
-                        border: postFilter === 'all' ? '2px solid #FF7A00' : '1px solid #475569',
-                        backgroundColor: postFilter === 'all' ? 'rgba(255, 122, 0, 0.2)' : '#0F172A',
-                        color: postFilter === 'all' ? '#FF7A00' : '#94A3B8',
+                        border: postFilter === 'all' ? '2px solid #FF7A00' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: postFilter === 'all' ? 'rgba(255, 122, 0, 0.15)' : theme.cardAlt,
+                        color: postFilter === 'all' ? '#FF7A00' : theme.textMuted,
                       }}
                     >
                       📋 ทั้งหมด ({posts.length})
@@ -441,16 +500,16 @@ export default function AdminPage() {
                 {displayedPosts.length === 0 ? (
                   <div
                     style={{
-                      backgroundColor: '#1E293B',
-                      border: '1px solid #334155',
+                      backgroundColor: theme.card,
+                      border: `1px solid ${theme.border}`,
                       borderRadius: '16px',
                       padding: '4rem 2rem',
                       textAlign: 'center',
-                      color: '#94A3B8',
+                      color: theme.textMuted,
                     }}
                   >
                     <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎉</div>
-                    <h4 style={{ fontSize: '1.2rem', color: '#FFFFFF', margin: 0 }}>ไม่มีโพสต์ที่อยู่ในหมวดหมู่นี้</h4>
+                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>ไม่มีโพสต์ที่อยู่ในหมวดหมู่นี้</h4>
                     <p style={{ fontSize: '0.85rem', marginTop: '6px' }}>
                       {postFilter === 'pending'
                         ? 'ยอดเยี่ยม! ไม่มีโพสต์ที่ค้างรอการอนุมัติในขณะนี้'
@@ -465,8 +524,8 @@ export default function AdminPage() {
                         <div
                           key={post.id}
                           style={{
-                            backgroundColor: '#1E293B',
-                            border: isPending ? '1.5px solid #F59E0B' : '1px solid #334155',
+                            backgroundColor: theme.card,
+                            border: isPending ? '1.5px solid #F59E0B' : `1px solid ${theme.border}`,
                             borderRadius: '16px',
                             padding: '1.25rem 1.5rem',
                             display: 'flex',
@@ -483,7 +542,7 @@ export default function AdminPage() {
                               height: '100px',
                               borderRadius: '12px',
                               overflow: 'hidden',
-                              backgroundColor: '#0F172A',
+                              backgroundColor: theme.cardAlt,
                               flexShrink: 0,
                             }}
                           >
@@ -500,7 +559,7 @@ export default function AdminPage() {
                               {/* Type Badge */}
                               <span
                                 style={{
-                                  backgroundColor: post.type === 'lost' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                  backgroundColor: post.type === 'lost' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                                   color: post.type === 'lost' ? '#EF4444' : '#10B981',
                                   border: post.type === 'lost' ? '1px solid #EF4444' : '1px solid #10B981',
                                   padding: '2px 8px',
@@ -529,7 +588,7 @@ export default function AdminPage() {
                               {/* AI Content Safety Shield */}
                               <span
                                 style={{
-                                  backgroundColor: '#0F172A',
+                                  backgroundColor: theme.cardAlt,
                                   color: '#38BDF8',
                                   padding: '2px 8px',
                                   borderRadius: '6px',
@@ -541,18 +600,18 @@ export default function AdminPage() {
                               </span>
                             </div>
 
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px 0' }}>
+                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: theme.text, margin: '0 0 4px 0' }}>
                               {post.title}
                             </h4>
 
-                            <div style={{ fontSize: '0.85rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '0.85rem', color: theme.textMuted, display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }}>
                               <span>📦 {post.category}</span>
                               <span>🎨 สี: {post.color}</span>
                               <span>📍 {post.location}</span>
                               <span>🕒 {post.dateTime}</span>
                             </div>
 
-                            <div style={{ fontSize: '0.8rem', color: '#CBD5E1', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ fontSize: '0.8rem', color: theme.textSub, display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                               <span>👤 ผู้โพสต์: <strong>{post.userName}</strong></span>
                               <span>📞 {post.userContact}</span>
                               <span>✉️ {post.userEmail}</span>
@@ -586,7 +645,7 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => handleApprovePost(post.id, false)}
                                   style={{
-                                    backgroundColor: '#334155',
+                                    backgroundColor: theme.cardAlt,
                                     color: '#EF4444',
                                     border: '1px solid #EF4444',
                                     padding: '8px 12px',
@@ -604,7 +663,7 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => handleApprovePost(post.id, false)}
                                   style={{
-                                    backgroundColor: '#0F172A',
+                                    backgroundColor: theme.cardAlt,
                                     color: '#F59E0B',
                                     border: '1px solid #F59E0B',
                                     padding: '8px 12px',
@@ -622,9 +681,9 @@ export default function AdminPage() {
                             <button
                               onClick={() => handleDeletePost(post.id)}
                               style={{
-                                backgroundColor: '#1E293B',
+                                backgroundColor: theme.card,
                                 color: '#EF4444',
-                                border: '1px solid #475569',
+                                border: `1px solid ${theme.border}`,
                                 padding: '8px 12px',
                                 borderRadius: '10px',
                                 fontWeight: 700,
@@ -644,15 +703,15 @@ export default function AdminPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 2: QUARTERLY ANALYTICS (รายงานประจำไตรมาส - สไตล์ User UI) */}
+            {/* TAB 2: QUARTERLY ANALYTICS (รายงานประจำไตรมาส) */}
             {/* ============================================================== */}
             {activeTab === 'quarterly' && quarterlyStats && (
               <div>
                 {/* Quarter Selector Header */}
                 <div
                   style={{
-                    backgroundColor: '#1E293B',
-                    border: '1px solid #334155',
+                    backgroundColor: theme.card,
+                    border: `1px solid ${theme.border}`,
                     borderRadius: '16px',
                     padding: '1.25rem 1.5rem',
                     marginBottom: '1.5rem',
@@ -664,10 +723,10 @@ export default function AdminPage() {
                   }}
                 >
                   <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: theme.text, margin: 0 }}>
                       📅 รายงานวิเคราะห์สถิติประจำไตรมาส: {quarterlyStats.quarterName} ปี 2569
                     </h3>
-                    <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                    <p style={{ color: theme.textMuted, fontSize: '0.85rem', margin: '4px 0 0 0' }}>
                       สรุปยอดของหาย ของที่พบ การส่งคืน และ 5 อันดับหมวดหมู่ที่หายบ่อยที่สุด
                     </p>
                   </div>
@@ -689,9 +748,9 @@ export default function AdminPage() {
                           fontWeight: 700,
                           fontSize: '0.85rem',
                           cursor: 'pointer',
-                          border: selectedQuarter === item.q ? '2px solid #FF7A00' : '1px solid #475569',
-                          backgroundColor: selectedQuarter === item.q ? '#FF7A00' : '#0F172A',
-                          color: '#FFFFFF',
+                          border: selectedQuarter === item.q ? '2px solid #FF7A00' : `1px solid ${theme.borderAlt}`,
+                          backgroundColor: selectedQuarter === item.q ? '#FF7A00' : theme.cardAlt,
+                          color: selectedQuarter === item.q ? '#FFFFFF' : theme.text,
                           transition: 'all 0.2s',
                         }}
                       >
@@ -704,59 +763,59 @@ export default function AdminPage() {
                 {/* 4 Main Requested Metric Cards + Return Rate */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   {/* 1. จำนวนของหายทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderLeft: '4px solid #EF4444', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 700 }}>1. ของหายทั้งหมดในไตรมาส</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #EF4444', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>1. ของหายทั้งหมดในไตรมาส</div>
                     <div style={{ color: '#EF4444', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
-                      {quarterlyStats.totalLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#94A3B8' }}>ชิ้น</span>
+                      {quarterlyStats.totalLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>โพสต์ของหายทั้งหมด</div>
+                    <div style={{ fontSize: '0.75rem', color: theme.textMuted }}>โพสต์ของหายทั้งหมด</div>
                   </div>
 
                   {/* 2. จำนวนของที่ถูกส่งคืนทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderLeft: '4px solid #10B981', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 700 }}>2. ส่งคืนสำเร็จในไตรมาส</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #10B981', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>2. ส่งคืนสำเร็จในไตรมาส</div>
                     <div style={{ color: '#10B981', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
-                      {quarterlyStats.totalReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#94A3B8' }}>ชิ้น</span>
+                      {quarterlyStats.totalReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>ส่งมอบคืนเจ้าของแล้ว</div>
+                    <div style={{ fontSize: '0.75rem', color: theme.textMuted }}>ส่งมอบคืนเจ้าของแล้ว</div>
                   </div>
 
                   {/* 3. จำนวนของที่หาพบแล้วแต่ยังไม่ถูกส่งคืนในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderLeft: '4px solid #F59E0B', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 700 }}>3. พบแล้วยังไม่ส่งคืน</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #F59E0B', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>3. พบแล้วยังไม่ส่งคืน</div>
                     <div style={{ color: '#F59E0B', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
-                      {quarterlyStats.foundNotReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#94A3B8' }}>ชิ้น</span>
+                      {quarterlyStats.foundNotReturned} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>รอเจ้าของมารับคืน</div>
+                    <div style={{ fontSize: '0.75rem', color: theme.textMuted }}>รอเจ้าของมารับคืน</div>
                   </div>
 
                   {/* 4. จำนวนของที่ยังหาไม่เจอทั้งหมดในไตรมาสนั้น */}
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderLeft: '4px solid #6366F1', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 700 }}>4. ยังหาไม่เจอทั้งหมด</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #6366F1', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>4. ยังหาไม่เจอทั้งหมด</div>
                     <div style={{ color: '#6366F1', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
-                      {quarterlyStats.unfoundLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#94A3B8' }}>ชิ้น</span>
+                      {quarterlyStats.unfoundLost} <span style={{ fontSize: '1rem', fontWeight: 600, color: theme.textMuted }}>ชิ้น</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>อยู่ระหว่างตามหา</div>
+                    <div style={{ fontSize: '0.75rem', color: theme.textMuted }}>อยู่ระหว่างตามหา</div>
                   </div>
 
                   {/* Return Rate Percentage */}
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderLeft: '4px solid #FF7A00', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 700 }}>อัตราส่งคืนสำเร็จ (% Return Rate)</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderLeft: '4px solid #FF7A00', borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: theme.textMuted, fontWeight: 700 }}>อัตราส่งคืนสำเร็จ (% Return Rate)</div>
                     <div style={{ color: '#FF7A00', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 2px 0' }}>
                       {quarterlyStats.returnRatePercentage}%
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>คำนวณตามสูตรสัดส่วนส่งคืน</div>
+                    <div style={{ fontSize: '0.75rem', color: theme.textMuted }}>คำนวณตามสูตรสัดส่วนส่งคืน</div>
                   </div>
                 </div>
 
                 {/* 5. 5 อันดับแรกของหมวดหมู่ของของที่หายบ่อยที่สุด */}
-                <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '18px', padding: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '18px', padding: '1.5rem', marginBottom: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#FFFFFF' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: theme.text }}>
                         🏆 5 อันดับแรกของหมวดหมู่ของของที่หายบ่อยที่สุด ({quarterlyStats.quarterName})
                       </h3>
-                      <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                      <p style={{ color: theme.textMuted, fontSize: '0.85rem', margin: '4px 0 0 0' }}>
                         วิเคราะห์ความถี่ตามหมวดหมู่สิ่งของที่มีการแจ้งของหายเข้ามามากที่สุด
                       </p>
                     </div>
@@ -766,13 +825,13 @@ export default function AdminPage() {
                   </div>
 
                   {quarterlyStats.top5LostCategories.length === 0 ? (
-                    <div style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8' }}>
+                    <div style={{ padding: '2.5rem', textAlign: 'center', color: theme.textMuted }}>
                       ยังไม่มีข้อมูลของหายในไตรมาสนี้
                     </div>
                   ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #334155', color: '#94A3B8', fontSize: '0.85rem' }}>
+                        <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
                           <th style={{ padding: '10px 14px', width: '90px', textAlign: 'center' }}>อันดับ</th>
                           <th style={{ padding: '10px 14px' }}>หมวดหมู่สิ่งของ</th>
                           <th style={{ padding: '10px 14px', width: '160px', textAlign: 'center' }}>จำนวนที่หาย (ชิ้น)</th>
@@ -784,7 +843,7 @@ export default function AdminPage() {
                         {quarterlyStats.top5LostCategories.map((cat) => {
                           const rankBadges = ['🥇 อันดับ 1', '🥈 อันดับ 2', '🥉 อันดับ 3', 'อันดับ 4', 'อันดับ 5'];
                           return (
-                            <tr key={cat.rank} style={{ borderBottom: '1px solid #334155' }}>
+                            <tr key={cat.rank} style={{ borderBottom: `1px solid ${theme.border}` }}>
                               <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                                 <span
                                   style={{
@@ -793,27 +852,27 @@ export default function AdminPage() {
                                     borderRadius: '6px',
                                     fontWeight: 800,
                                     fontSize: '0.8rem',
-                                    backgroundColor: cat.rank <= 3 ? 'rgba(245, 158, 11, 0.2)' : '#0F172A',
-                                    color: cat.rank === 1 ? '#F59E0B' : cat.rank === 2 ? '#E2E8F0' : '#D97706',
+                                    backgroundColor: cat.rank <= 3 ? 'rgba(245, 158, 11, 0.15)' : theme.cardAlt,
+                                    color: cat.rank === 1 ? '#F59E0B' : cat.rank === 2 ? '#94A3B8' : '#D97706',
                                   }}
                                 >
                                   {rankBadges[cat.rank - 1]}
                                 </span>
                               </td>
-                              <td style={{ padding: '12px 14px', fontWeight: 700, color: '#FFFFFF' }}>
+                              <td style={{ padding: '12px 14px', fontWeight: 700, color: theme.text }}>
                                 {cat.category}
                               </td>
                               <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                                 <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EF4444' }}>
                                   {cat.count}
                                 </span>{' '}
-                                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>รายการ</span>
+                                <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>รายการ</span>
                               </td>
                               <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 800, color: '#FF7A00' }}>
                                 {cat.percentage}%
                               </td>
                               <td style={{ padding: '12px 14px' }}>
-                                <div style={{ backgroundColor: '#0F172A', borderRadius: '6px', height: '10px', width: '100%', overflow: 'hidden' }}>
+                                <div style={{ backgroundColor: theme.cardAlt, borderRadius: '6px', height: '10px', width: '100%', overflow: 'hidden' }}>
                                   <div
                                     style={{
                                       backgroundColor: cat.rank === 1 ? '#EF4444' : cat.rank === 2 ? '#FF7A00' : '#F59E0B',
@@ -841,30 +900,30 @@ export default function AdminPage() {
             {activeTab === 'stats' && stats && (
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ color: '#94A3B8', fontSize: '0.85rem', fontWeight: 700 }}>ของหายทั้งหมด</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>ของหายทั้งหมด</div>
                     <div style={{ color: '#EF4444', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalLost}</div>
                   </div>
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ color: '#94A3B8', fontSize: '0.85rem', fontWeight: 700 }}>พบของทั้งหมด</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>พบของทั้งหมด</div>
                     <div style={{ color: '#F59E0B', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalFound}</div>
                   </div>
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ color: '#94A3B8', fontSize: '0.85rem', fontWeight: 700 }}>ส่งคืนสำเร็จ</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>ส่งคืนสำเร็จ</div>
                     <div style={{ color: '#10B981', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.totalReturned}</div>
                   </div>
-                  <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.25rem' }}>
-                    <div style={{ color: '#94A3B8', fontSize: '0.85rem', fontWeight: 700 }}>Success Rate</div>
+                  <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.25rem' }}>
+                    <div style={{ color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700 }}>Success Rate</div>
                     <div style={{ color: '#FF7A00', fontSize: '2.2rem', fontWeight: 900, margin: '6px 0 0 0' }}>{stats.returnRatePercentage}%</div>
                   </div>
                 </div>
 
                 {/* Monthly Trend Table */}
-                <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#FFFFFF' }}>สถิติเปรียบเทียบรายเดือน</h3>
+                <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: theme.text }}>สถิติเปรียบเทียบรายเดือน</h3>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #334155', color: '#94A3B8', fontSize: '0.85rem' }}>
+                      <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
                         <th style={{ padding: '8px 12px' }}>ประจำเดือน</th>
                         <th style={{ padding: '8px 12px' }}>ของหาย (ชิ้น)</th>
                         <th style={{ padding: '8px 12px' }}>พบของ (ชิ้น)</th>
@@ -874,8 +933,8 @@ export default function AdminPage() {
                     </thead>
                     <tbody>
                       {stats.monthlyTrend.map((t, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #334155' }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#FFFFFF' }}>{t.month}</td>
+                        <tr key={idx} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: theme.text }}>{t.month}</td>
                           <td style={{ padding: '10px 12px', color: '#EF4444' }}>{t.lost}</td>
                           <td style={{ padding: '10px 12px', color: '#F59E0B' }}>{t.found}</td>
                           <td style={{ padding: '10px 12px', color: '#10B981' }}>{t.returned}</td>
@@ -894,13 +953,13 @@ export default function AdminPage() {
             {/* TAB 4: USER MANAGEMENT (จัดการสมาชิก) */}
             {/* ============================================================== */}
             {activeTab === 'users' && (
-              <div style={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '16px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#FFFFFF' }}>
+              <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: theme.text }}>
                   👥 รายชื่อสมาชิกและนักศึกษา ({users.length})
                 </h3>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', color: '#94A3B8', fontSize: '0.85rem' }}>
+                    <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
                       <th style={{ padding: '10px 12px' }}>รหัสนักศึกษา</th>
                       <th style={{ padding: '10px 12px' }}>ชื่อ-นามสกุล</th>
                       <th style={{ padding: '10px 12px' }}>อีเมล</th>
@@ -911,11 +970,11 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #334155' }}>
+                      <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
                         <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>{u.studentId}</td>
-                        <td style={{ padding: '12px', fontWeight: 700, color: '#FFFFFF' }}>{u.fullName}</td>
-                        <td style={{ padding: '12px', color: '#94A3B8' }}>{u.email}</td>
-                        <td style={{ padding: '12px', color: '#94A3B8' }}>{u.phone || '-'}</td>
+                        <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{u.fullName}</td>
+                        <td style={{ padding: '12px', color: theme.textMuted }}>{u.email}</td>
+                        <td style={{ padding: '12px', color: theme.textMuted }}>{u.phone || '-'}</td>
                         <td style={{ padding: '12px' }}>
                           <span
                             style={{
@@ -935,7 +994,7 @@ export default function AdminPage() {
                             <button
                               onClick={() => handleDeleteUser(u.id)}
                               style={{
-                                backgroundColor: '#0F172A',
+                                backgroundColor: theme.cardAlt,
                                 color: '#EF4444',
                                 border: '1px solid #EF4444',
                                 padding: '4px 10px',

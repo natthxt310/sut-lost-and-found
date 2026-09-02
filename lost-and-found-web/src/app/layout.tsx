@@ -1,6 +1,6 @@
 import './globals.css';
-import Link from 'next/link';
 import React from 'react';
+import Navbar from '../components/Navbar';
 
 export const metadata = {
   title: 'SUT Lost and Found - ระบบตามหาของหาย มหาวิทยาลัยเทคโนโลยีสุรนารี',
@@ -15,25 +15,7 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body>
-        <nav className="navbar">
-          <div className="nav-container">
-            <Link href="/" className="brand-logo">
-              <div className="brand-badge">SUT</div>
-              <div className="brand-text">
-                <h1>Lost & Found</h1>
-                <span>ระบบของหายชุมชน มทส. (กลุ่ม 7)</span>
-              </div>
-            </Link>
-            <div className="nav-links">
-              <Link href="/" className="nav-btn nav-btn-outline">
-                🔍 สำรวจของหาย
-              </Link>
-              <Link href="/admin" className="nav-btn nav-btn-primary">
-                ⚙️ Admin Dashboard
-              </Link>
-            </div>
-          </div>
-        </nav>
+        <Navbar />
         {children}
       </body>
     </html>
