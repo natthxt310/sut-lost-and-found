@@ -32,44 +32,70 @@ interface PostDetailScreenProps {
   post: PostItem;
   onBack: () => void;
   onOpenChat: (post: PostItem) => void;
+  onEditPost?: (post: PostItem) => void;
 }
 
 export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
   post,
   onBack,
   onOpenChat,
+  onEditPost,
 }) => {
-  const { user, updatePost } = useApp();
+  const { user, updatePost, deletePost } = useApp();
   const { colors, isDark } = useTheme();
 
   const isLost = post.type === 'lost';
   const isOwner = user?.id === post.userId || user?.email === post.userEmail;
+  const isReturned = post.status === 'returned';
+
+  const handleToggleStatus = () => {
+    const nextStatus = isReturned ? (isLost ? 'lost' : 'found') : 'returned';
+    const confirmMessage = isReturned
+      ? 'ต้องการเปิดโพสต์นี้ใหม่อีกครั้ง (เปลี่ยนสถานะเป็นยังไม่ได้รับคืน) ใช่หรือไม่?'
+      : isLost
+      ? 'ยินดีด้วยครับ! คุณได้รับสิ่งของนี้คืนเรียบร้อยแล้วใช่หรือไม่?'
+      : 'คุณได้ส่งคืนสิ่งของนี้ให้เจ้าของเรียบร้อยแล้วใช่หรือไม่?';
+
+    Alert.alert('เปลี่ยนสถานะโพสต์ 🔄', confirmMessage, [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ยืนยัน',
+        onPress: async () => {
+          await updatePost(post.id, { status: nextStatus });
+          Alert.alert('สำเร็จ! 🎉', isReturned ? 'เปิดโพสต์ใหม่อีกครั้งแล้ว' : 'บันทึกสถานะส่งคืนเรียบร้อยแล้ว');
+        },
+      },
+    ]);
+  };
+
+  const handleDeletePost = () => {
+    Alert.alert('ยืนยันการลบโพสต์ 🗑️', `คุณต้องการลบโพสต์ "${post.title}" ออกจากระบบถาวรใช่หรือไม่?`, [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ลบโพสต์',
+        style: 'destructive',
+        onPress: async () => {
+          await deletePost(post.id);
+          Alert.alert('ลบโพสต์สำเร็จ', 'โพสต์ของคุณถูกลบออกจากระบบเรียบร้อยแล้ว', [
+            { text: 'ตกลง', onPress: onBack },
+          ]);
+        },
+      },
+    ]);
+  };
 
   const handleReportFound = async () => {
-    if (isOwner) {
-      Alert.alert('จัดการโพสต์', 'ต้องการเปลี่ยนสถานะสิ่งของนี้เป็น "ส่งคืนเรียบร้อยแล้ว" หรือไม่?', [
+    Alert.alert(
+      'แจ้งพบสิ่งของ',
+      `คุณได้พบสิ่งของ "${post.title}" ใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อนัดส่งคืนเจ้าของทันที`,
+      [
         { text: 'ยกเลิก', style: 'cancel' },
         {
-          text: 'ยืนยัน',
-          onPress: async () => {
-            await updatePost(post.id, { status: 'returned' });
-            Alert.alert('สำเร็จ', 'อัปเดตสถานะเป็นส่งคืนเรียบร้อยแล้ว');
-          },
+          text: 'ส่งข้อความนัดรับ',
+          onPress: () => onOpenChat(post),
         },
-      ]);
-    } else {
-      Alert.alert(
-        'แจ้งพบสิ่งของ',
-        `คุณได้พบสิ่งของ "${post.title}" ใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อนัดส่งคืนเจ้าของทันที`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'ส่งข้อความนัดรับ',
-            onPress: () => onOpenChat(post),
-          },
-        ]
-      );
-    }
+      ]
+    );
   };
 
   return (
@@ -148,7 +174,7 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
             </View>
             <View style={styles.posterDetails}>
               <Text style={[styles.posterName, { color: colors.text }]}>
-                {post.userName || 'ชื่อผู้ใช้งาน'}
+                {post.userName || 'ชื่อผู้ใช้งาน'} {isOwner ? ' (คุณ)' : ''}
               </Text>
               {post.userContact ? (
                 <Text style={[styles.posterContact, { color: colors.textMuted }]}>
@@ -160,23 +186,67 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         </View>
       </ScrollView>
 
-      {/* 2 Bottom Action Buttons: ติดต่อ (Blue) & พบของ (Green) */}
+      {/* Bottom Action Bar */}
       <View style={[styles.bottomActionsBar, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#0055D4' }]}
-          onPress={() => onOpenChat(post)}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.actionBtnText}>ติดต่อ</Text>
-        </TouchableOpacity>
+        {isOwner ? (
+          <>
+            {/* ปุ่มแก้ไขโพสต์ */}
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#0055D4', flex: 1.1 }]}
+              onPress={() => onEditPost?.(post)}
+              activeOpacity={0.88}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionBtnText}>แก้ไข</Text>
+              </View>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
-          onPress={handleReportFound}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.actionBtnText}>พบของ</Text>
-        </TouchableOpacity>
+            {/* ปุ่มเปลี่ยนสถานะ */}
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                { backgroundColor: isReturned ? '#FF7A00' : '#10B981', flex: 1.4 },
+              ]}
+              onPress={handleToggleStatus}
+              activeOpacity={0.88}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name={isReturned ? 'refresh-outline' : 'checkmark-done-outline'} size={20} color="#FFFFFF" />
+                <Text style={styles.actionBtnText}>
+                  {isReturned ? 'เปิดโพสต์ใหม่' : (isLost ? 'เจอของแล้ว' : 'ส่งคืนแล้ว')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* ปุ่มลบโพสต์ */}
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#EF4444', width: 52, flex: 0, paddingHorizontal: 0 }]}
+              onPress={handleDeletePost}
+              activeOpacity={0.88}
+            >
+              <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#0055D4' }]}
+              onPress={() => onOpenChat(post)}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.actionBtnText}>ติดต่อ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+              onPress={handleReportFound}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.actionBtnText}>พบของ</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );

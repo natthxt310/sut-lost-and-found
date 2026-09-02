@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PostItem, ItemStatus } from '../types';
+import { getMediaUrl } from '../services/api';
 
 /**
  * =========================================================================
@@ -26,9 +27,10 @@ import { PostItem, ItemStatus } from '../types';
 interface MyPostsScreenProps {
   onBack: () => void;
   onSelectPost: (post: PostItem) => void;
+  onEditPost?: (post: PostItem) => void;
 }
 
-export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPost }) => {
+export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPost, onEditPost }) => {
   const { posts, user, updatePost, deletePost } = useApp();
   const { colors, isDark } = useTheme();
 
@@ -49,12 +51,18 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
 
   const handleQuickStatus = (post: PostItem) => {
     Alert.alert(
-      'จัดการโพสต์',
+      'จัดการโพสต์ ⚙️',
       `เลือกการดำเนินการสำหรับ: "${post.title}"`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
         {
-          text: post.status === 'returned' ? 'เปลี่ยนเป็น "ยังไม่พบ"' : 'เปลี่ยนเป็น "ส่งคืนแล้ว" ✅',
+          text: '✏️ แก้ไขข้อมูลโพสต์',
+          onPress: () => {
+            onEditPost?.(post);
+          },
+        },
+        {
+          text: post.status === 'returned' ? '🔄 เปลี่ยนเป็น "ยังไม่พบ"' : '✅ เปลี่ยนเป็น "ส่งคืนแล้ว"',
           onPress: async () => {
             await updatePost(post.id, {
               status: post.status === 'returned' ? (post.type === 'lost' ? 'lost' : 'found') : 'returned',
@@ -62,7 +70,7 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
           },
         },
         {
-          text: 'ลบโพสต์ 🗑️',
+          text: '🗑️ ลบโพสต์นี้',
           style: 'destructive',
           onPress: () => {
             Alert.alert('ยืนยันการลบ', 'คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้?', [
@@ -185,7 +193,7 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
                 {/* Thumbnail */}
                 <View style={[styles.thumbnailBox, { backgroundColor: isDark ? colors.surfaceAlt : '#E2E8F0' }]}>
                   {post.imageUrl ? (
-                    <Image source={{ uri: post.imageUrl }} style={styles.thumbnailImg} resizeMode="cover" />
+                    <Image source={{ uri: getMediaUrl(post.imageUrl) }} style={styles.thumbnailImg} resizeMode="cover" />
                   ) : (
                     <Ionicons name="cube-outline" size={32} color={colors.textMuted} />
                   )}

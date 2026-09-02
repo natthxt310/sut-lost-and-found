@@ -18,7 +18,7 @@ import { SUTDropdown } from '../components/SUTDropdown';
 import { SUTDateTimePickerModal } from '../components/SUTDateTimePickerModal';
 import { CATEGORY_DROPDOWN_OPTIONS, SUT_CATEGORIES, SUT_COLOR_OPTIONS } from '../data/categoriesData';
 import { ALL_SUT_LOCATION_NAMES } from '../data/locationsData';
-import { PostType } from '../types';
+import { PostType, PostItem } from '../types';
 
 /**
  * =========================================================================
@@ -36,37 +36,48 @@ import { PostType } from '../types';
 
 interface CreatePostScreenProps {
   initialType?: PostType;
+  editingPost?: PostItem | null;
   onBack: () => void;
   onSuccess: () => void;
 }
 
 export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   initialType = 'lost',
+  editingPost = null,
   onBack,
   onSuccess,
 }) => {
-  const { createPost, user } = useApp();
+  const { createPost, updatePost, user } = useApp();
   const { colors, isDark } = useTheme();
 
-  const [type, setType] = useState<PostType>(initialType);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [selectedColor, setSelectedColor] = useState('ดำ');
-  const [location, setLocation] = useState('');
+  const isEditing = !!editingPost;
+  const [type, setType] = useState<PostType>(editingPost?.type || initialType);
+  const [title, setTitle] = useState(editingPost?.title || '');
+  const [category, setCategory] = useState(editingPost?.category || '');
+  const [selectedColor, setSelectedColor] = useState(editingPost?.color || 'ดำ');
+  const [location, setLocation] = useState(editingPost?.location || '');
   
   // Date & Time States
   const [date, setDate] = useState(() => {
+    if (editingPost?.dateTime) {
+      const parts = editingPost.dateTime.split(' ');
+      if (parts[0]) return parts[0];
+    }
     const d = new Date();
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}`;
   });
   const [time, setTime] = useState(() => {
+    if (editingPost?.dateTime) {
+      const parts = editingPost.dateTime.split(' ');
+      if (parts[1]) return parts[1];
+    }
     const d = new Date();
     const h = String(d.getHours()).padStart(2, '0');
     const m = String(d.getMinutes()).padStart(2, '0');
     return `${h}:${m}`;
   });
-  const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [description, setDescription] = useState(editingPost?.description || '');
+  const [imageUrl, setImageUrl] = useState(editingPost?.imageUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Picker Modals States
@@ -155,30 +166,55 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
 
     setIsSubmitting(true);
     try {
-      await createPost({
-        type,
-        title: title.trim(),
-        category,
-        color: selectedColor || 'ไม่ระบุ',
-        location,
-        dateTime: `${date} ${time}`,
-        description: description.trim(),
-        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80',
-        status: type === 'lost' ? 'lost' : 'found',
-        userId: user?.id || 'usr-001',
-        userName: user?.fullName || 'ศิวะพร ภูดินทราย',
-        userContact: user?.phone || '089-123-4567',
-        userEmail: user?.email || 'b6802189@g.sut.ac.th',
-      });
+      if (isEditing && editingPost) {
+        await updatePost(editingPost.id, {
+          type,
+          title: title.trim(),
+          category,
+          color: selectedColor || 'ไม่ระบุ',
+          location,
+          dateTime: `${date} ${time}`,
+          description: description.trim(),
+          imageUrl: imageUrl || editingPost.imageUrl,
+        });
 
-      Alert.alert('โพสต์สำเร็จ! 🎉', 'ข้อมูลสิ่งของของคุณถูกบันทึกขึ้นระบบเรียบร้อยแล้ว', [
-        {
-          text: 'ตกลง',
-          onPress: onSuccess,
-        },
-      ]);
+        Alert.alert('บันทึกสำเร็จ! 🎉', 'ข้อมูลโพสต์ของคุณได้รับการอัปเดตเรียบร้อยแล้ว', [
+          {
+            text: 'ตกลง',
+            onPress: onSuccess,
+          },
+        ]);
+      } else {
+        await createPost({
+          type,
+          title: title.trim(),
+          category,
+          color: selectedColor || 'ไม่ระบุ',
+          location,
+          dateTime: `${date} ${time}`,
+          description: description.trim(),
+          imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80',
+          status: type === 'lost' ? 'lost' : 'found',
+          userId: user?.id || 'usr-001',
+          userName: user?.fullName || 'ศิวะพร ภูดินทราย',
+          userContact: user?.phone || '089-123-4567',
+          userEmail: user?.email || 'b6802189@g.sut.ac.th',
+        });
+
+        // รีเซ็ตค่าทันทีป้องกันการเด้งซ้ำ
+        setTitle('');
+        setDescription('');
+        setImageUrl('');
+
+        Alert.alert('โพสต์สำเร็จ! 🎉', 'ข้อมูลสิ่งของของคุณถูกบันทึกขึ้นระบบเรียบร้อยแล้ว', [
+          {
+            text: 'ตกลง',
+            onPress: onSuccess,
+          },
+        ]);
+      }
     } catch (e: any) {
-      Alert.alert('ข้อผิดพลาด', e.message || 'ไม่สามารถสร้างโพสต์ได้ กรุณาลองใหม่');
+      Alert.alert('ข้อผิดพลาด', e.message || 'ไม่สามารถบันทึกโพสต์ได้ กรุณาลองใหม่');
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +237,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         <TouchableOpacity onPress={onBack} style={styles.blackCircleBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>โพสต์</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? 'แก้ไขโพสต์' : 'โพสต์'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -402,7 +438,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.orangeSubmitBtnText}>โพสต์</Text>
+            <Text style={styles.orangeSubmitBtnText}>{isEditing ? 'บันทึกการแก้ไข' : 'โพสต์'}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

@@ -43,6 +43,7 @@ function MainAppContent() {
   const [selectedChatPost, setSelectedChatPost] = useState<PostItem | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [createInitialType, setCreateInitialType] = useState<PostType>('lost');
+  const [editingPost, setEditingPost] = useState<PostItem | null>(null);
   const [myPostsVisible, setMyPostsVisible] = useState(false);
   const [dashboardVisible, setDashboardVisible] = useState(false);
   const [favoritesModalVisible, setFavoritesModalVisible] = useState(false);
@@ -236,6 +237,10 @@ function MainAppContent() {
               setSelectedPost(null);
               setSelectedChatPost(p);
             }}
+            onEditPost={(p) => {
+              setSelectedPost(null);
+              setEditingPost(p);
+            }}
           />
         )}
       </Modal>
@@ -250,12 +255,19 @@ function MainAppContent() {
         )}
       </Modal>
 
-      {/* ================= MODAL: CREATE POST (โพสต์.png) ================= */}
-      <Modal visible={createModalVisible} animationType="slide" transparent={false}>
+      {/* ================= MODAL: CREATE / EDIT POST (โพสต์.png) ================= */}
+      <Modal visible={createModalVisible || !!editingPost} animationType="slide" transparent={false}>
         <CreatePostScreen
           initialType={createInitialType}
-          onBack={() => setCreateModalVisible(false)}
-          onSuccess={() => setCreateModalVisible(false)}
+          editingPost={editingPost}
+          onBack={() => {
+            setCreateModalVisible(false);
+            setEditingPost(null);
+          }}
+          onSuccess={() => {
+            setCreateModalVisible(false);
+            setEditingPost(null);
+          }}
         />
       </Modal>
 
@@ -266,6 +278,10 @@ function MainAppContent() {
           onSelectPost={(p) => {
             setMyPostsVisible(false);
             setSelectedPost(p);
+          }}
+          onEditPost={(p) => {
+            setMyPostsVisible(false);
+            setEditingPost(p);
           }}
         />
       </Modal>
