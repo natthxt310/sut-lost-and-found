@@ -195,7 +195,7 @@ class PersistentApiService {
       if (data.success && data.data) {
         this.user = data.data;
         await this.saveUserToStorage();
-        return this.user;
+        return data.data as User;
       } else if (data.notRegistered) {
         throw new Error(`NOT_REGISTERED:${data.error}`);
       } else if (!data.success) {
@@ -218,10 +218,10 @@ class PersistentApiService {
       }
       this.user = found;
       await this.saveUserToStorage();
-      return this.user;
+      return found;
     }
 
-    return this.user;
+    throw new Error('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง');
   }
 
   async register(studentId: string, email?: string, password?: string, fullName?: string, phone?: string): Promise<User> {
@@ -433,7 +433,7 @@ class PersistentApiService {
 
     const newFav: FavoriteItem = {
       id: `fav-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      userId: this.user.id,
+      userId: this.user?.id || 'usr-guest',
       postId,
       post,
       personalNote,
@@ -572,8 +572,8 @@ class PersistentApiService {
       id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       postId,
       postTitle,
-      senderId: this.user.id,
-      senderName: this.user.fullName || 'ผู้ใช้งาน มทส.',
+      senderId: this.user?.id || 'usr-guest',
+      senderName: this.user?.fullName || 'ผู้ใช้งาน มทส.',
       receiverId,
       receiverName,
       text: text.trim(),
@@ -652,7 +652,7 @@ class PersistentApiService {
 
   async getConversations(): Promise<ChatConversation[]> {
     await this.ensureInitialized();
-    const currentUserId = this.user.id;
+    const currentUserId = this.user?.id || '';
     let allMessages: ChatMessage[] = [];
 
     // 1. ดึงข้อความจากเซิร์ฟเวอร์
