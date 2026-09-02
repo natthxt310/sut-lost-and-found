@@ -265,7 +265,7 @@ class PersistentApiService {
       // offline fallback
     }
 
-    return this.user;
+    return newUser;
   }
 
   async resetPassword(studentId: string): Promise<{ success: boolean; message: string }> {

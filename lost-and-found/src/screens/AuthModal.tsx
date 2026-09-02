@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
+import { moderateUserName } from '../services/moderation';
 
 /**
  * =========================================================================
@@ -22,9 +23,10 @@ import { useTheme } from '../context/ThemeContext';
  * =========================================================================
  * 💡 ฟีเจอร์:
  * 1. สลับแท็บ เข้าสู่ระบบ / ลงทะเบียน
- * 2. หน้าลงทะเบียนใช้ 4 ฟิลด์: รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
- * 3. ห้ามปิดหรือข้ามหน้าต่างนี้หากยังไม่ได้เข้าสู่ระบบ (allowDismiss: false)
- * 4. Placeholder กระชับ คลีน ไม่มีคำว่า "เช่น"
+ * 2. หน้าลงทะเบียนมีช่องกรอก: ชื่อ-นามสกุล, รหัสนักศึกษา, อีเมล, ตั้งรหัสผ่าน, ยืนยันรหัสผ่าน
+ * 3. ระบบตรวจจับและแบนคำไม่เหมาะสมในชื่อ (Name Moderation)
+ * 4. ห้ามปิดหรือข้ามหน้าต่างนี้หากยังไม่ได้เข้าสู่ระบบ (allowDismiss: false)
+ * 5. Placeholder กระชับ คลีน ไม่มีคำว่า "เช่น"
  * =========================================================================
  */
 
@@ -52,7 +54,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Register States (4 ฟิลด์ตามต้องการ)
+  // Register States
+  const [regFullName, setRegFullName] = useState('');
   const [regStudentId, setRegStudentId] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -110,10 +113,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleRegister = async () => {
+    const fullName = regFullName.trim();
     const sId = regStudentId.trim().toUpperCase();
     const email = regEmail.trim();
     const pwd = regPassword;
     const confirmPwd = regConfirmPassword;
+
+    if (!fullName) {
+      Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุชื่อ-นามสกุล หรือชื่อผู้ใช้งาน');
+      return;
+    }
+
+    // 🛡️ ตรวจสอบคำไม่เหมาะสมในชื่อ (Name Moderation)
+    const nameCheck = moderateUserName(fullName);
+    if (!nameCheck.isSafe) {
+      Alert.alert(
+        'ชื่อไม่เหมาะสม ⚠️',
+        nameCheck.reason || 'ตรวจพบคำไม่เหมาะสมในชื่อ กรุณาใช้ชื่อที่สุภาพ'
+      );
+      return;
+    }
 
     if (!sId) {
       Alert.alert('กรุณากรอกข้อมูล', 'โปรดระบุรหัสนักศึกษา');
@@ -138,10 +157,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsLoading(true);
     try {
-      await register(sId, email, pwd);
+      await register(sId, email, pwd, fullName);
       Alert.alert(
         'ลงทะเบียนสำเร็จ! 🎉',
-        `บัญชีรหัสนักศึกษา ${sId} ได้รับการลงทะเบียนเรียบร้อยแล้ว`,
+        `ยินดีต้อนรับ ${fullName} (รหัสนักศึกษา ${sId}) ได้รับการลงทะเบียนเรียบร้อยแล้ว`,
         [{ text: 'เริ่มใช้งาน', onPress: onClose }]
       );
     } catch (e: any) {
@@ -365,14 +384,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* =========================================================================
-              FORM: ลงทะเบียน (REGISTER - 4 ฟิลด์ตามกำหนด)
+              FORM: ลงทะเบียน (REGISTER - รวมช่องตั้งชื่อ)
              ========================================================================= */}
           {authMode === 'register' && (
             <View style={styles.formContainer}>
-              {/* Field 1: รหัสนักศึกษา */}
+              {/* Field 1: ชื่อ-นามสกุล / ชื่อผู้ใช้งาน */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  1. รหัสนักศึกษา <Text style={styles.requiredStar}>*</Text>
+                  1. ชื่อ-นามสกุล / ชื่อผู้ใช้งาน <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.inputBox,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? colors.border : '#CBD5E1',
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder="ชื่อ-นามสกุล หรือชื่อที่ใช้แสดง"
+                  placeholderTextColor="#94A3B8"
+                  value={regFullName}
+                  onChangeText={setRegFullName}
+                />
+              </View>
+
+              {/* Field 2: รหัสนักศึกษา */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  2. รหัสนักศึกษา <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <TextInput
                   style={[
@@ -391,10 +431,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 />
               </View>
 
-              {/* Field 2: อีเมล */}
+              {/* Field 3: อีเมล */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  2. อีเมลนักศึกษา <Text style={styles.requiredStar}>*</Text>
+                  3. อีเมลนักศึกษา <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <TextInput
                   style={[
@@ -414,10 +454,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 />
               </View>
 
-              {/* Field 3: ตั้งรหัสผ่าน */}
+              {/* Field 4: ตั้งรหัสผ่าน */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  3. ตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
+                  4. ตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <View
                   style={[
@@ -449,10 +489,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </View>
               </View>
 
-              {/* Field 4: ยืนยันตั้งรหัสผ่าน */}
+              {/* Field 5: ยืนยันตั้งรหัสผ่าน */}
               <View style={styles.inputContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  4. ยืนยันตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
+                  5. ยืนยันตั้งรหัสผ่าน <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 <View
                   style={[
