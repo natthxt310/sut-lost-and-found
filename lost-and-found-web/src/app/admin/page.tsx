@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PostItem, User, MonthlyStats, QuarterlyStats } from '../../types';
+import { PostItem, User, MonthlyStats, QuarterlyStats, PostReport } from '../../types';
 
 export default function AdminPage() {
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [reports, setReports] = useState<PostReport[]>([]);
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [quarterlyStats, setQuarterlyStats] = useState<QuarterlyStats | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'approval' | 'quarterly' | 'stats' | 'users'>('quarterly');
+  const [activeTab, setActiveTab] = useState<'approval' | 'reports' | 'quarterly' | 'stats' | 'users'>('reports');
   const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'all'>('pending');
+  const [reportFilter, setReportFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
 
   // Dark / Light Theme State (สลับโหมดมืด / โหมดสว่าง)
@@ -43,19 +45,22 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [resPosts, resUsers, resStats, resQuarterly] = await Promise.all([
+      const [resPosts, resUsers, resReports, resStats, resQuarterly] = await Promise.all([
         fetch('/api/posts?all=true'),
         fetch('/api/users'),
+        fetch('/api/reports?status=all'),
         fetch('/api/stats'),
         fetch(`/api/stats/quarterly?quarter=${selectedQuarter}`),
       ]);
       const dataPosts = await resPosts.json();
       const dataUsers = await resUsers.json();
+      const dataReports = await resReports.json();
       const dataStats = await resStats.json();
       const dataQuarterly = await resQuarterly.json();
 
       if (dataPosts.success) setPosts(dataPosts.data);
       if (dataUsers.success) setUsers(dataUsers.data);
+      if (dataReports.success) setReports(dataReports.data);
       if (dataStats.success) setStats(dataStats.data);
       if (dataQuarterly.success) setQuarterlyStats(dataQuarterly.data);
     } catch (err) {
@@ -101,6 +106,33 @@ export default function AdminPage() {
     }
   };
 
+  // ดำเนินการกับรายงาน (Report Management Action: ซ่อน, ลบ, หรือยกเลิก)
+  const handleReportAction = async (reportId: string, action: 'hide' | 'delete' | 'dismiss') => {
+    const actionNames: { [key: string]: string } = {
+      hide: 'ซ่อนโพสต์นี้ไม่ให้แสดงบนฟีดสาธารณะ',
+      delete: 'ลบโพสต์นี้ออกจากระบบอย่างถาวร',
+      dismiss: 'ยกเลิกรายงานนี้ (โพสต์ปลอดภัย)',
+    };
+    if (!confirm(`คุณต้องการ${actionNames[action]} หรือไม่?`)) return;
+
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'ดำเนินการสำเร็จ');
+        loadData();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
   const handleDeletePost = async (id: string) => {
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์นี้ (Admin Moderation)?')) return;
     try {
@@ -137,6 +169,17 @@ export default function AdminPage() {
   const displayedPosts = posts.filter((p) => {
     if (postFilter === 'pending') return p.isApproved === false;
     if (postFilter === 'approved') return p.isApproved === true;
+    return true;
+  });
+
+  // ตัวนับรายงานโพสต์ไม่เหมาะสม
+  const pendingReports = reports.filter((r) => r.status === 'pending');
+  const resolvedReports = reports.filter((r) => r.status === 'resolved' || r.status === 'dismissed');
+
+  // คัดกรองรายงานในแท็บ Reports
+  const displayedReports = reports.filter((r) => {
+    if (reportFilter === 'pending') return r.status === 'pending';
+    if (reportFilter === 'resolved') return r.status === 'resolved' || r.status === 'dismissed';
     return true;
   });
 
@@ -250,7 +293,7 @@ export default function AdminPage() {
                 </span>
               </div>
               <span style={{ fontSize: '0.75rem', color: theme.textMuted }}>
-                ศูนย์ควบคุม & ตรวจสอบของหาย มทส.
+                ศูนย์ควบคุม & ตรวจสอบของหาย มทส. (Admin Portal)
               </span>
             </div>
           </div>
@@ -292,7 +335,42 @@ export default function AdminPage() {
               )}
             </button>
 
-            {/* TAB 2: รายงานประจำไตรมาส */}
+            {/* TAB 2: หน้าจัดการรายงาน (Report Management) */}
+            <button
+              onClick={() => setActiveTab('reports')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                border: activeTab === 'reports' ? '1.5px solid #EF4444' : `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'reports' ? '#EF4444' : theme.card,
+                color: activeTab === 'reports' ? '#FFFFFF' : theme.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>🚨 จัดการรายงาน</span>
+              {pendingReports.length > 0 && (
+                <span
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: '#EF4444',
+                    borderRadius: '8px',
+                    padding: '1px 6px',
+                    fontSize: '0.7rem',
+                    fontWeight: 900,
+                  }}
+                >
+                  {pendingReports.length}
+                </span>
+              )}
+            </button>
+
+            {/* TAB 3: รายงานประจำไตรมาส */}
             <button
               onClick={() => setActiveTab('quarterly')}
               style={{
@@ -313,7 +391,7 @@ export default function AdminPage() {
               <span>📅 ประจำไตรมาส</span>
             </button>
 
-            {/* TAB 3: สถิติรายเดือน / ภาพรวม */}
+            {/* TAB 4: สถิติรายเดือน / ภาพรวม */}
             <button
               onClick={() => setActiveTab('stats')}
               style={{
@@ -334,7 +412,7 @@ export default function AdminPage() {
               <span>📊 สถิติภาพรวม</span>
             </button>
 
-            {/* TAB 4: จัดการสมาชิก */}
+            {/* TAB 5: จัดการสมาชิก */}
             <button
               onClick={() => setActiveTab('users')}
               style={{
@@ -374,7 +452,7 @@ export default function AdminPage() {
               }}
             >
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-              <span>Online</span>
+              <span>Admin Online</span>
             </div>
 
             {/* Refresh Button */}
@@ -541,7 +619,10 @@ export default function AdminPage() {
                           key={post.id}
                           style={{
                             backgroundColor: theme.card,
-                            border: isPending ? '1.5px solid #F59E0B' : `1px solid ${theme.border}`,
+                            borderTop: `1px solid ${theme.border}`,
+                            borderRight: `1px solid ${theme.border}`,
+                            borderBottom: `1px solid ${theme.border}`,
+                            borderLeft: isPending ? '4px solid #F59E0B' : '4px solid #10B981',
                             borderRadius: '16px',
                             padding: '1.25rem 1.5rem',
                             display: 'flex',
@@ -719,7 +800,356 @@ export default function AdminPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 2: QUARTERLY ANALYTICS (รายงานประจำไตรมาส) */}
+            {/* TAB 2: REPORT MANAGEMENT (หน้าจัดการรายงานโพสต์ไม่เหมาะสม) */}
+            {/* ============================================================== */}
+            {activeTab === 'reports' && (
+              <div>
+                {/* Header Card */}
+                <div
+                  style={{
+                    backgroundColor: theme.card,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '16px',
+                    padding: '1.25rem 1.5rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          color: '#EF4444',
+                          fontWeight: 800,
+                          fontSize: '0.75rem',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        🚨 REPORT MANAGEMENT
+                      </span>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: theme.text }}>
+                        หน้าจัดการรายงานโพสต์ไม่เหมาะสม
+                      </h3>
+                    </div>
+                    <p style={{ margin: 0, color: theme.textMuted, fontSize: '0.85rem' }}>
+                      ตรวจสอบรายละเอียดโพสต์ที่ถูกรายงานจากผู้ใช้ และดำเนินการซ่อนหรือลบโพสต์ที่มีปัญหา
+                    </p>
+                  </div>
+
+                  {/* Filter Tabs */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setReportFilter('pending')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: reportFilter === 'pending' ? '2px solid #EF4444' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: reportFilter === 'pending' ? 'rgba(239, 68, 68, 0.15)' : theme.cardAlt,
+                        color: reportFilter === 'pending' ? '#EF4444' : theme.textMuted,
+                      }}
+                    >
+                      ⏳ รอตรวจสอบ ({pendingReports.length})
+                    </button>
+                    <button
+                      onClick={() => setReportFilter('resolved')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: reportFilter === 'resolved' ? '2px solid #10B981' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: reportFilter === 'resolved' ? 'rgba(16, 185, 129, 0.15)' : theme.cardAlt,
+                        color: reportFilter === 'resolved' ? '#10B981' : theme.textMuted,
+                      }}
+                    >
+                      ✅ ดำเนินการแล้ว ({resolvedReports.length})
+                    </button>
+                    <button
+                      onClick={() => setReportFilter('all')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: reportFilter === 'all' ? '2px solid #FF7A00' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: reportFilter === 'all' ? 'rgba(255, 122, 0, 0.15)' : theme.cardAlt,
+                        color: reportFilter === 'all' ? '#FF7A00' : theme.textMuted,
+                      }}
+                    >
+                      📋 ทั้งหมด ({reports.length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reports List */}
+                {displayedReports.length === 0 ? (
+                  <div
+                    style={{
+                      backgroundColor: theme.card,
+                      border: `1px solid ${theme.border}`,
+                      borderRadius: '16px',
+                      padding: '4rem 2rem',
+                      textAlign: 'center',
+                      color: theme.textMuted,
+                    }}
+                  >
+                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🛡️</div>
+                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>ไม่มีรายงานโพสต์ในหมวดหมู่นี้</h4>
+                    <p style={{ fontSize: '0.85rem', marginTop: '6px' }}>
+                      {reportFilter === 'pending'
+                        ? 'ยอดเยี่ยม! ไม่มีรายงานโพสต์ไม่เหมาะสมที่ค้างรอตรวจสอบในขณะนี้'
+                        : 'ไม่พบรายการรายงานตามตัวกรองที่เลือก'}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '1.25rem' }}>
+                    {displayedReports.map((rep) => {
+                      const isPending = rep.status === 'pending';
+                      const reportedPost = posts.find((p) => p.id === rep.postId);
+                      const isPostHidden = reportedPost?.moderationStatus === 'hidden' || reportedPost?.isApproved === false;
+
+                      return (
+                        <div
+                          key={rep.id}
+                          style={{
+                            backgroundColor: theme.card,
+                            borderTop: `1px solid ${theme.border}`,
+                            borderRight: `1px solid ${theme.border}`,
+                            borderBottom: `1px solid ${theme.border}`,
+                            borderLeft: isPending ? '4px solid #EF4444' : '4px solid #10B981',
+                            borderRadius: '16px',
+                            padding: '1.5rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1.2rem',
+                            boxShadow: isPending ? '0 4px 20px rgba(239, 68, 68, 0.1)' : 'none',
+                          }}
+                        >
+                          {/* Report Metadata Row */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                              {/* Reason Badge */}
+                              <span
+                                style={{
+                                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                  color: '#EF4444',
+                                  border: '1px solid #EF4444',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {rep.reasonText}
+                              </span>
+
+                              {/* Status Badge */}
+                              <span
+                                style={{
+                                  backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                  color: isPending ? '#F59E0B' : '#10B981',
+                                  border: isPending ? '1px solid #F59E0B' : '1px solid #10B981',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {isPending ? '⏳ รอแอดมินดำเนินการ' : `✅ ดำเนินการแล้ว (${rep.actionTaken === 'hidden' ? 'ซ่อนโพสต์' : rep.actionTaken === 'deleted' ? 'ลบโพสต์ถาวร' : 'ยกเลิกรายงาน'})`}
+                              </span>
+
+                              {/* Post Status Badge */}
+                              {reportedPost ? (
+                                <span
+                                  style={{
+                                    backgroundColor: isPostHidden ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                    color: isPostHidden ? '#EF4444' : '#10B981',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {isPostHidden ? '⏸️ โพสต์ถูกซ่อนอยู่' : '🌐 โพสต์ยังแสดงอยู่'}
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    backgroundColor: 'rgba(148, 163, 184, 0.15)',
+                                    color: theme.textMuted,
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  🗑️ โพสต์ถูกลบออกจากระบบแล้ว
+                                </span>
+                              )}
+                            </div>
+
+                            <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>
+                              🕒 รายงานเมื่อ: {new Date(rep.createdAt).toLocaleString('th-TH')}
+                            </span>
+                          </div>
+
+                          {/* Reporter Details & Message */}
+                          <div
+                            style={{
+                              backgroundColor: theme.cardAlt,
+                              borderRadius: '12px',
+                              padding: '0.85rem 1.1rem',
+                              border: `1px solid ${theme.border}`,
+                            }}
+                          >
+                            <div style={{ fontSize: '0.8rem', color: theme.textMuted, marginBottom: '4px' }}>
+                              👤 <strong>ผู้รายงาน:</strong> {rep.reporterName}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: theme.text, fontStyle: 'italic' }}>
+                              💬 &quot;{rep.details || 'ไม่มีข้อความเพิ่มเติม'}&quot;
+                            </div>
+                          </div>
+
+                          {/* Reported Post Details (การตรวจสอบรายละเอียดโพสต์ที่ถูกรายงาน) */}
+                          <div
+                            style={{
+                              border: `1px solid ${theme.border}`,
+                              borderRadius: '12px',
+                              padding: '1rem',
+                              display: 'flex',
+                              gap: '1.25rem',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.4)' : '#FFFFFF',
+                            }}
+                          >
+                            {/* Thumbnail */}
+                            <div
+                              style={{
+                                width: '90px',
+                                height: '90px',
+                                borderRadius: '10px',
+                                overflow: 'hidden',
+                                backgroundColor: theme.cardAlt,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <img
+                                src={rep.postImageUrl || reportedPost?.imageUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80'}
+                                alt={rep.postTitle}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </div>
+
+                            {/* Post Info */}
+                            <div style={{ flex: '1 1 250px' }}>
+                              <div style={{ fontSize: '0.75rem', color: theme.textMuted, marginBottom: '4px' }}>
+                                📦 หมวดหมู่: <strong>{rep.postCategory || reportedPost?.category || 'ทั่วไป'}</strong> | 👤 ผู้โพสต์: <strong>{rep.postAuthorName || reportedPost?.userName || '-'}</strong>
+                              </div>
+                              <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: theme.text, fontWeight: 800 }}>
+                                {rep.postTitle}
+                              </h4>
+                              {reportedPost?.description && (
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: theme.textMuted }}>
+                                  {reportedPost.description}
+                                </p>
+                              )}
+                              {reportedPost?.location && (
+                                <div style={{ fontSize: '0.8rem', color: theme.textSub, marginTop: '4px' }}>
+                                  📍 สถานที่: {reportedPost.location} | 🎨 สี: {reportedPost.color}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Buttons: ซ่อนโพสต์, ลบโพสต์ถาวร, หรือยกเลิกรายงาน */}
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                              {/* 1. ดำเนินการซ่อนโพสต์ที่มีปัญหา */}
+                              <button
+                                onClick={() => handleReportAction(rep.id, 'hide')}
+                                disabled={isPostHidden}
+                                style={{
+                                  backgroundColor: isPostHidden ? theme.cardAlt : '#F59E0B',
+                                  color: isPostHidden ? theme.textMuted : '#FFFFFF',
+                                  border: isPostHidden ? `1px solid ${theme.border}` : 'none',
+                                  padding: '9px 14px',
+                                  borderRadius: '10px',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem',
+                                  cursor: isPostHidden ? 'not-allowed' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  boxShadow: isPostHidden ? 'none' : '0 4px 12px rgba(245, 158, 11, 0.3)',
+                                }}
+                                title="ซ่อนโพสต์ไม่ให้แสดงบนฟีดสาธารณะ"
+                              >
+                                ⏸️ {isPostHidden ? 'ซ่อนอยู่แล้ว' : 'ซ่อนโพสต์ (Hide)'}
+                              </button>
+
+                              {/* 2. ดำเนินการลบโพสต์ที่มีปัญหา */}
+                              <button
+                                onClick={() => handleReportAction(rep.id, 'delete')}
+                                style={{
+                                  backgroundColor: '#EF4444',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  padding: '9px 14px',
+                                  borderRadius: '10px',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                                }}
+                                title="ลบโพสต์ที่มีปัญหาออกจากระบบอย่างถาวร"
+                              >
+                                🗑️ ลบโพสต์ถาวร (Delete)
+                              </button>
+
+                              {/* 3. ปุ่มยกเลิกรายงาน / โพสต์ปลอดภัย */}
+                              {isPending && (
+                                <button
+                                  onClick={() => handleReportAction(rep.id, 'dismiss')}
+                                  style={{
+                                    backgroundColor: theme.cardAlt,
+                                    color: theme.textMuted,
+                                    border: `1px solid ${theme.border}`,
+                                    padding: '8px 12px',
+                                    borderRadius: '10px',
+                                    fontWeight: 700,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                  }}
+                                  title="ตรวจสอบแล้วไม่มีปัญหา ยกเลิกการรายงาน"
+                                >
+                                  🛡️ ปล่อยผ่าน (Dismiss)
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ============================================================== */}
+            {/* TAB 3: QUARTERLY ANALYTICS (รายงานประจำไตรมาส) */}
             {/* ============================================================== */}
             {activeTab === 'quarterly' && quarterlyStats && (
               <div>
@@ -913,7 +1343,7 @@ export default function AdminPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 3: STATS OVERVIEW (สถิติภาพรวม / รายเดือน) */}
+            {/* TAB 4: STATS OVERVIEW (สถิติภาพรวม / รายเดือน) */}
             {/* ============================================================== */}
             {activeTab === 'stats' && stats && (
               <div>
@@ -976,7 +1406,7 @@ export default function AdminPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 4: USER MANAGEMENT (จัดการสมาชิก) */}
+            {/* TAB 5: USER MANAGEMENT (จัดการสมาชิก) */}
             {/* ============================================================== */}
             {activeTab === 'users' && (
               <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem' }}>

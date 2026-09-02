@@ -19,9 +19,12 @@ export interface PostItem {
   userEmail: string;
   securityQuestion?: string;
   isApproved?: boolean;
-  moderationStatus?: 'approved' | 'rejected' | 'flagged' | 'pending';
+  moderationStatus?: 'approved' | 'rejected' | 'flagged' | 'pending' | 'hidden';
   moderationScore?: number;
   moderationNotes?: string;
+  isReported?: boolean;
+  reportCount?: number;
+  reportReason?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -108,6 +111,24 @@ export interface QuarterlyStats {
   top5LostCategories: TopCategoryStat[];
   returnRatePercentage: number;
 }
+
+export interface PostReport {
+  id: string;
+  postId: string;
+  postTitle: string;
+  postImageUrl?: string;
+  postCategory?: string;
+  postAuthorName?: string;
+  reporterId: string;
+  reporterName: string;
+  reason: 'spam' | 'offensive' | 'scam' | 'false_info' | 'other';
+  reasonText: string;
+  details?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  actionTaken?: 'hidden' | 'deleted' | 'dismissed';
+  createdAt: string;
+}
+
 
 export const SUT_LOCATIONS = [
   'อาคารเรียนรวม 1 (B1)',

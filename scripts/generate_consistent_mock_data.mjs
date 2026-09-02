@@ -4,11 +4,12 @@ import path from 'path';
 const DB_PATH = path.resolve('lost-and-found-web/data/database.json');
 const currentDb = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
 
-// Retain existing users, favorites, notifications, messages
+// Retain existing users, favorites, notifications, messages, reports
 const existingUsers = currentDb.users || [];
 const existingFavorites = currentDb.favorites || [];
 const existingNotifications = currentDb.notifications || [];
 const existingMessages = currentDb.messages || [];
+const existingReports = currentDb.reports || [];
 
 // Preserve existing user posts:
 const existingPost1 = currentDb.posts.find((p) => p.id === 'post-1788368018264-677') || {
@@ -1335,6 +1336,7 @@ const newDb = {
   favorites: existingFavorites,
   notifications: existingNotifications,
   messages: existingMessages,
+  reports: existingReports,
   lastUpdated: new Date().toISOString(),
 };
 

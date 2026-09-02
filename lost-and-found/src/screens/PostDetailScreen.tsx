@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PostItem } from '../types';
-import { getMediaUrl } from '../services/api';
+import { getMediaUrl, api } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -94,6 +94,56 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         },
       ]
     );
+  };
+
+  const handleReportInappropriate = () => {
+    Alert.alert(
+      '🚨 รายงานโพสต์ไม่เหมาะสม',
+      'กรุณาเลือกสาเหตุที่ต้องการรายงานโพสต์นี้ถึงผู้ดูแลระบบ (Admin):',
+      [
+        {
+          text: '📢 สแปม / โฆษณา',
+          onPress: () => submitReport('spam', '📢 สแปม / โฆษณาผิดกฎหมาย'),
+        },
+        {
+          text: '⚠️ หลอกลวง / มิจฉาชีพ',
+          onPress: () => submitReport('scam', '⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน'),
+        },
+        {
+          text: '🚫 เนื้อหาไม่เหมาะสม',
+          onPress: () => submitReport('offensive', '🚫 เนื้อหาไม่เหมาะสม / หยาบคาย'),
+        },
+        {
+          text: '❌ ข้อมูลเท็จ / ก่อกวน',
+          onPress: () => submitReport('false_info', '❌ ข้อมูลเท็จ / ก่อกวน'),
+        },
+        { text: 'ยกเลิก', style: 'cancel' },
+      ]
+    );
+  };
+
+  const submitReport = async (reason: string, reasonText: string) => {
+    try {
+      const res = await api.reportPost({
+        postId: post.id,
+        postTitle: post.title,
+        postImageUrl: post.imageUrl,
+        postCategory: post.category,
+        postAuthorName: post.userName,
+        reporterId: user?.id || 'usr-mobile-user',
+        reporterName: user?.fullName || 'ผู้ใช้ มทส.',
+        reason,
+        reasonText,
+        details: 'รายงานผ่านแอปพลิเคชันมือถือ',
+      });
+      if (res.success) {
+        Alert.alert('รายงานสำเร็จ ✅', 'ระบบได้รับรายงานของคุณแล้ว ผู้ดูแลระบบจะตรวจสอบและดำเนินการทันที');
+      } else {
+        Alert.alert('แจ้งเตือน', res.message || 'เกิดข้อผิดพลาด');
+      }
+    } catch (e) {
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถส่งรายงานได้');
+    }
   };
 
   return (
@@ -245,7 +295,7 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         ) : (
           <>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#0055D4' }]}
+              style={[styles.actionBtn, { backgroundColor: '#0055D4', flex: 1 }]}
               onPress={() => onOpenChat(post)}
               activeOpacity={0.88}
             >
@@ -253,11 +303,19 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+              style={[styles.actionBtn, { backgroundColor: '#10B981', flex: 1 }]}
               onPress={handleReportFound}
               activeOpacity={0.88}
             >
               <Text style={styles.actionBtnText}>พบของ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#EF4444', flex: 0.45, paddingHorizontal: 0 }]}
+              onPress={handleReportInappropriate}
+              activeOpacity={0.88}
+            >
+              <Ionicons name="flag-outline" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </>
         )}

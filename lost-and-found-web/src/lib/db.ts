@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, MonthlyStats, QuarterlyStats, TopCategoryStat } from '../types';
+import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, MonthlyStats, QuarterlyStats, TopCategoryStat, PostReport } from '../types';
 
 interface DatabaseSchema {
   users: User[];
@@ -8,6 +8,7 @@ interface DatabaseSchema {
   favorites: FavoriteItem[];
   notifications: MatchNotification[];
   messages?: ChatMessage[];
+  reports?: PostReport[];
   lastUpdated: string;
 }
 
@@ -557,6 +558,90 @@ export class PersistentDatabase {
     db.messages.push(newMsg);
     this.writeDb(db);
     return newMsg;
+  }
+
+  // ==========================================
+  // POST REPORT MANAGEMENT (RQ-REPORT)
+  // ==========================================
+  getReports(status?: string): PostReport[] {
+    const db = this.readDb();
+    let reports = Array.isArray(db.reports) ? [...db.reports] : [];
+    if (status && status !== 'all') {
+      reports = reports.filter((r) => r && r.status === status);
+    }
+    return reports.sort((a, b) => {
+      const timeA = a && a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b && b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
+
+  createReport(reportData: Omit<PostReport, 'id' | 'createdAt' | 'status'>): PostReport {
+    const db = this.readDb();
+    if (!db.reports) db.reports = [];
+
+    const newReport: PostReport = {
+      ...reportData,
+      id: `rep-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    db.reports.unshift(newReport);
+
+    // Update post report count and flag
+    const post = db.posts.find((p) => p.id === reportData.postId);
+    if (post) {
+      post.isReported = true;
+      post.reportCount = (post.reportCount || 0) + 1;
+      post.reportReason = reportData.reasonText;
+    }
+
+    this.writeDb(db);
+    return newReport;
+  }
+
+  handleReportAction(reportId: string, action: 'hide' | 'delete' | 'dismiss'): { success: boolean; message: string; report?: PostReport } {
+    const db = this.readDb();
+    if (!db.reports) db.reports = [];
+
+    const report = db.reports.find((r) => r.id === reportId);
+    if (!report) {
+      return { success: false, message: 'ไม่พบรายงานนี้ในระบบ' };
+    }
+
+    if (action === 'hide') {
+      // ซ่อนโพสต์
+      const post = db.posts.find((p) => p.id === report.postId);
+      if (post) {
+        post.isApproved = false;
+        post.moderationStatus = 'hidden';
+        post.moderationNotes = `⏸️ โพสต์ถูกซ่อนโดยแอดมิน เนื่องจากถูกรายงาน: ${report.reasonText}`;
+      }
+      report.status = 'resolved';
+      report.actionTaken = 'hidden';
+      this.writeDb(db);
+      return { success: true, message: 'ซ่อนโพสต์ที่มีปัญหาเรียบร้อยแล้ว (ไม่แสดงบนฟีดสาธารณะ)', report };
+    } else if (action === 'delete') {
+      // ลบโพสต์ถาวร
+      db.posts = db.posts.filter((p) => p.id !== report.postId);
+      report.status = 'resolved';
+      report.actionTaken = 'deleted';
+      this.writeDb(db);
+      return { success: true, message: 'ลบโพสต์ที่มีปัญหาออกจากระบบอย่างถาวรเรียบร้อยแล้ว', report };
+    } else if (action === 'dismiss') {
+      // ยกเลิกรายงาน / ปล่อยผ่าน
+      report.status = 'dismissed';
+      report.actionTaken = 'dismissed';
+      const post = db.posts.find((p) => p.id === report.postId);
+      if (post) {
+        post.isReported = false;
+      }
+      this.writeDb(db);
+      return { success: true, message: 'ยกเลิกการรายงาน โพสต์ยังคงแสดงผลตามปกติ', report };
+    }
+
+    return { success: false, message: 'การดำเนินการไม่ถูกต้อง' };
   }
 
   // ==========================================

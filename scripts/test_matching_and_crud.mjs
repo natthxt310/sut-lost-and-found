@@ -175,6 +175,50 @@ assert(typeof qStats.foundNotReturned === 'number', `Quarterly [Q3]: Found pendi
 assert(typeof qStats.unfoundLost === 'number', `Quarterly [Q3]: Unfound lost items in quarter = ${qStats.unfoundLost} items`);
 assert(Array.isArray(qStats.top5LostCategories), `Quarterly [Q3]: Top 5 most frequent lost categories ranked (${qStats.top5LostCategories.length} categories)`);
 
+// 9. Test Post Report Management (การจัดการรายงานโพสต์ไม่เหมาะสม)
+const testReportPost = persistentDb.createPost({
+  type: 'lost',
+  title: 'โพสต์ทดสอบสำหรับรายงานสแปม',
+  category: 'ของใช้ส่วนตัว & อื่นๆ',
+  color: 'ขาว',
+  location: 'อาคารเรียนรวม 1 (B1)',
+  dateTime: '03/09/2569 12:00',
+  description: 'เนื้อหาโฆษณาเว็บพนัน',
+  imageUrl: 'https://example.com/test.jpg',
+  userId: 'usr-spammer-test',
+  userName: 'สแปมเมอร์',
+  userContact: '080-000-0000',
+  userEmail: 'spam@test.com',
+});
+
+const report = persistentDb.createReport({
+  postId: testReportPost.id,
+  postTitle: testReportPost.title,
+  reporterId: 'usr-001',
+  reporterName: 'ศิวะพร ภูดินทราย',
+  reason: 'spam',
+  reasonText: '📢 สแปม / การพนันและโฆษณาผิดกฎหมาย',
+  details: 'โพสต์โฆษณาไม่เหมาะสมใน มทส.',
+});
+assert(report.id.startsWith('rep-') && report.status === 'pending', 'Reports: Successfully created and saved post report to database.json');
+
+const reportsPending = persistentDb.getReports('pending');
+assert(reportsPending.some((r) => r.id === report.id), 'Reports: Admin successfully inspected pending reports list');
+
+const hideResult = persistentDb.handleReportAction(report.id, 'hide');
+assert(hideResult.success && hideResult.report?.actionTaken === 'hidden', 'Reports: Admin successfully performed action HIDE on reported post');
+
+// Verify post is hidden
+const allPostsAfterHide = persistentDb.getPosts({ all: true });
+const hiddenPost = allPostsAfterHide.find((p) => p.id === testReportPost.id);
+assert(hiddenPost?.isApproved === false && hiddenPost?.moderationStatus === 'hidden', 'Reports: Verified problematic post is hidden from public feed');
+
+const deleteResult = persistentDb.handleReportAction(report.id, 'delete');
+assert(deleteResult.success && deleteResult.report?.actionTaken === 'deleted', 'Reports: Admin successfully performed action DELETE on reported post');
+
+const allPostsAfterDelete = persistentDb.getPosts({ all: true });
+assert(!allPostsAfterDelete.some((p) => p.id === testReportPost.id), 'Reports: Verified problematic post is permanently deleted from database.json');
+
 console.log('\n=====================================================');
 console.log(`🎉 TEST SUMMARY: ${passCount}/${totalCount} TESTS PASSED`);
 console.log('=====================================================\n');

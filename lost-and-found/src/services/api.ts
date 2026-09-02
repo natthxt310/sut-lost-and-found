@@ -872,6 +872,33 @@ class PersistentApiService {
     }
     return fallbackUri;
   }
+
+  // ==========================================
+  // POST REPORTING (รายงานโพสต์ไม่เหมาะสม)
+  // ==========================================
+  async reportPost(reportData: {
+    postId: string;
+    postTitle: string;
+    postImageUrl?: string;
+    postCategory?: string;
+    postAuthorName?: string;
+    reporterId: string;
+    reporterName: string;
+    reason: string;
+    reasonText: string;
+    details?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reportData),
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: 'ส่งรายงานไม่สำเร็จ' };
+    }
+  }
 }
 
 export const api = new PersistentApiService();
