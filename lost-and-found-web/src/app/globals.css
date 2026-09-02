@@ -366,24 +366,20 @@ table {
 }
 
 th {
-  background: #F9FAFB;
-  padding: 0.85rem 1.5rem;
+  background: transparent;
+  padding: 0.85rem 1.25rem;
   font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
+  font-weight: 700;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border-color);
 }
 
 td {
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   font-size: 0.875rem;
-  border-bottom: 1px solid #F3F4F6;
 }
 
 tr:hover {
-  background: #F9FAFB;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Action Buttons in Table */

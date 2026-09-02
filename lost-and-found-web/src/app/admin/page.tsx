@@ -10,7 +10,7 @@ export default function AdminPage() {
   const [quarterlyStats, setQuarterlyStats] = useState<QuarterlyStats | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'approval' | 'quarterly' | 'stats' | 'users'>('approval');
+  const [activeTab, setActiveTab] = useState<'approval' | 'quarterly' | 'stats' | 'users'>('quarterly');
   const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
 
@@ -24,21 +24,10 @@ export default function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleThemeChange = (e: any) => {
-      if (e.detail && typeof e.detail.isDark === 'boolean') {
-        setIsDark(e.detail.isDark);
-      }
-    };
-    window.addEventListener('sut_theme_change', handleThemeChange);
-    return () => window.removeEventListener('sut_theme_change', handleThemeChange);
-  }, []);
-
   const toggleTheme = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
     localStorage.setItem('sut_theme', nextDark ? 'dark' : 'light');
-    window.dispatchEvent(new CustomEvent('sut_theme_change', { detail: { isDark: nextDark } }));
   };
 
   const loadQuarterly = async (q: number) => {
@@ -151,12 +140,13 @@ export default function AdminPage() {
     return true;
   });
 
-  // Dynamic Theme Colors (สลับสีตาม isDark)
+  // Dynamic Theme Colors
   const theme = {
     bg: isDark ? '#0B132B' : '#F8F9FA',
+    navBg: isDark ? 'rgba(11, 19, 43, 0.95)' : 'rgba(255, 255, 255, 0.95)',
     card: isDark ? '#1E293B' : '#FFFFFF',
-    cardHeader: isDark ? 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)' : 'linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%)',
     cardAlt: isDark ? '#0F172A' : '#F1F5F9',
+    tableHeader: isDark ? '#0F172A' : '#F1F5F9',
     border: isDark ? '#334155' : '#E2E8F0',
     borderAlt: isDark ? '#475569' : '#CBD5E1',
     text: isDark ? '#FFFFFF' : '#0F172A',
@@ -170,232 +160,276 @@ export default function AdminPage() {
         backgroundColor: theme.bg,
         minHeight: '100vh',
         color: theme.text,
-        padding: '2rem 1.5rem',
         fontFamily: 'inherit',
         transition: 'background-color 0.25s ease, color 0.25s ease',
       }}
     >
-      <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
-        
-        {/* Toast Alert */}
-        {actionSuccessMsg ? (
-          <div
-            style={{
-              position: 'fixed',
-              top: '24px',
-              right: '24px',
-              backgroundColor: '#10B981',
-              color: '#FFFFFF',
-              padding: '12px 20px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              animation: 'slideIn 0.3s ease-out',
-            }}
-          >
-            {actionSuccessMsg}
-          </div>
-        ) : null}
-
-        {/* Top Header Card */}
+      {/* Toast Alert */}
+      {actionSuccessMsg ? (
         <div
           style={{
-            background: theme.cardHeader,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '20px',
-            padding: '1.75rem 2rem',
-            marginBottom: '1.75rem',
+            position: 'fixed',
+            top: '80px',
+            right: '24px',
+            backgroundColor: '#10B981',
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'slideIn 0.3s ease-out',
+          }}
+        >
+          {actionSuccessMsg}
+        </div>
+      ) : null}
+
+      {/* ============================================================== */}
+      {/* UNIFIED STICKY TOP NAVBAR (แถบนำทางหลัก รวมแบรนด์ แท็บ และปุ่มสลับโหมด) */}
+      {/* ============================================================== */}
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 200,
+          backgroundColor: theme.navBg,
+          backdropFilter: 'blur(16px)',
+          borderBottom: `1px solid ${theme.border}`,
+          padding: '0.75rem 1.5rem',
+          transition: 'background-color 0.25s ease, border-color 0.25s ease',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '1.25rem',
-            boxShadow: isDark ? '0 10px 25px -5px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.06)',
-            transition: 'background 0.25s ease, border-color 0.25s ease',
+            gap: '1rem',
           }}
         >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #FF7A00, #E65100)',
-                  color: '#FFFFFF',
-                  fontWeight: 900,
-                  fontSize: '0.75rem',
-                  padding: '4px 10px',
-                  borderRadius: '8px',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                🛡️ SUT ADMIN CONSOLE
-              </span>
-              <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>
-                ศูนย์ตรวจสอบ & อนุมัติเนื้อหา มทส.
+          {/* Left: Brand Logo & Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #FF7A00, #E65100)',
+                color: '#FFFFFF',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '10px',
+                letterSpacing: '0.5px',
+                boxShadow: '0 4px 12px rgba(255, 122, 0, 0.35)',
+              }}
+            >
+              SUT
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1 style={{ fontSize: '1.2rem', fontWeight: 900, color: theme.text, margin: 0, letterSpacing: '-0.3px' }}>
+                  Lost & Found
+                </h1>
+                <span
+                  style={{
+                    backgroundColor: 'rgba(255, 122, 0, 0.15)',
+                    color: '#FF7A00',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                  }}
+                >
+                  ADMIN
+                </span>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: theme.textMuted }}>
+                ศูนย์ควบคุม & ตรวจสอบของหาย มทส.
               </span>
             </div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: theme.text, margin: 0, letterSpacing: '-0.5px' }}>
-              ระบบจัดการและอนุมัติโพสต์ (Admin Portal)
-            </h1>
-            <p style={{ color: theme.textMuted, fontSize: '0.85rem', margin: '6px 0 0 0' }}>
-              ตรวจสอบความถูกต้องและอนุมัติโพสต์ก่อนแสดงผลสู่สาธารณะ พร้อมรายงานสถิติประจำไตรมาส
-            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Theme Toggle Button */}
+          {/* Center: Navigation Tabs (Pill Buttons) */}
+          <nav style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* TAB 1: ตรวจสอบและอนุมัติโพสต์ */}
             <button
-              onClick={toggleTheme}
+              onClick={() => setActiveTab('approval')}
               style={{
-                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-                color: isDark ? '#F59E0B' : '#D97706',
-                border: `1px solid ${theme.border}`,
-                padding: '10px 16px',
-                borderRadius: '12px',
+                padding: '8px 14px',
+                borderRadius: '10px',
                 fontWeight: 800,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
+                border: activeTab === 'approval' ? '1.5px solid #FF7A00' : `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'approval' ? '#FF7A00' : theme.card,
+                color: activeTab === 'approval' ? '#FFFFFF' : theme.text,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 transition: 'all 0.2s',
-                boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.05)',
               }}
-              title="สลับโหมดมืด / โหมดสว่าง"
             >
-              {isDark ? '☀️ โหมดสว่าง (Light)' : '🌙 โหมดมืด (Dark)'}
+              <span>🛡️ อนุมัติโพสต์</span>
+              {pendingPosts.length > 0 && (
+                <span
+                  style={{
+                    backgroundColor: '#EF4444',
+                    color: '#FFFFFF',
+                    borderRadius: '8px',
+                    padding: '1px 6px',
+                    fontSize: '0.7rem',
+                    fontWeight: 900,
+                  }}
+                >
+                  {pendingPosts.length}
+                </span>
+              )}
             </button>
+
+            {/* TAB 2: รายงานประจำไตรมาส */}
+            <button
+              onClick={() => setActiveTab('quarterly')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                border: activeTab === 'quarterly' ? '1.5px solid #FF7A00' : `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'quarterly' ? '#FF7A00' : theme.card,
+                color: activeTab === 'quarterly' ? '#FFFFFF' : theme.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>📅 ประจำไตรมาส</span>
+            </button>
+
+            {/* TAB 3: สถิติรายเดือน / ภาพรวม */}
+            <button
+              onClick={() => setActiveTab('stats')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                border: activeTab === 'stats' ? '1.5px solid #FF7A00' : `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'stats' ? '#FF7A00' : theme.card,
+                color: activeTab === 'stats' ? '#FFFFFF' : theme.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>📊 สถิติภาพรวม</span>
+            </button>
+
+            {/* TAB 4: จัดการสมาชิก */}
+            <button
+              onClick={() => setActiveTab('users')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                border: activeTab === 'users' ? '1.5px solid #FF7A00' : `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'users' ? '#FF7A00' : theme.card,
+                color: activeTab === 'users' ? '#FFFFFF' : theme.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>👥 สมาชิก ({users.length})</span>
+            </button>
+          </nav>
+
+          {/* Right: Quick Action Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Status Indicator */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: theme.card,
+                border: `1px solid ${theme.border}`,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: theme.textMuted,
+              }}
+            >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+              <span>Online</span>
+            </div>
 
             {/* Refresh Button */}
             <button
               onClick={loadData}
               style={{
-                backgroundColor: isDark ? '#334155' : '#FFFFFF',
+                backgroundColor: theme.card,
                 color: theme.text,
-                border: `1px solid ${theme.borderAlt}`,
-                padding: '10px 16px',
-                borderRadius: '12px',
+                border: `1px solid ${theme.border}`,
+                padding: '7px 12px',
+                borderRadius: '8px',
                 fontWeight: 700,
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '4px',
                 transition: 'all 0.2s',
               }}
+              title="รีเฟรชข้อมูลล่าสุด"
             >
-              🔄 รีเฟรชข้อมูล
+              🔄
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                backgroundColor: theme.card,
+                color: isDark ? '#F59E0B' : '#D97706',
+                border: `1px solid ${theme.border}`,
+                padding: '7px 12px',
+                borderRadius: '8px',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+              title="สลับโหมดมืด / โหมดสว่าง"
+            >
+              {isDark ? '☀️ สว่าง' : '🌙 มืด'}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
-          {/* TAB 1: ตรวจสอบและอนุมัติโพสต์ */}
-          <button
-            onClick={() => setActiveTab('approval')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              border: activeTab === 'approval' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
-              backgroundColor: activeTab === 'approval' ? '#FF7A00' : theme.card,
-              color: activeTab === 'approval' ? '#FFFFFF' : theme.text,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>🛡️ ตรวจสอบและอนุมัติโพสต์</span>
-            {pendingPosts.length > 0 && (
-              <span
-                style={{
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  borderRadius: '10px',
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 900,
-                }}
-              >
-                {pendingPosts.length} รอตรวจ
-              </span>
-            )}
-          </button>
-
-          {/* TAB 2: รายงานประจำไตรมาส */}
-          <button
-            onClick={() => setActiveTab('quarterly')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              border: activeTab === 'quarterly' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
-              backgroundColor: activeTab === 'quarterly' ? '#FF7A00' : theme.card,
-              color: activeTab === 'quarterly' ? '#FFFFFF' : theme.text,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>📅 รายงานประจำไตรมาส (Quarterly)</span>
-          </button>
-
-          {/* TAB 3: สถิติรายเดือน / ภาพรวม */}
-          <button
-            onClick={() => setActiveTab('stats')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              border: activeTab === 'stats' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
-              backgroundColor: activeTab === 'stats' ? '#FF7A00' : theme.card,
-              color: activeTab === 'stats' ? '#FFFFFF' : theme.text,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>📊 สถิติภาพรวม/รายเดือน</span>
-          </button>
-
-          {/* TAB 4: จัดการสมาชิก */}
-          <button
-            onClick={() => setActiveTab('users')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              border: activeTab === 'users' ? '2px solid #FF7A00' : `1px solid ${theme.border}`,
-              backgroundColor: activeTab === 'users' ? '#FF7A00' : theme.card,
-              color: activeTab === 'users' ? '#FFFFFF' : theme.text,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>👥 จัดการสมาชิกและนักศึกษา ({users.length})</span>
-          </button>
-        </div>
-
+      {/* ============================================================== */}
+      {/* MAIN CONTENT AREA */}
+      {/* ============================================================== */}
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.75rem 1.5rem' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: theme.textMuted }}>
+          <div style={{ textAlign: 'center', padding: '5rem', color: theme.textMuted }}>
             ⏳ กำลังโหลดข้อมูล...
           </div>
         ) : (
@@ -811,52 +845,53 @@ export default function AdminPage() {
                       ยังไม่มีข้อมูลของหายในไตรมาสนี้
                     </div>
                   ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
-                          <th style={{ padding: '10px 14px', width: '90px', textAlign: 'center' }}>อันดับ</th>
-                          <th style={{ padding: '10px 14px' }}>หมวดหมู่สิ่งของ</th>
-                          <th style={{ padding: '10px 14px', width: '160px', textAlign: 'center' }}>จำนวนที่หาย (ชิ้น)</th>
-                          <th style={{ padding: '10px 14px', width: '120px', textAlign: 'center' }}>สัดส่วน (%)</th>
-                          <th style={{ padding: '10px 14px', width: '240px' }}>แถบเปรียบเทียบ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {quarterlyStats.top5LostCategories.map((cat) => {
-                          const rankBadges = ['🥇 อันดับ 1', '🥈 อันดับ 2', '🥉 อันดับ 3', 'อันดับ 4', 'อันดับ 5'];
-                          return (
-                            <tr key={cat.rank} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                              <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                                <span
-                                  style={{
-                                    display: 'inline-block',
-                                    padding: '4px 8px',
-                                    borderRadius: '6px',
-                                    fontWeight: 800,
-                                    fontSize: '0.8rem',
-                                    backgroundColor: cat.rank <= 3 ? 'rgba(245, 158, 11, 0.15)' : theme.cardAlt,
-                                    color: cat.rank === 1 ? '#F59E0B' : cat.rank === 2 ? '#94A3B8' : '#D97706',
-                                  }}
-                                >
-                                  {rankBadges[cat.rank - 1]}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 14px', fontWeight: 700, color: theme.text }}>
-                                {cat.category}
-                              </td>
-                              <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EF4444' }}>
-                                  {cat.count}
-                                </span>{' '}
-                                <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>รายการ</span>
-                              </td>
-                              <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 800, color: '#FF7A00' }}>
-                                {cat.percentage}%
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <div style={{ backgroundColor: theme.cardAlt, borderRadius: '6px', height: '10px', width: '100%', overflow: 'hidden' }}>
-                                  <div
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
+                            <th style={{ padding: '12px 14px', width: '100px', textAlign: 'center', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px' }}>อันดับ</th>
+                            <th style={{ padding: '12px 14px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>หมวดหมู่สิ่งของ</th>
+                            <th style={{ padding: '12px 14px', width: '160px', textAlign: 'center', color: theme.textMuted, backgroundColor: theme.tableHeader }}>จำนวนที่หาย (ชิ้น)</th>
+                            <th style={{ padding: '12px 14px', width: '120px', textAlign: 'center', color: theme.textMuted, backgroundColor: theme.tableHeader }}>สัดส่วน (%)</th>
+                            <th style={{ padding: '12px 14px', width: '240px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>แถบเปรียบเทียบ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {quarterlyStats.top5LostCategories.map((cat) => {
+                            const rankBadges = ['🥇 อันดับ 1', '🥈 อันดับ 2', '🥉 อันดับ 3', 'อันดับ 4', 'อันดับ 5'];
+                            return (
+                              <tr key={cat.rank} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  <span
                                     style={{
+                                      display: 'inline-block',
+                                      padding: '4px 10px',
+                                      borderRadius: '6px',
+                                      fontWeight: 800,
+                                      fontSize: '0.8rem',
+                                      backgroundColor: cat.rank <= 3 ? 'rgba(245, 158, 11, 0.15)' : theme.cardAlt,
+                                      color: cat.rank === 1 ? '#F59E0B' : cat.rank === 2 ? '#94A3B8' : '#D97706',
+                                    }}
+                                  >
+                                    {rankBadges[cat.rank - 1]}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '14px', fontWeight: 700, color: theme.text }}>
+                                  {cat.category}
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EF4444' }}>
+                                    {cat.count}
+                                  </span>{' '}
+                                  <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>รายการ</span>
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontWeight: 800, color: '#FF7A00' }}>
+                                  {cat.percentage}%
+                                </td>
+                                <td style={{ padding: '14px' }}>
+                                  <div style={{ backgroundColor: theme.cardAlt, borderRadius: '6px', height: '10px', width: '100%', overflow: 'hidden' }}>
+                                    <div
+                                      style={{
                                       backgroundColor: cat.rank === 1 ? '#EF4444' : cat.rank === 2 ? '#FF7A00' : '#F59E0B',
                                       height: '100%',
                                       width: `${Math.max(cat.percentage, 8)}%`,
@@ -869,8 +904,9 @@ export default function AdminPage() {
                             </tr>
                           );
                         })}
-                      </tbody>
-                    </table>
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
@@ -903,30 +939,32 @@ export default function AdminPage() {
                 {/* Monthly Trend Table */}
                 <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                   <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: theme.text }}>สถิติเปรียบเทียบรายเดือน</h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
-                        <th style={{ padding: '8px 12px' }}>ประจำเดือน</th>
-                        <th style={{ padding: '8px 12px' }}>ของหาย (ชิ้น)</th>
-                        <th style={{ padding: '8px 12px' }}>พบของ (ชิ้น)</th>
-                        <th style={{ padding: '8px 12px' }}>ส่งคืนสำเร็จ (ชิ้น)</th>
-                        <th style={{ padding: '8px 12px' }}>อัตราสำเร็จ (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.monthlyTrend.map((t, idx) => (
-                        <tr key={idx} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 700, color: theme.text }}>{t.month}</td>
-                          <td style={{ padding: '10px 12px', color: '#EF4444' }}>{t.lost}</td>
-                          <td style={{ padding: '10px 12px', color: '#F59E0B' }}>{t.found}</td>
-                          <td style={{ padding: '10px 12px', color: '#10B981' }}>{t.returned}</td>
-                          <td style={{ padding: '10px 12px', fontWeight: 800, color: '#FF7A00' }}>
-                            {t.lost + t.found > 0 ? Math.round((t.returned / (t.lost + t.found)) * 100) : 0}%
-                          </td>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px' }}>ประจำเดือน</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ของหาย (ชิ้น)</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>พบของ (ชิ้น)</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ส่งคืนสำเร็จ (ชิ้น)</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>อัตราสำเร็จ (%)</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {stats.monthlyTrend.map((t, idx) => (
+                          <tr key={idx} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                            <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{t.month}</td>
+                            <td style={{ padding: '12px', color: '#EF4444' }}>{t.lost}</td>
+                            <td style={{ padding: '12px', color: '#F59E0B' }}>{t.found}</td>
+                            <td style={{ padding: '12px', color: '#10B981' }}>{t.returned}</td>
+                            <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>
+                              {t.lost + t.found > 0 ? Math.round((t.returned / (t.lost + t.found)) * 100) : 0}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -939,66 +977,68 @@ export default function AdminPage() {
                 <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: theme.text }}>
                   👥 รายชื่อสมาชิกและนักศึกษา ({users.length})
                 </h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: '0.85rem' }}>
-                      <th style={{ padding: '10px 12px' }}>รหัสนักศึกษา</th>
-                      <th style={{ padding: '10px 12px' }}>ชื่อ-นามสกุล</th>
-                      <th style={{ padding: '10px 12px' }}>อีเมล</th>
-                      <th style={{ padding: '10px 12px' }}>เบอร์โทร</th>
-                      <th style={{ padding: '10px 12px' }}>บทบาท (Role)</th>
-                      <th style={{ padding: '10px 12px' }}>การจัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                        <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>{u.studentId}</td>
-                        <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{u.fullName}</td>
-                        <td style={{ padding: '12px', color: theme.textMuted }}>{u.email}</td>
-                        <td style={{ padding: '12px', color: theme.textMuted }}>{u.phone || '-'}</td>
-                        <td style={{ padding: '12px' }}>
-                          <span
-                            style={{
-                              backgroundColor: u.role === 'admin' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(56, 189, 248, 0.2)',
-                              color: u.role === 'admin' ? '#F59E0B' : '#38BDF8',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {u.role}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px' }}>
-                          {u.role !== 'admin' && (
-                            <button
-                              onClick={() => handleDeleteUser(u.id)}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px' }}>รหัสนักศึกษา</th>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ชื่อ-นามสกุล</th>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>อีเมล</th>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>เบอร์โทร</th>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>บทบาท (Role)</th>
+                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>การจัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((u) => (
+                        <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                          <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>{u.studentId}</td>
+                          <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{u.fullName}</td>
+                          <td style={{ padding: '12px', color: theme.textMuted }}>{u.email}</td>
+                          <td style={{ padding: '12px', color: theme.textMuted }}>{u.phone || '-'}</td>
+                          <td style={{ padding: '12px' }}>
+                            <span
                               style={{
-                                backgroundColor: theme.cardAlt,
-                                color: '#EF4444',
-                                border: '1px solid #EF4444',
-                                padding: '4px 10px',
-                                borderRadius: '8px',
+                                backgroundColor: u.role === 'admin' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                                color: u.role === 'admin' ? '#F59E0B' : '#38BDF8',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
                                 fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
+                                fontWeight: 800,
                               }}
                             >
-                              ระงับบัญชี
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            {u.role !== 'admin' && (
+                              <button
+                                onClick={() => handleDeleteUser(u.id)}
+                                style={{
+                                  backgroundColor: theme.cardAlt,
+                                  color: '#EF4444',
+                                  border: '1px solid #EF4444',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                ระงับบัญชี
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import './globals.css';
 import React from 'react';
-import Navbar from '../components/Navbar';
 
 export const metadata = {
   title: 'SUT Lost and Found - ระบบตามหาของหาย มหาวิทยาลัยเทคโนโลยีสุรนารี',
@@ -15,7 +14,6 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body>
-        <Navbar />
         {children}
       </body>
     </html>
