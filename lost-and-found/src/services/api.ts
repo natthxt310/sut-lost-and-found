@@ -298,7 +298,12 @@ class PersistentApiService {
 
     // ดึงข้อมูลล่าสุดจาก Next.js Backend API เพื่อให้ทุกเครื่องแสดงข้อมูลตรงกัน
     try {
-      const res = await fetch(`${API_BASE_URL}/posts`, { method: 'GET' });
+      const qParams = new URLSearchParams();
+      if (this.user?.id) qParams.append('userId', this.user.id);
+      if (this.user?.role === 'admin') qParams.append('all', 'true');
+      const fetchUrl = `${API_BASE_URL}/posts?${qParams.toString()}`;
+      
+      const res = await fetch(fetchUrl, { method: 'GET' });
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -447,6 +452,38 @@ class PersistentApiService {
     }
 
     return true;
+  }
+
+  async approvePost(id: string, isApproved: boolean = true): Promise<PostItem | undefined> {
+    await this.ensureInitialized();
+    try {
+      const res = await fetch(`${API_BASE_URL}/posts/${id}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isApproved }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          const idx = this.posts.findIndex((p) => p.id === id);
+          if (idx !== -1) {
+            this.posts[idx] = data.data;
+            await this.savePostsToStorage();
+          }
+          return data.data;
+        }
+      }
+    } catch {
+      // offline fallback
+      const post = this.posts.find((p) => p.id === id);
+      if (post) {
+        post.isApproved = isApproved;
+        post.moderationStatus = isApproved ? 'approved' : 'rejected';
+        await this.savePostsToStorage();
+        return post;
+      }
+    }
+    return undefined;
   }
 
   // ==========================================

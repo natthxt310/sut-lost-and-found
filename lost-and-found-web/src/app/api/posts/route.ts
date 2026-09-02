@@ -11,12 +11,16 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || undefined;
     const location = searchParams.get('location') || undefined;
     const search = searchParams.get('search') || undefined;
+    const all = searchParams.get('all') === 'true';
+    const userId = searchParams.get('userId') || undefined;
 
     const posts = backendStore.getPosts({
       type: type || undefined,
       category,
       location,
       search,
+      all,
+      userId,
     });
 
     return NextResponse.json({ success: true, count: posts.length, data: posts });
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/posts - สร้างโพสต์ใหม่พร้อม AI Content Safety Moderation & Auto-Matching (Source 2 Create)
+// POST /api/posts - สร้างโพสต์ใหม่พร้อม AI Content Safety Moderation & Admin Approval Queue
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -51,7 +55,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAutoApproved = modResult.status === 'approved';
+    // กำหนดสิทธิ์การอนุมัติ: โพสต์จากผู้ใช้ทั่วไปจะต้องให้ Admin ตรวจสอบและอนุมัติก่อนจึงจะขึ้นแสดง
+    const isAdmin = body.role === 'admin' || body.userId === 'usr-admin' || body.isAdmin === true;
+    const isApproved = isAdmin ? true : false;
 
     const createdPost = backendStore.createPost({
       type: body.type || 'lost',
@@ -68,14 +74,16 @@ export async function POST(request: NextRequest) {
       userContact: body.userContact || '089-xxx-xxxx',
       userEmail: body.userEmail || 'student@g.sut.ac.th',
       securityQuestion: body.securityQuestion,
-      isApproved: isAutoApproved,
-      moderationStatus: modResult.status,
+      isApproved,
+      moderationStatus: isApproved ? 'approved' : 'pending',
       moderationScore: modResult.score,
-      moderationNotes: modResult.reason,
+      moderationNotes: isApproved
+        ? '✅ ได้รับการอนุมัติแล้ว (Admin Approved)'
+        : '⏳ รอผู้ดูแลระบบ (Admin) ตรวจสอบและอนุมัติก่อนเผยแพร่สู่สาธารณะ',
     });
 
     // 2. Auto-Matching check & Save Notifications to database
-    const allPosts = backendStore.getPosts();
+    const allPosts = backendStore.getPosts({ all: true });
     const matches = findMatchesForPost(createdPost, allPosts);
     if (matches.length > 0) {
       backendStore.saveNotifications(matches);
@@ -84,9 +92,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: isAutoApproved
-          ? 'โพสต์สำเร็จและผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)'
-          : 'โพสต์ถูกส่งเข้าคิวรอผู้ดูแลระบบตรวจสอบความเหมาะสมเพิ่มเติม',
+        message: isApproved
+          ? 'โพสต์สำเร็จและได้รับการอนุมัติเรียบร้อย'
+          : 'ส่งโพสต์เรียบร้อยแล้ว อยู่ระหว่างรอผู้ดูแลระบบ (Admin) ตรวจสอบและอนุมัติก่อนเผยแพร่',
         data: createdPost,
         moderation: modResult,
         matchesCount: matches.length,

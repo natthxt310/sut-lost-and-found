@@ -29,7 +29,14 @@ class BackendDataStore {
     return persistentDb.deleteUser(id);
   }
 
-  getPosts(filter?: { type?: 'lost' | 'found'; category?: string; location?: string; search?: string }): PostItem[] {
+  getPosts(filter?: {
+    type?: 'lost' | 'found';
+    category?: string;
+    location?: string;
+    search?: string;
+    all?: boolean;
+    userId?: string;
+  }): PostItem[] {
     return persistentDb.getPosts(filter);
   }
 
@@ -39,6 +46,10 @@ class BackendDataStore {
 
   createPost(post: Omit<PostItem, 'id' | 'createdAt'>): PostItem {
     return persistentDb.createPost(post);
+  }
+
+  approvePost(id: string, isApproved: boolean = true): PostItem | undefined {
+    return persistentDb.approvePost(id, isApproved);
   }
 
   updatePost(id: string, updates: Partial<PostItem>): PostItem | undefined {

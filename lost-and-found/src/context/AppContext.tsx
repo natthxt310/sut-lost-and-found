@@ -30,6 +30,7 @@ interface AppContextType {
   toggleLikeMessage: (postId: string, messageId: string) => Promise<ChatMessage[]>;
   createPost: (data: Omit<PostItem, 'id' | 'createdAt'>) => Promise<{ post: PostItem; matches: MatchNotification[] }>;
   updatePost: (id: string, updates: Partial<PostItem>) => Promise<PostItem>;
+  approvePost: (id: string, isApproved?: boolean) => Promise<PostItem | undefined>;
   deletePost: (id: string) => Promise<boolean>;
   toggleFavorite: (postId: string, note?: string) => Promise<boolean>;
   updateFavoriteNote: (favId: string, note: string) => Promise<void>;
@@ -135,6 +136,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return updated;
   };
 
+  const approvePost = async (id: string, isApproved: boolean = true) => {
+    const updated = await api.approvePost(id, isApproved);
+    await refreshData();
+    if (selectedPost && selectedPost.id === id && updated) {
+      setSelectedPost(updated);
+    }
+    return updated;
+  };
+
   const deletePost = async (id: string) => {
     const success = await api.deletePost(id);
     await refreshData();
@@ -227,6 +237,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleLikeMessage,
         createPost,
         updatePost,
+        approvePost,
         deletePost,
         toggleFavorite,
         updateFavoriteNote,

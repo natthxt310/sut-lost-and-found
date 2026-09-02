@@ -6,10 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
+import { getMediaUrl } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -27,12 +30,40 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
-  const { posts } = useApp();
+  const { posts, approvePost, deletePost } = useApp();
   const { colors, isDark } = useTheme();
 
-  // Mode: 'quarterly' (รายงานประจำไตรมาส) vs 'overview' (ภาพรวมรายสัปดาห์)
-  const [activeMode, setActiveMode] = React.useState<'quarterly' | 'overview'>('quarterly');
+  // Mode: 'approval' (ตรวจสอบอนุมัติ) vs 'quarterly' (รายงานประจำไตรมาส) vs 'overview' (ภาพรวมรายสัปดาห์)
+  const [activeMode, setActiveMode] = React.useState<'approval' | 'quarterly' | 'overview'>('approval');
   const [selectedQuarter, setSelectedQuarter] = React.useState<number>(3);
+
+  // รายการโพสต์ที่รอ Admin ตรวจสอบอนุมัติ
+  const pendingPosts = posts.filter((p) => p.isApproved === false);
+
+  const handleApprove = async (id: string, isApproved: boolean) => {
+    try {
+      await approvePost(id, isApproved);
+      Alert.alert(
+        isApproved ? 'อนุมัติสำเร็จ ✅' : 'ปฏิเสธโพสต์ ❌',
+        isApproved ? 'โพสต์นี้จะแสดงบนหน้าฟีดสาธารณะของทุกคนทันที' : 'ระงับการแสดงผลโพสต์นี้เรียบร้อยแล้ว'
+      );
+    } catch {
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถดำเนินการได้');
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert('ยืนยันการลบ 🗑️', 'คุณต้องการลบโพสต์นี้ออกจากระบบอย่างถาวรหรือไม่?', [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ลบโพสต์',
+        style: 'destructive',
+        onPress: async () => {
+          await deletePost(id);
+        },
+      },
+    ]);
+  };
 
   // คำนวณสถิติประจำไตรมาส (Quarterly Analytics)
   const quarterNames: { [key: number]: string } = {
@@ -151,17 +182,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
       {/* Mode Switcher Tabs */}
       <View style={[styles.modeTabsRow, { backgroundColor: isDark ? colors.surface : '#F1F5F9' }]}>
         <TouchableOpacity
+          style={[styles.modeTabBtn, activeMode === 'approval' && styles.modeTabBtnActive]}
+          onPress={() => setActiveMode('approval')}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="shield-checkmark"
+            size={15}
+            color={activeMode === 'approval' ? '#FFFFFF' : colors.textSecondary}
+          />
+          <Text style={[styles.modeTabText, activeMode === 'approval' ? { color: '#FFFFFF' } : { color: colors.textSecondary }]}>
+            อนุมัติ ({pendingPosts.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.modeTabBtn, activeMode === 'quarterly' && styles.modeTabBtnActive]}
           onPress={() => setActiveMode('quarterly')}
           activeOpacity={0.7}
         >
           <Ionicons
             name="calendar"
-            size={16}
+            size={15}
             color={activeMode === 'quarterly' ? '#FFFFFF' : colors.textSecondary}
           />
           <Text style={[styles.modeTabText, activeMode === 'quarterly' ? { color: '#FFFFFF' } : { color: colors.textSecondary }]}>
-            รายงานประจำไตรมาส
+            ไตรมาส
           </Text>
         </TouchableOpacity>
 
@@ -172,17 +218,196 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
         >
           <Ionicons
             name="bar-chart"
-            size={16}
+            size={15}
             color={activeMode === 'overview' ? '#FFFFFF' : colors.textSecondary}
           />
           <Text style={[styles.modeTabText, activeMode === 'overview' ? { color: '#FFFFFF' } : { color: colors.textSecondary }]}>
-            ภาพรวมสถิติ
+            ภาพรวม
           </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {activeMode === 'quarterly' ? (
+        {activeMode === 'approval' ? (
+          /* ================= POST APPROVAL QUEUE VIEW ================= */
+          <View style={{ marginTop: 12 }}>
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+                🛡️ คิวตรวจสอบและอนุมัติโพสต์
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                โพสต์ที่ยังไม่ได้รับอนุมัติจะไม่แสดงบนหน้าฟีดสาธารณะ
+              </Text>
+            </View>
+
+            {pendingPosts.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.cardBorder,
+                  borderWidth: 1,
+                  borderRadius: 18,
+                  paddingVertical: 40,
+                  paddingHorizontal: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                }}
+              >
+                <Ionicons name="checkmark-done-circle" size={54} color="#10B981" />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+                  ทุกโพสต์ได้รับการอนุมัติแล้ว 🎉
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
+                  ไม่มีโพสต์ค้างรอตรวจสอบในระบบ ทุกคนสามารถเห็นโพสต์ที่ผ่านการอนุมัติแล้วได้ปกติ
+                </Text>
+              </View>
+            ) : (
+              pendingPosts.map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderColor: '#F59E0B',
+                    borderWidth: 1.5,
+                    borderRadius: 18,
+                    padding: 14,
+                    marginBottom: 14,
+                    shadowColor: '#F59E0B',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 6,
+                    elevation: 3,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    {/* Image Thumbnail */}
+                    <View
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        backgroundColor: isDark ? '#1E293B' : '#E2E8F0',
+                      }}
+                    >
+                      {item.imageUrl ? (
+                        <Image
+                          source={{ uri: getMediaUrl(item.imageUrl) }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Ionicons name="cube-outline" size={32} color={colors.textMuted} />
+                      )}
+                    </View>
+
+                    {/* Details */}
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <View
+                          style={{
+                            backgroundColor: item.type === 'lost' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: item.type === 'lost' ? '#EF4444' : '#10B981',
+                              fontSize: 10,
+                              fontWeight: '800',
+                            }}
+                          >
+                            {item.type === 'lost' ? 'ของหาย' : 'พบของ'}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            backgroundColor: '#FEF3C7',
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text style={{ color: '#B45309', fontSize: 10, fontWeight: '800' }}>
+                            ⏳ รออนุมัติ
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>
+                        📍 {item.location}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }} numberOfLines={1}>
+                        👤 {item.userName} ({item.userContact || item.userEmail})
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#10B981',
+                        paddingVertical: 9,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                        gap: 6,
+                      }}
+                      onPress={() => handleApprove(item.id, true)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
+                        อนุมัติโพสต์
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        borderRadius: 10,
+                        backgroundColor: isDark ? '#334155' : '#E2E8F0',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onPress={() => handleApprove(item.id, false)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 12 }}>
+                        ปฏิเสธ
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 9,
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onPress={() => handleDelete(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        ) : activeMode === 'quarterly' ? (
           /* ================= QUARTERLY STATS VIEW ================= */
           <View style={{ marginTop: 12 }}>
             {/* Quarter Selector Chips */}

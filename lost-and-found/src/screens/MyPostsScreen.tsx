@@ -203,17 +203,30 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
                   </Text>
                 </View>
 
-                {/* Status Badge */}
+                {/* Status Badge & Approval Indicator */}
                 <TouchableOpacity
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: isReturned ? '#10B981' : '#EF4444' },
+                    {
+                      backgroundColor:
+                        post.isApproved === false
+                          ? '#D97706'
+                          : isReturned
+                          ? '#10B981'
+                          : '#EF4444',
+                    },
                   ]}
                   onPress={() => handleQuickStatus(post)}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.statusBadgeText}>
-                    {isReturned ? 'ส่งคืนแล้ว' : 'ยังไม่พบ'}
+                    {post.isApproved === false
+                      ? '⏳ รอ Admin อนุมัติ'
+                      : isReturned
+                      ? 'ส่งคืนแล้ว'
+                      : post.type === 'found'
+                      ? 'พบของแล้ว'
+                      : 'ยังไม่พบ'}
                   </Text>
                 </TouchableOpacity>
               </TouchableOpacity>

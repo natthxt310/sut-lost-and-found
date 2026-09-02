@@ -299,9 +299,25 @@ export class PersistentDatabase {
   // ==========================================
   // SOURCE 2: POSTS CRUD (REAL PERSISTENCE)
   // ==========================================
-  getPosts(filter?: { type?: 'lost' | 'found'; category?: string; location?: string; search?: string }): PostItem[] {
+  getPosts(filter?: {
+    type?: 'lost' | 'found';
+    category?: string;
+    location?: string;
+    search?: string;
+    all?: boolean;
+    userId?: string;
+  }): PostItem[] {
     const db = this.readDb();
     let result = [...db.posts];
+
+    // การคัดกรองการอนุมัติ (Approval Filter):
+    // หาก all เป็น true (Admin Mode) -> ดึงทั้งหมดรวมถึงที่รออนุมัติ
+    // หากเป็นผู้ใช้ทั่วไป -> แสดงเฉพาะโพสต์ที่ผ่านการอนุมัติแล้ว (isApproved: true) หรือโพสต์ของตัวเองเท่านั้น
+    if (!filter?.all) {
+      result = result.filter(
+        (p) => p.isApproved === true || (filter?.userId && p.userId === filter.userId)
+      );
+    }
 
     if (filter?.type) {
       result = result.filter((p) => p.type === filter.type);
@@ -333,15 +349,31 @@ export class PersistentDatabase {
 
   createPost(post: Omit<PostItem, 'id' | 'createdAt'>): PostItem {
     const db = this.readDb();
+    // โพสต์ใหม่ต้องรอการตรวจสอบและอนุมัติจาก Admin ก่อน เว้นแต่ระบุเป็น approved มาแล้ว
+    const isApproved = post.isApproved === true ? true : false;
     const newPost: PostItem = {
       ...post,
       id: `post-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      isApproved: true,
+      isApproved,
+      moderationStatus: isApproved ? 'approved' : 'pending',
+      moderationNotes: isApproved
+        ? '✅ ได้รับการอนุมัติแล้ว (Approved)'
+        : '⏳ รอผู้ดูแลระบบ (Admin) ตรวจสอบและอนุมัติก่อนเผยแพร่สู่สาธารณะ',
       createdAt: new Date().toISOString(),
     };
     db.posts.unshift(newPost);
     this.writeDb(db);
     return newPost;
+  }
+
+  approvePost(id: string, isApproved: boolean = true): PostItem | undefined {
+    return this.updatePost(id, {
+      isApproved,
+      moderationStatus: isApproved ? 'approved' : 'rejected',
+      moderationNotes: isApproved
+        ? '✅ ผ่านการตรวจสอบและอนุมัติโดยผู้ดูแลระบบ (Admin Approved)'
+        : '❌ ไม่อนุมัติการเผยแพร่โดยผู้ดูแลระบบ (Rejected)',
+    });
   }
 
   updatePost(id: string, updates: Partial<PostItem>): PostItem | undefined {

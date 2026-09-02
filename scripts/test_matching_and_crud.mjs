@@ -113,6 +113,11 @@ assert(createdPost.title.includes('Samsung'), 'Source 2 Create: Successfully add
 const diskContentPosts = JSON.parse(fs.readFileSync(dbFilePath, 'utf-8'));
 assert(diskContentPosts.posts.some((p) => p.id === createdPost.id), 'Disk Check: Verified new post exists in physical database.json file');
 
+assert(createdPost.isApproved === false, 'Source 2 Approval: Verified new post defaults to unapproved (pending admin review)');
+
+const approvedPost = persistentDb.approvePost(createdPost.id, true);
+assert(approvedPost?.isApproved === true && approvedPost?.moderationStatus === 'approved', 'Source 2 Approval: Admin successfully approved post to live status');
+
 const updatedPost = persistentDb.updatePost(createdPost.id, { status: 'returned' });
 assert(updatedPost?.status === 'returned', 'Source 2 Update: Successfully updated post status to returned');
 

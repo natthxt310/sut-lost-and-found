@@ -19,7 +19,7 @@ export interface PostItem {
   userEmail: string;
   securityQuestion?: string;
   isApproved?: boolean;
-  moderationStatus?: 'approved' | 'rejected' | 'flagged';
+  moderationStatus?: 'approved' | 'rejected' | 'flagged' | 'pending';
   moderationScore?: number;
   moderationNotes?: string;
   createdAt: string;
