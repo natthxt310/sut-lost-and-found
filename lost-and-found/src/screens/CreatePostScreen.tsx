@@ -72,17 +72,28 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   // Picker Modals States
   const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
 
-  // เลือกรูปภาพจากคลังภาพ
+  // เลือกรูปภาพจากคลังภาพ (แปลงเป็น Base64 เพื่อให้แสดงผลได้ทุกเครื่องและทุก Emulator ข้ามเครื่องได้)
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.6,
+        base64: true,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImageUrl(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const mime = asset.mimeType || 'image/jpeg';
+          setImageUrl(`data:${mime};base64,${asset.base64}`);
+        } else {
+          setImageUrl(asset.uri);
+        }
+      }
+    } catch (e) {
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเลือกรูปภาพได้');
     }
   };
 
@@ -97,10 +108,17 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8,
+        quality: 0.6,
+        base64: true,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUrl(result.assets[0].uri);
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const mime = asset.mimeType || 'image/jpeg';
+          setImageUrl(`data:${mime};base64,${asset.base64}`);
+        } else {
+          setImageUrl(asset.uri);
+        }
       }
     } catch (e) {
       Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเปิดกล้องถ่ายรูปได้');

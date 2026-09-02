@@ -85,7 +85,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               LOST & FOUND
             </Text>
             <View style={styles.sutPill}>
-              <Text style={styles.sutPillText}>มทส.</Text>
+              <Text style={styles.sutPillText}>SUT</Text>
             </View>
           </View>
 
@@ -202,8 +202,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                             post.status === 'returned'
                               ? '#10B981'
                               : post.type === 'lost'
-                              ? '#EF4444'
-                              : '#10B981',
+                                ? '#EF4444'
+                                : '#10B981',
                         },
                       ]}
                     >
@@ -211,8 +211,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         {post.status === 'returned'
                           ? 'ส่งคืนแล้ว'
                           : post.type === 'lost'
-                          ? 'ของหาย'
-                          : 'พบของ'}
+                            ? 'ของหาย'
+                            : 'พบของ'}
                       </Text>
                     </View>
                   </View>
