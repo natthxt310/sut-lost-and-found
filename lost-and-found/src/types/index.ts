@@ -50,7 +50,7 @@ export interface MatchNotification {
   id: string;
   targetUserId?: string;
   targetUserEmail?: string;
-  type?: 'lost' | 'found' | 'match';
+  type?: 'lost' | 'found' | 'match' | 'message';
   sourcePostId: string;
   matchedPostId: string;
   sourcePostTitle: string;

@@ -79,7 +79,13 @@ function MainAppContent() {
     <NotificationScreen
       onSelectNotification={(n) => {
         const targetPost = posts.find((p) => p.id === n.sourcePostId || p.id === n.matchedPostId);
-        if (targetPost) setSelectedPost(targetPost);
+        if (targetPost) {
+          if (n.type === 'message') {
+            setSelectedChatPost(targetPost);
+          } else {
+            setSelectedPost(targetPost);
+          }
+        }
       }}
     />
   ), [posts]);

@@ -30,89 +30,9 @@
       "createdAt": "2026-09-02T14:28:53.623Z"
     }
   ],
-  "posts": [
-    {
-      "type": "found",
-      "title": "กุญแจมอไซค์ honda",
-      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
-      "color": "ขาว",
-      "location": "เทคโนธานี",
-      "dateTime": "2/9/2569 21:48",
-      "description": "",
-      "imageUrl": "/uploads/item-1788360666724-168.jpg",
-      "status": "found",
-      "userId": "usr-1788359329630-68",
-      "userName": "Natthapat",
-      "userContact": "089-123-4567",
-      "userEmail": "Natthapat@gmail.com",
-      "isApproved": true,
-      "moderationStatus": "approved",
-      "moderationScore": 0.98,
-      "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
-      "id": "post-1788360667259-795",
-      "createdAt": "2026-09-02T14:51:07.259Z"
-    },
-    {
-      "type": "lost",
-      "title": "กุญแจมอไซค์ honda",
-      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
-      "color": "ขาว",
-      "location": "เทคโนธานี",
-      "dateTime": "1/9/2569 21:46",
-      "description": "",
-      "imageUrl": "/uploads/item-1788360488230-185.jpg",
-      "status": "lost",
-      "userId": "usr-1788359332365-917",
-      "userName": "Siwaphon",
-      "userContact": "089-123-4567",
-      "userEmail": "Siwaphon@gmail.com",
-      "isApproved": true,
-      "moderationStatus": "approved",
-      "moderationScore": 0.98,
-      "moderationNotes": "✅ ผ่านการตรวจสอบความปลอดภัยอัตโนมัติ (AI Safe Content)",
-      "id": "post-1788360488624-292",
-      "createdAt": "2026-09-02T14:48:08.624Z"
-    }
-  ],
+  "posts": [],
   "favorites": [],
-  "notifications": [
-    {
-      "id": "notif-lost-1788360667259-101",
-      "targetUserId": "usr-1788359332365-917",
-      "targetUserEmail": "Siwaphon@gmail.com",
-      "type": "found",
-      "sourcePostId": "post-1788360488624-292",
-      "matchedPostId": "post-1788360667259-795",
-      "sourcePostTitle": "กุญแจมอไซค์ honda",
-      "matchedPostTitle": "กุญแจมอไซค์ honda",
-      "matchScore": 100,
-      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
-      "color": "ขาว",
-      "location": "เทคโนธานี",
-      "matchedWithUserName": "Natthapat",
-      "matchedWithContact": "089-123-4567",
-      "isRead": true,
-      "createdAt": "2026-09-02T14:51:07.259Z"
-    },
-    {
-      "id": "notif-found-1788360667259-102",
-      "targetUserId": "usr-1788359329630-68",
-      "targetUserEmail": "Natthapat@gmail.com",
-      "type": "match",
-      "sourcePostId": "post-1788360667259-795",
-      "matchedPostId": "post-1788360488624-292",
-      "sourcePostTitle": "กุญแจมอไซค์ honda",
-      "matchedPostTitle": "กุญแจมอไซค์ honda",
-      "matchScore": 100,
-      "category": "กุญแจรถมอเตอร์ไซค์ / รถยนต์",
-      "color": "ขาว",
-      "location": "เทคโนธานี",
-      "matchedWithUserName": "Siwaphon",
-      "matchedWithContact": "089-123-4567",
-      "isRead": true,
-      "createdAt": "2026-09-02T14:51:07.259Z"
-    }
-  ],
+  "notifications": [],
   "messages": [
     {
       "postId": "post-001",
@@ -122,31 +42,9 @@
       "receiverId": "usr-002",
       "receiverName": "นัฐภัทร์ กตัญวิญญู",
       "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
-      "id": "msg-1788361060944-422",
-      "createdAt": "2026-09-02T14:57:40.944Z"
-    },
-    {
-      "postId": "post-001",
-      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
-      "senderId": "usr-001",
-      "senderName": "ศิวะพร ภูดินทราย",
-      "receiverId": "usr-002",
-      "receiverName": "นัฐภัทร์ กตัญวิญญู",
-      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
-      "id": "msg-1788361418150-866",
-      "createdAt": "2026-09-02T15:03:38.150Z"
-    },
-    {
-      "postId": "post-001",
-      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
-      "senderId": "usr-001",
-      "senderName": "ศิวะพร ภูดินทราย",
-      "receiverId": "usr-002",
-      "receiverName": "นัฐภัทร์ กตัญวิญญู",
-      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
-      "id": "msg-1788361829366-897",
-      "createdAt": "2026-09-02T15:10:29.366Z"
+      "id": "msg-1788362408451-636",
+      "createdAt": "2026-09-02T15:20:08.451Z"
     }
   ],
-  "lastUpdated": "2026-09-02T15:10:29.366Z"
+  "lastUpdated": "2026-09-02T15:20:08.451Z"
 }

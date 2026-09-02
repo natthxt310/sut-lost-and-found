@@ -129,6 +129,8 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                   <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
                     {notifType === 'found'
                       ? `มีผู้พบ "${n.matchedPostTitle}" ที่ ${n.location} (ตรงกับที่คุณตามหา)`
+                      : notifType === 'message'
+                      ? `💬 "${n.matchedPostTitle}" (เกี่ยวกับ: ${n.sourcePostTitle})`
                       : `"${n.sourcePostTitle}" ตรงกับโพสต์ของ ${n.matchedWithUserName || 'นักศึกษา มทส.'}`}
                   </Text>
 

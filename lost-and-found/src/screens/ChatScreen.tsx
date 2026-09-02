@@ -80,11 +80,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
     setIsSending(true);
     setInputText('');
 
+    // ระบุผู้รับข้อความ:
+    // ถ้าเราเป็นเจ้าของโพสต์ ให้ส่งหาคนที่ทักเรามา (คนอื่นในห้องแชท)
+    // ถ้าเราไม่ใช่เจ้าของโพสต์ ให้ส่งหาเจ้าของโพสต์
+    const otherMsg = messages.find((m) => m.senderId !== user?.id);
+    const targetReceiverId = (user?.id === post.userId && otherMsg) ? otherMsg.senderId : (post.userId || 'usr-receiver');
+    const targetReceiverName = (user?.id === post.userId && otherMsg) ? otherMsg.senderName : (post.userName || 'ผู้ใช้ มทส.');
+
     const newMsg = await api.sendMessage(
       post.id,
       post.title,
-      post.userId || 'usr-receiver',
-      post.userName || 'ผู้ใช้ มทส.',
+      targetReceiverId,
+      targetReceiverName,
       textToSend
     );
 

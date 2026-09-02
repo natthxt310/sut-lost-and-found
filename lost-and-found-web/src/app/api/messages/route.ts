@@ -63,6 +63,32 @@ export async function POST(request: NextRequest) {
       text: body.text.trim(),
     });
 
+    // 🔔 สร้างการแจ้งเตือนข้อความแชทใหม่ส่งไปยังผู้รับ (Receiver Chat Notification)
+    try {
+      persistentDb.saveNotifications([
+        {
+          id: `notif-chat-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          targetUserId: body.receiverId,
+          targetUserEmail: body.receiverEmail,
+          type: 'message',
+          sourcePostId: body.postId,
+          matchedPostId: body.postId,
+          sourcePostTitle: body.postTitle || 'สิ่งของที่นัดรับ',
+          matchedPostTitle: body.text.trim(),
+          matchScore: 100,
+          category: 'แชทข้อความ',
+          color: '',
+          location: '',
+          matchedWithUserName: body.senderName || 'ผู้ใช้ มทส.',
+          matchedWithContact: '',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } catch (e) {
+      console.warn('Failed to save chat notification:', e);
+    }
+
     return NextResponse.json(
       { success: true, message: 'Message sent successfully', data: createdMsg },
       { status: 201 }
