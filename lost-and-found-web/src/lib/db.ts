@@ -368,13 +368,42 @@ export class PersistentDatabase {
   }
 
   approvePost(id: string, isApproved: boolean = true): PostItem | undefined {
-    return this.updatePost(id, {
+    const updated = this.updatePost(id, {
       isApproved,
       moderationStatus: isApproved ? 'approved' : 'rejected',
       moderationNotes: isApproved
         ? '✅ ผ่านการตรวจสอบและอนุมัติโดยผู้ดูแลระบบ (Admin Approved)'
         : '❌ ไม่อนุมัติการเผยแพร่โดยผู้ดูแลระบบ (Rejected)',
     });
+
+    if (updated) {
+      // ส่งแจ้งเตือน (In-App Notification) ไปยังเจ้าของโพสต์ทันที
+      const notif: MatchNotification = {
+        id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        targetUserId: updated.userId,
+        targetUserEmail: updated.userEmail,
+        type: isApproved ? ('approval_approved' as any) : ('approval_rejected' as any),
+        sourcePostId: updated.id,
+        matchedPostId: updated.id,
+        sourcePostTitle: updated.title,
+        matchedPostTitle: isApproved ? 'ผ่านการอนุมัติแล้ว ✅' : 'ถูกปฏิเสธโดยแอดมิน ❌',
+        matchScore: 100,
+        category: updated.category,
+        color: updated.color,
+        location: updated.location,
+        matchedWithUserName: 'ผู้ดูแลระบบ (Admin)',
+        matchedWithContact: isApproved
+          ? 'โพสต์ของคุณแสดงบนฟีดสาธารณะเรียบร้อยแล้ว'
+          : updated.moderationNotes || '❌ ไม่อนุมัติการเผยแพร่',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      const db = this.readDb();
+      db.notifications.unshift(notif);
+      this.writeDb(db);
+    }
+
+    return updated;
   }
 
   updatePost(id: string, updates: Partial<PostItem>): PostItem | undefined {

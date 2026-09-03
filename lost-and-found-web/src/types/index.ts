@@ -52,7 +52,7 @@ export interface MatchNotification {
   id: string;
   targetUserId?: string;
   targetUserEmail?: string;
-  type?: 'lost' | 'found' | 'match' | 'message';
+  type?: 'lost' | 'found' | 'match' | 'message' | 'approval_approved' | 'approval_rejected';
   sourcePostId: string;
   matchedPostId: string;
   sourcePostTitle: string;

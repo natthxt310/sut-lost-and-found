@@ -98,8 +98,28 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
         ) : (
           notifications.map((n, idx) => {
             const notifType = n.type || (idx % 3 === 0 ? 'found' : idx % 3 === 1 ? 'message' : 'match');
-            const iconColor = notifType === 'found' ? '#EF4444' : notifType === 'message' ? '#0055D4' : '#10B981';
-            const iconName = notifType === 'found' ? 'notifications' : notifType === 'message' ? 'chatbubble' : 'checkmark-circle';
+            const isApprovedNotif = notifType === 'approval_approved';
+            const isRejectedNotif = notifType === 'approval_rejected';
+
+            const iconColor = isApprovedNotif
+              ? '#10B981'
+              : isRejectedNotif
+              ? '#EF4444'
+              : notifType === 'found'
+              ? '#EF4444'
+              : notifType === 'message'
+              ? '#0055D4'
+              : '#10B981';
+
+            const iconName = isApprovedNotif
+              ? 'checkmark-done-circle'
+              : isRejectedNotif
+              ? 'close-circle'
+              : notifType === 'found'
+              ? 'notifications'
+              : notifType === 'message'
+              ? 'chatbubble'
+              : 'checkmark-circle';
 
             return (
               <TouchableOpacity
@@ -119,7 +139,11 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                 {/* Content */}
                 <View style={styles.notifDetails}>
                   <Text style={[styles.notifTitle, { color: colors.text }]} numberOfLines={1}>
-                    {notifType === 'found'
+                    {isApprovedNotif
+                      ? '✅ โพสต์ของคุณผ่านการอนุมัติแล้ว'
+                      : isRejectedNotif
+                      ? '❌ โพสต์ของคุณถูกปฏิเสธโดยแอดมิน'
+                      : notifType === 'found'
                       ? '🎉 มีคนพบของที่คุณแจ้งหาย!'
                       : notifType === 'message'
                       ? `${n.matchedWithUserName || 'ผู้ใช้ มทส.'} ส่งข้อความถึงคุณ`
@@ -127,7 +151,11 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                   </Text>
 
                   <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
-                    {notifType === 'found'
+                    {isApprovedNotif
+                      ? `โพสต์ "${n.sourcePostTitle}" ได้รับการอนุมัติแล้ว และกำลังแสดงบนฟีดสาธารณะ`
+                      : isRejectedNotif
+                      ? `โพสต์ "${n.sourcePostTitle}" ไม่ผ่านเกณฑ์ (${n.matchedWithContact || 'กรุณาตรวจสอบรายละเอียด'})`
+                      : notifType === 'found'
                       ? `มีผู้พบ "${n.matchedPostTitle}" ที่ ${n.location} (ตรงกับที่คุณตามหา)`
                       : notifType === 'message'
                       ? `💬 "${n.matchedPostTitle}" (เกี่ยวกับ: ${n.sourcePostTitle})`

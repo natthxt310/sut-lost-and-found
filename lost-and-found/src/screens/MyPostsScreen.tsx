@@ -209,7 +209,11 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
                     styles.statusBadge,
                     {
                       backgroundColor:
-                        post.isApproved === false
+                        post.moderationStatus === 'rejected'
+                          ? '#EF4444'
+                          : post.moderationStatus === 'hidden'
+                          ? '#F59E0B'
+                          : post.isApproved === false
                           ? '#D97706'
                           : isReturned
                           ? '#10B981'
@@ -220,7 +224,11 @@ export const MyPostsScreen: React.FC<MyPostsScreenProps> = ({ onBack, onSelectPo
                   activeOpacity={0.8}
                 >
                   <Text style={styles.statusBadgeText}>
-                    {post.isApproved === false
+                    {post.moderationStatus === 'rejected'
+                      ? '❌ ถูกปฏิเสธ'
+                      : post.moderationStatus === 'hidden'
+                      ? '⏸️ ถูกระงับ'
+                      : post.isApproved === false
                       ? '⏳ รอ Admin อนุมัติ'
                       : isReturned
                       ? 'ส่งคืนแล้ว'

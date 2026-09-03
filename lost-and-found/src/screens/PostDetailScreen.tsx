@@ -188,6 +188,81 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
 
         {/* White Rounded Sheet Content */}
         <View style={[styles.sheetContent, { backgroundColor: colors.surface }]}>
+          {/* 🛡️ Moderation Status Alert Box (สำหรับแจ้งเตือนสถานะอนุมัติ / ปฏิเสธ) */}
+          {post.moderationStatus === 'rejected' ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                borderColor: '#EF4444',
+                borderWidth: 1.5,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <Ionicons name="close-circle" size={24} color="#EF4444" style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#EF4444' }}>
+                  ❌ โพสต์นี้ถูกปฏิเสธโดยผู้ดูแลระบบ (ไม่อนุมัติ)
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.text, marginTop: 3, lineHeight: 18 }}>
+                  {post.moderationNotes || 'โพสต์นี้ไม่ผ่านเกณฑ์การเผยแพร่ และจะไม่แสดงบนหน้าฟีดสาธารณะของผู้อื่น'}
+                </Text>
+              </View>
+            </View>
+          ) : post.moderationStatus === 'hidden' ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                borderColor: '#F59E0B',
+                borderWidth: 1.5,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <Ionicons name="alert-circle" size={24} color="#F59E0B" style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#F59E0B' }}>
+                  ⏸️ โพสต์นี้ถูกระงับการแสดงผลชั่วคราว
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.text, marginTop: 3, lineHeight: 18 }}>
+                  {post.moderationNotes || 'มีการรายงานความไม่เหมาะสม อยู่ระหว่างรอการตรวจสอบ'}
+                </Text>
+              </View>
+            </View>
+          ) : post.isApproved === false ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                borderColor: '#F59E0B',
+                borderWidth: 1.5,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <Ionicons name="time" size={24} color="#F59E0B" style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#F59E0B' }}>
+                  ⏳ โพสต์นี้กำลังรอการตรวจสอบจากผู้ดูแลระบบ
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.text, marginTop: 3, lineHeight: 18 }}>
+                  โพสต์จะแสดงบนหน้าฟีดสาธารณะของทุกคน ทันทีที่แอดมินอนุมัติเรียบร้อยแล้ว
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           {/* Header Row: Title & Badge */}
           <View style={styles.titleRow}>
             <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={2}>
