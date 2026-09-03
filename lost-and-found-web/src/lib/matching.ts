@@ -27,8 +27,8 @@ export function calculateMatchScore(postA: PostItem, postB: PostItem): number {
 }
 
 export function findMatchesForPost(newPost: PostItem, allPosts: PostItem[]): MatchNotification[] {
-  // 🛡️ โพสต์ต้นทางต้องได้รับการอนุมัติแล้วเท่านั้น (isApproved !== false) ถึงจะทำการจับคู่ได้
-  if (newPost.isApproved === false || newPost.moderationStatus === 'rejected' || newPost.moderationStatus === 'hidden') {
+  // 🛡️ โพสต์ต้นทางต้องได้รับการอนุมัติแล้วเท่านั้น (isApproved === true) ถึงจะทำการจับคู่ได้
+  if (!newPost.isApproved || newPost.moderationStatus === 'rejected' || newPost.moderationStatus === 'hidden' || newPost.moderationStatus === 'pending') {
     return [];
   }
 
@@ -37,8 +37,19 @@ export function findMatchesForPost(newPost: PostItem, allPosts: PostItem[]): Mat
   for (const existingPost of allPosts) {
     if (existingPost.id === newPost.id) continue;
     if (existingPost.status === 'returned') continue;
+
+    // 🛡️ ไม่จับคู่กับโพสต์ของตนเอง (ทั้งตาม userId และ userEmail)
+    if (existingPost.userId && newPost.userId && existingPost.userId === newPost.userId) continue;
+    if (
+      existingPost.userEmail &&
+      newPost.userEmail &&
+      existingPost.userEmail.trim().toLowerCase() === newPost.userEmail.trim().toLowerCase()
+    ) {
+      continue;
+    }
+
     // 🛡️ โพสต์ปลายทางที่นำมาเทียบต้องได้รับการอนุมัติแล้วเช่นกัน
-    if (existingPost.isApproved === false || existingPost.moderationStatus === 'rejected' || existingPost.moderationStatus === 'hidden') {
+    if (!existingPost.isApproved || existingPost.moderationStatus === 'rejected' || existingPost.moderationStatus === 'hidden' || existingPost.moderationStatus === 'pending') {
       continue;
     }
 

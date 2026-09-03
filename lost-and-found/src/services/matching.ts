@@ -55,8 +55,8 @@ export function findMatchesForPost(
   newPost: PostItem,
   allPosts: PostItem[]
 ): MatchNotification[] {
-  // 🛡️ โพสต์ต้นทางต้องได้รับการอนุมัติแล้วเท่านั้น (isApproved !== false) ถึงจะทำการจับคู่ได้
-  if (newPost.isApproved === false || newPost.moderationStatus === 'rejected' || newPost.moderationStatus === 'hidden') {
+  // 🛡️ โพสต์ต้นทางต้องได้รับการอนุมัติแล้วเท่านั้น (isApproved === true) ถึงจะทำการจับคู่ได้
+  if (!newPost.isApproved || newPost.moderationStatus === 'rejected' || newPost.moderationStatus === 'hidden' || newPost.moderationStatus === 'pending') {
     return [];
   }
 
@@ -69,8 +69,18 @@ export function findMatchesForPost(
     // ข้ามของที่ส่งคืนเจ้าของสำเร็จแล้ว
     if (existingPost.status === 'returned') continue;
 
+    // 🛡️ ไม่จับคู่กับโพสต์ของตนเอง (ทั้งตาม userId และ userEmail)
+    if (existingPost.userId && newPost.userId && existingPost.userId === newPost.userId) continue;
+    if (
+      existingPost.userEmail &&
+      newPost.userEmail &&
+      existingPost.userEmail.trim().toLowerCase() === newPost.userEmail.trim().toLowerCase()
+    ) {
+      continue;
+    }
+
     // 🛡️ ข้ามโพสต์ที่ยังไม่ผ่านการอนุมัติ ถูกปฏิเสธ หรือถูกซ่อน
-    if (existingPost.isApproved === false || existingPost.moderationStatus === 'rejected' || existingPost.moderationStatus === 'hidden') {
+    if (!existingPost.isApproved || existingPost.moderationStatus === 'rejected' || existingPost.moderationStatus === 'hidden' || existingPost.moderationStatus === 'pending') {
       continue;
     }
 

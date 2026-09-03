@@ -400,19 +400,23 @@ export class PersistentDatabase {
         createdAt: new Date().toISOString(),
       };
       const db = this.readDb();
-      if (!db.notifications) db.notifications = [];
-      db.notifications.unshift(notif);
-
       // ✨ ทำการคำนวณและแจ้งเตือนการจับคู่ (Auto-Matching) เฉพาะเมื่อแอดมินอนุมัติโพสต์แล้วเท่านั้น!
       if (isApproved) {
         const approvedPosts = db.posts.filter(
-          (p) => p.isApproved && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden'
+          (p) =>
+            p.id !== updated.id &&
+            p.isApproved &&
+            p.moderationStatus !== 'rejected' &&
+            p.moderationStatus !== 'hidden'
         );
         const matches = findMatchesForPost(updated, approvedPosts);
         if (matches.length > 0) {
           db.notifications.unshift(...matches);
         }
       }
+
+      // 🔔 วางแจ้งเตือนผลอนุมัติ (Approval) ไว้ด้านบนสุด เพื่อให้เจ้าของโพสต์เห็นผลอนุมัติก่อน
+      db.notifications.unshift(notif);
 
       this.writeDb(db);
     }
