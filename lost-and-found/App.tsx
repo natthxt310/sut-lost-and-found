@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -95,10 +96,17 @@ function MainAppContent() {
     <ProfileScreen
       onOpenMyPosts={() => setMyPostsVisible(true)}
       onOpenFavorites={() => setFavoritesModalVisible(true)}
-      onOpenDashboard={() => setDashboardVisible(true)}
+      onOpenDashboard={() => {
+        const isAdmin = user?.role === 'admin' || user?.studentId?.toUpperCase() === 'ADMIN' || user?.email?.toLowerCase().includes('admin');
+        if (isAdmin) {
+          setDashboardVisible(true);
+        } else {
+          Alert.alert('จำกัดสิทธิ์เฉพาะผู้ดูแลระบบ 🛡️', 'เฉพาะบัญชี Admin เท่านั้นที่สามารถเข้าถึงแผงสถิติผู้ดูแลระบบได้');
+        }
+      }}
       onOpenAuth={() => setAuthModalVisible(true)}
     />
-  ), []);
+  ), [user]);
 
   // 1. สถานะกำลังโหลดข้อมูล
   if (isLoading) {

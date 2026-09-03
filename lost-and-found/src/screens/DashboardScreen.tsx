@@ -30,12 +30,35 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
-  const { posts, approvePost, deletePost } = useApp();
+  const { user, posts, approvePost, deletePost } = useApp();
   const { colors, isDark } = useTheme();
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.studentId?.toUpperCase() === 'ADMIN' ||
+    user?.email?.toLowerCase().includes('admin');
 
   // Mode: 'approval' (ตรวจสอบอนุมัติ) vs 'quarterly' (รายงานประจำไตรมาส) vs 'overview' (ภาพรวมรายสัปดาห์)
   const [activeMode, setActiveMode] = React.useState<'approval' | 'quarterly' | 'overview'>('approval');
   const [selectedQuarter, setSelectedQuarter] = React.useState<number>(3);
+
+  if (!isAdmin) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <Ionicons name="lock-closed" size={64} color="#EF4444" />
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginTop: 16 }}>จำกัดสิทธิ์เฉพาะผู้ดูแลระบบ 🛡️</Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>
+          คุณไม่มีสิทธิ์เข้าถึงหน้านี้ แผงควบคุมและสถิติสงวนไว้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น
+        </Text>
+        <TouchableOpacity
+          style={{ marginTop: 24, backgroundColor: '#FF7A00', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          onPress={onBack}
+        >
+          <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 }}>กลับหน้าหลัก</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // รายการโพสต์ที่รอ Admin ตรวจสอบอนุมัติ
   const pendingPosts = posts.filter((p) => p.isApproved === false);
