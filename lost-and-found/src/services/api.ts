@@ -392,11 +392,14 @@ class PersistentApiService {
     this.posts.unshift(newPost);
     await this.savePostsToStorage();
 
-    // 2. รัน Auto-Matching Engine อัตโนมัติ (RQ-009)
-    const newMatches = findMatchesForPost(newPost, this.posts);
-    if (newMatches.length > 0) {
-      this.notifications.unshift(...newMatches);
-      await this.saveNotificationsToStorage();
+    // 2. รัน Auto-Matching Engine อัตโนมัติ (เฉพาะเมื่อโพสต์ได้รับการอนุมัติแล้วเท่านั้น)
+    let newMatches: MatchNotification[] = [];
+    if (newPost.isApproved) {
+      newMatches = findMatchesForPost(newPost, this.posts);
+      if (newMatches.length > 0) {
+        this.notifications.unshift(...newMatches);
+        await this.saveNotificationsToStorage();
+      }
     }
 
     // 3. ส่งข้อมูลขึ้น Next.js Backend API เพื่อบันทึกลง Database บน Server

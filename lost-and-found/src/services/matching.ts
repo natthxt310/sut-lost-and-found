@@ -55,6 +55,11 @@ export function findMatchesForPost(
   newPost: PostItem,
   allPosts: PostItem[]
 ): MatchNotification[] {
+  // 🛡️ โพสต์ต้นทางต้องได้รับการอนุมัติแล้วเท่านั้น (isApproved !== false) ถึงจะทำการจับคู่ได้
+  if (newPost.isApproved === false || newPost.moderationStatus === 'rejected' || newPost.moderationStatus === 'hidden') {
+    return [];
+  }
+
   const notifications: MatchNotification[] = [];
 
   for (const existingPost of allPosts) {
@@ -63,6 +68,11 @@ export function findMatchesForPost(
     
     // ข้ามของที่ส่งคืนเจ้าของสำเร็จแล้ว
     if (existingPost.status === 'returned') continue;
+
+    // 🛡️ ข้ามโพสต์ที่ยังไม่ผ่านการอนุมัติ ถูกปฏิเสธ หรือถูกซ่อน
+    if (existingPost.isApproved === false || existingPost.moderationStatus === 'rejected' || existingPost.moderationStatus === 'hidden') {
+      continue;
+    }
 
     // คำนวณคะแนนความเหมือน
     const score = calculateMatchScore(newPost, existingPost);

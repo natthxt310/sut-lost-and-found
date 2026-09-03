@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, MonthlyStats, QuarterlyStats, TopCategoryStat, PostReport } from '../types';
+import { findMatchesForPost } from './matching';
 
 interface DatabaseSchema {
   users: User[];
@@ -399,7 +400,20 @@ export class PersistentDatabase {
         createdAt: new Date().toISOString(),
       };
       const db = this.readDb();
+      if (!db.notifications) db.notifications = [];
       db.notifications.unshift(notif);
+
+      // ✨ ทำการคำนวณและแจ้งเตือนการจับคู่ (Auto-Matching) เฉพาะเมื่อแอดมินอนุมัติโพสต์แล้วเท่านั้น!
+      if (isApproved) {
+        const approvedPosts = db.posts.filter(
+          (p) => p.isApproved && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden'
+        );
+        const matches = findMatchesForPost(updated, approvedPosts);
+        if (matches.length > 0) {
+          db.notifications.unshift(...matches);
+        }
+      }
+
       this.writeDb(db);
     }
 

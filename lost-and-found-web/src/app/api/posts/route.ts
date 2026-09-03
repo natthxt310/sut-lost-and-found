@@ -82,11 +82,14 @@ export async function POST(request: NextRequest) {
         : '⏳ รอผู้ดูแลระบบ (Admin) ตรวจสอบและอนุมัติก่อนเผยแพร่สู่สาธารณะ',
     });
 
-    // 2. Auto-Matching check & Save Notifications to database
-    const allPosts = backendStore.getPosts({ all: true });
-    const matches = findMatchesForPost(createdPost, allPosts);
-    if (matches.length > 0) {
-      backendStore.saveNotifications(matches);
+    // 2. Auto-Matching check & Save Notifications to database (เฉพาะโพสต์ที่ผ่านการอนุมัติแล้ว)
+    let matches: any[] = [];
+    if (createdPost.isApproved) {
+      const allPosts = backendStore.getPosts({ all: true });
+      matches = findMatchesForPost(createdPost, allPosts);
+      if (matches.length > 0) {
+        backendStore.saveNotifications(matches);
+      }
     }
 
     return NextResponse.json(
