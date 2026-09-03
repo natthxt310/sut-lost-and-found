@@ -471,8 +471,29 @@ export class PersistentDatabase {
     return db.posts[idx];
   }
 
+  deleteUploadedImageFile(imageUrl?: string): void {
+    if (!imageUrl || !imageUrl.includes('/uploads/')) return;
+    try {
+      const filename = path.basename(imageUrl.split('?')[0]);
+      const possibleDirs = [
+        path.join(process.cwd(), 'public', 'uploads'),
+        path.join(process.cwd(), 'lost-and-found-web', 'public', 'uploads'),
+      ];
+      for (const dir of possibleDirs) {
+        const filePath = path.join(dir, filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not remove uploaded image file:', e);
+    }
+  }
+
   deletePost(id: string): boolean {
     const db = this.readDb();
+    const postToDelete = db.posts.find((p) => p.id === id);
     const initLen = db.posts.length;
     db.posts = db.posts.filter((p) => p.id !== id);
     db.favorites = db.favorites.filter((f) => f.postId !== id);
@@ -480,6 +501,10 @@ export class PersistentDatabase {
       (n) => n.sourcePostId !== id && n.matchedPostId !== id
     );
     if (db.posts.length < initLen) {
+      // 🗑️ ลบไฟล์รูปภาพที่เกี่ยวข้องออกจากดิสก์
+      if (postToDelete?.imageUrl) {
+        this.deleteUploadedImageFile(postToDelete.imageUrl);
+      }
       this.writeDb(db);
       return true;
     }
