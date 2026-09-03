@@ -197,9 +197,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>
                       {post.title}
                     </Text>
-                    <Text style={[styles.postLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {post.location}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, marginBottom: 2 }}>
+                      {post.category ? (
+                        <View style={{ backgroundColor: isDark ? 'rgba(2, 132, 199, 0.18)' : '#E0F2FE', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 4 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#38BDF8' : '#0284C7' }} numberOfLines={1}>
+                            {post.category}
+                          </Text>
+                        </View>
+                      ) : null}
+                      <Text style={[styles.postLocation, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                        {post.location}
+                      </Text>
+                    </View>
                     <Text style={[styles.postTime, { color: colors.textMuted }]}>
                       {post.dateTime || 'เมื่อสักครู่'}
                     </Text>

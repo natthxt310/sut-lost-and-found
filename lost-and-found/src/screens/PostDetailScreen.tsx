@@ -82,18 +82,32 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
     ]);
   };
 
-  const handleReportFound = async () => {
-    Alert.alert(
-      'แจ้งพบสิ่งของ',
-      `คุณได้พบสิ่งของ "${post.title}" ใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อนัดส่งคืนเจ้าของทันที`,
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ส่งข้อความนัดรับ',
-          onPress: () => onOpenChat(post),
-        },
-      ]
-    );
+  const handleClaimOrReportFound = async () => {
+    if (isLost) {
+      Alert.alert(
+        'แจ้งพบสิ่งของ 🔍',
+        `คุณได้พบสิ่งของ "${post.title}" ใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อนัดส่งคืนเจ้าของทันที`,
+        [
+          { text: 'ยกเลิก', style: 'cancel' },
+          {
+            text: 'ส่งข้อความนัดส่งมอบ',
+            onPress: () => onOpenChat(post),
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'ขอรับสิ่งของคืน 🎁',
+        `สิ่งของ "${post.title}" ชิ้นนี้เป็นของคุณใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อติดต่อขอนัดรับของคืนจากผู้พบทันที`,
+        [
+          { text: 'ยกเลิก', style: 'cancel' },
+          {
+            text: 'ส่งข้อความขอรับคืน',
+            onPress: () => onOpenChat(post),
+          },
+        ]
+      );
+    }
   };
 
   const handleReportInappropriate = () => {
@@ -280,6 +294,71 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
             </View>
           </View>
 
+          {/* Category & Color Badges */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -4, marginBottom: 14 }}>
+            {post.category ? (
+              <View
+                style={{
+                  backgroundColor: isDark ? 'rgba(2, 132, 199, 0.15)' : '#E0F2FE',
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#0284C7' : '#BAE6FD',
+                }}
+              >
+                <Ionicons name="pricetag" size={13} color="#0284C7" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#38BDF8' : '#0369A1' }}>
+                  {post.category}
+                </Text>
+              </View>
+            ) : null}
+
+            {post.color && post.color !== 'ไม่ระบุ' ? (
+              <View
+                style={{
+                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#F3E8FF',
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#8B5CF6' : '#DDD6FE',
+                }}
+              >
+                <Ionicons name="color-palette" size={13} color="#8B5CF6" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#C084FC' : '#7C3AED' }}>
+                  สี{post.color}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Category Info Row */}
+          {post.category ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="pricetag-outline" size={18} color="#0284C7" />
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                หมวดหมู่: <Text style={{ fontWeight: '600', color: colors.text }}>{post.category}</Text>
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Color Info Row */}
+          {post.color && post.color !== 'ไม่ระบุ' ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="color-palette-outline" size={18} color="#8B5CF6" />
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                สี / โทนสี: <Text style={{ fontWeight: '600', color: colors.text }}>สี{post.color}</Text>
+              </Text>
+            </View>
+          ) : null}
+
           {/* Location & Time Info */}
           <View style={styles.infoRow}>
             <Ionicons name="location-sharp" size={18} color="#64748B" />
@@ -374,15 +453,21 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
               onPress={() => onOpenChat(post)}
               activeOpacity={0.88}
             >
-              <Text style={styles.actionBtnText}>ติดต่อ</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.actionBtnText}>ติดต่อ</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#10B981', flex: 1 }]}
-              onPress={handleReportFound}
+              style={[styles.actionBtn, { backgroundColor: '#10B981', flex: 1.2 }]}
+              onPress={handleClaimOrReportFound}
               activeOpacity={0.88}
             >
-              <Text style={styles.actionBtnText}>พบของ</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name={isLost ? 'search-outline' : 'gift-outline'} size={18} color="#FFFFFF" />
+                <Text style={styles.actionBtnText}>{isLost ? 'พบของ' : 'ขอรับของคืน'}</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
