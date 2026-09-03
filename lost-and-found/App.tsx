@@ -28,6 +28,7 @@ import { MyPostsScreen } from './src/screens/MyPostsScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { FavoritesScreen } from './src/screens/FavoritesScreen';
 import { AuthModal } from './src/screens/AuthModal';
+import { InAppNotificationBanner } from './src/components/InAppNotificationBanner';
 import { PostItem, PostType } from './src/types';
 
 const Tab = createBottomTabNavigator();
@@ -36,7 +37,15 @@ const Tab = createBottomTabNavigator();
 const EmptyScreen = () => <View style={{ flex: 1 }} />;
 
 function MainAppContent() {
-  const { unreadNotifsCount, markAllNotificationsAsRead, posts, user, isLoading } = useApp();
+  const {
+    unreadNotifsCount,
+    markAllNotificationsAsRead,
+    posts,
+    user,
+    isLoading,
+    activeInAppBanner,
+    dismissInAppBanner,
+  } = useApp();
   const { colors, isDark } = useTheme();
 
   // Navigation Overlay States
@@ -314,6 +323,23 @@ function MainAppContent() {
       <AuthModal
         visible={authModalVisible}
         onClose={() => setAuthModalVisible(false)}
+      />
+
+      {/* 🔔 FLOATING IN-APP TOAST NOTIFICATION BANNER */}
+      <InAppNotificationBanner
+        notification={activeInAppBanner}
+        onDismiss={dismissInAppBanner}
+        onPress={(notif) => {
+          dismissInAppBanner();
+          const targetPost = posts.find((p) => p.id === notif.sourcePostId || p.id === notif.matchedPostId);
+          if (targetPost) {
+            if (notif.type === 'message') {
+              setSelectedChatPost(targetPost);
+            } else {
+              setSelectedPost(targetPost);
+            }
+          }
+        }}
       />
     </View>
   );

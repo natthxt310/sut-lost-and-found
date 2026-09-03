@@ -88,6 +88,10 @@ class BackendDataStore {
     persistentDb.markNotificationAsRead(id);
   }
 
+  checkAndGenerateExpiringPostReminders(olderThanDays?: number): MatchNotification[] {
+    return persistentDb.checkAndGenerateExpiringPostReminders(olderThanDays);
+  }
+
   getMessages(postId?: string, userA?: string, userB?: string) {
     return persistentDb.getMessages(postId, userA, userB);
   }

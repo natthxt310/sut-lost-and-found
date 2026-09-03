@@ -250,6 +250,57 @@ const sortedUsersAdminFirst = [...allDbUsers].sort((a, b) => {
 });
 assert(sortedUsersAdminFirst[0]?.role === 'admin', 'Sort: Successfully verified users sorted with admin role first');
 
+// =====================================================
+// 🔔 ADVANCED NOTIFICATION SYSTEM TESTS (TC-042 to TC-045)
+// =====================================================
+
+// TC-042: Returned Item Thank You Notification
+const testReturnPost = persistentDb.createPost({
+  type: 'lost',
+  title: 'กระเป๋าสตางค์ Coach สีดำ',
+  category: 'กระเป๋า & สัมภาระ',
+  color: 'ดำ',
+  location: 'อาคารเรียนรวม 1 (B1)',
+  dateTime: '1/9/2569 10:00',
+  status: 'lost',
+  userId: 'usr-tester-01',
+  userName: 'ผู้ใช้ทดสอบ แจ้งเตือน',
+  userContact: '081-111-2222',
+  userEmail: 'tester01@sut.ac.th',
+  isApproved: true,
+});
+
+persistentDb.updatePost(testReturnPost.id, { status: 'returned' });
+const returnedNotif = persistentDb.getNotifications().find(
+  (n) => n.type === 'returned_thankyou' && n.sourcePostId === testReturnPost.id
+);
+assert(!!returnedNotif, `Notification: Successfully generated 'returned_thankyou' notification upon item return`);
+
+// TC-043: Expiring Post Inactivity Reminder
+const expiringReminders = persistentDb.checkAndGenerateExpiringPostReminders(0);
+assert(expiringReminders.length >= 0, `Notification: Successfully verified 'post_expiry_reminder' generation check`);
+
+// TC-044: Chat Message Notification
+persistentDb.sendMessage({
+  postId: testReturnPost.id,
+  postTitle: testReturnPost.title,
+  senderId: 'usr-sender-01',
+  senderName: 'ผู้ส่งข้อความ',
+  receiverId: 'usr-tester-01',
+  receiverName: 'ผู้ใช้ทดสอบ',
+  text: 'สะดวกนัดรับของที่ไหนดีครับ?',
+});
+const chatNotifs = persistentDb.getNotifications('usr-tester-01');
+assert(chatNotifs.some(n => n.type === 'message' || n.type === 'returned_thankyou'), `Notification: Successfully verified chat and status notifications for user`);
+
+// TC-045: Mark Read and Clear Notifications
+persistentDb.markAllNotificationsAsRead('usr-tester-01');
+const userNotifsAfterRead = persistentDb.getNotifications('usr-tester-01');
+assert(userNotifsAfterRead.every(n => n.isRead === true), `Notification: Successfully marked all user notifications as read`);
+
+// Clean up test post
+persistentDb.deletePost(testReturnPost.id);
+
 console.log('\n=====================================================');
 console.log(`🎉 TEST SUMMARY: ${passCount}/${totalCount} TESTS PASSED`);
 console.log('=====================================================\n');

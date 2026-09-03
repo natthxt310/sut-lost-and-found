@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { PostItem, User, FavoriteItem, MatchNotification, ChatConversation, ChatMessage } from '../types';
 import { api } from '../services/api';
+import {
+  requestNotificationPermissions,
+  triggerLocalPushNotification,
+  formatNotification,
+} from '../services/notificationService';
 
 /**
  * =========================================================================
@@ -24,6 +29,9 @@ interface AppContextType {
   isLoading: boolean;
   selectedPost: PostItem | null;
   setSelectedPost: (post: PostItem | null) => void;
+  activeInAppBanner: MatchNotification | null;
+  dismissInAppBanner: () => void;
+  triggerNotificationAlert: (notif: MatchNotification) => void;
   refreshData: () => Promise<void>;
   refreshConversations: () => Promise<void>;
   markChatAsRead: (postId: string) => Promise<void>;
@@ -54,6 +62,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeInAppBanner, setActiveInAppBanner] = useState<MatchNotification | null>(null);
+
+  const knownNotifIds = useRef<Set<string>>(new Set());
+  const isFirstLoadRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    requestNotificationPermissions();
+    // ตรวจสอบโพสต์เก่าในระบบเพื่อสร้างการแจ้งเตือนเตือนความจำต่ออายุ
+    api.checkExpiringPosts?.();
+  }, []);
+
+  const triggerNotificationAlert = (notif: MatchNotification) => {
+    const formatted = formatNotification(notif);
+    triggerLocalPushNotification(formatted.title, formatted.subtitle, {
+      id: notif.id,
+      postId: notif.sourcePostId,
+    });
+    setActiveInAppBanner(notif);
+  };
+
+  const dismissInAppBanner = () => {
+    setActiveInAppBanner(null);
+  };
 
   const refreshConversations = async () => {
     try {
@@ -91,6 +122,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setFavorites(f);
       setNotifications(n);
       setConversations(c);
+
+      // ตรวจหาการแจ้งเตือนใหม่สำหรับยิง Push Notification และ In-App Toast Banner
+      if (Array.isArray(n)) {
+        if (isFirstLoadRef.current) {
+          n.forEach((item) => knownNotifIds.current.add(item.id));
+          isFirstLoadRef.current = false;
+        } else {
+          const newItems = n.filter((item) => !knownNotifIds.current.has(item.id));
+          if (newItems.length > 0) {
+            newItems.forEach((item) => knownNotifIds.current.add(item.id));
+            triggerNotificationAlert(newItems[0]);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error refreshing app data:', error);
     } finally {
@@ -113,6 +158,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setPosts(p);
         setNotifications(n);
         setConversations(c);
+
+        if (Array.isArray(n)) {
+          if (isFirstLoadRef.current) {
+            n.forEach((item) => knownNotifIds.current.add(item.id));
+            isFirstLoadRef.current = false;
+          } else {
+            const newItems = n.filter((item) => !knownNotifIds.current.has(item.id));
+            if (newItems.length > 0) {
+              newItems.forEach((item) => knownNotifIds.current.add(item.id));
+              triggerNotificationAlert(newItems[0]);
+            }
+          }
+        }
       } catch {
         // offline silent
       }
@@ -231,6 +289,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isLoading,
         selectedPost,
         setSelectedPost,
+        activeInAppBanner,
+        dismissInAppBanner,
+        triggerNotificationAlert,
         refreshData,
         refreshConversations,
         markChatAsRead,

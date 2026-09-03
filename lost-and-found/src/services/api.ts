@@ -649,6 +649,14 @@ class PersistentApiService {
     }
   }
 
+  async checkExpiringPosts(): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/notifications/check-expiring`, { method: 'GET' });
+    } catch {
+      // offline
+    }
+  }
+
   // ==========================================
   // IN-APP DIRECT CHAT (REAL PERSISTENCE & INBOX)
   // ==========================================

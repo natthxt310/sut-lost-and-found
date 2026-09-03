@@ -53,7 +53,7 @@ export interface MatchNotification {
   id: string;
   targetUserId?: string;
   targetUserEmail?: string;
-  type?: 'lost' | 'found' | 'match' | 'message' | 'approval_approved' | 'approval_rejected';
+  type?: 'lost' | 'found' | 'match' | 'message' | 'approval_approved' | 'approval_rejected' | 'returned_thankyou' | 'post_expiry_reminder';
   sourcePostId: string;
   matchedPostId: string;
   sourcePostTitle: string;

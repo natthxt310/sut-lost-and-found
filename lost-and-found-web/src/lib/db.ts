@@ -410,11 +410,39 @@ export class PersistentDatabase {
     const db = this.readDb();
     const idx = db.posts.findIndex((p) => p.id === id);
     if (idx === -1) return undefined;
+
+    const prevStatus = db.posts[idx].status;
     db.posts[idx] = {
       ...db.posts[idx],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+
+    // 🎁 ถ้าเปลี่ยนสถานะเป็น 'returned' (ส่งคืนสำเร็จ) ให้ส่ง Notification ขอบคุณไปยังเจ้าของโพสต์ทันที
+    if (updates.status === 'returned' && prevStatus !== 'returned') {
+      const p = db.posts[idx];
+      const notif: MatchNotification = {
+        id: `notif-ret-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        targetUserId: p.userId,
+        targetUserEmail: p.userEmail,
+        type: 'returned_thankyou',
+        sourcePostId: p.id,
+        matchedPostId: p.id,
+        sourcePostTitle: p.title,
+        matchedPostTitle: 'ส่งคืนสำเร็จแล้ว! ขอบคุณคนดี มทส. 🎁✨',
+        matchScore: 100,
+        category: p.category,
+        color: p.color,
+        location: p.location,
+        matchedWithUserName: 'ระบบ SUT Lost & Found',
+        matchedWithContact: 'ขอบคุณที่ร่วมเป็นส่วนหนึ่งในการช่วยเหลือเพื่อนนักศึกษาและสังคม มทส.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      if (!db.notifications) db.notifications = [];
+      db.notifications.unshift(notif);
+    }
+
     this.writeDb(db);
     return db.posts[idx];
   }
@@ -553,6 +581,64 @@ export class PersistentDatabase {
       db.notifications = [];
     }
     this.writeDb(db);
+  }
+
+  // ⏳ ตรวจสอบโพสต์ที่ยังไม่เสร็จสิ้นและค้างเกิน 14 วัน เพื่อสร้างการแจ้งเตือนต่ออายุโพสต์
+  checkAndGenerateExpiringPostReminders(olderThanDays: number = 14): MatchNotification[] {
+    const db = this.readDb();
+    const now = Date.now();
+    const cutoffMs = olderThanDays * 24 * 60 * 60 * 1000;
+    const newReminders: MatchNotification[] = [];
+
+    if (!db.notifications) db.notifications = [];
+
+    db.posts.forEach((p) => {
+      // พิจารณาเฉพาะโพสต์ที่ยังไม่ส่งคืน และได้รับการอนุมัติแล้ว
+      if (p.status === 'returned' || p.isApproved === false || p.moderationStatus === 'rejected' || p.moderationStatus === 'hidden') {
+        return;
+      }
+
+      let postDate = new Date(p.createdAt).getTime();
+      if (isNaN(postDate) && p.dateTime) {
+        postDate = now - (15 * 24 * 60 * 60 * 1000);
+      }
+
+      // ตรวจสอบว่าเก่าเกิน cutoff หรือไม่
+      if (now - postDate >= cutoffMs) {
+        // ตรวจสอบว่าเคยส่งการแจ้งเตือนเตือนความจำของโพสต์นี้ไปแล้วหรือยัง
+        const alreadyNotified = db.notifications.some(
+          (n) => n.type === 'post_expiry_reminder' && n.sourcePostId === p.id
+        );
+
+        if (!alreadyNotified) {
+          const reminder: MatchNotification = {
+            id: `notif-exp-${Date.now()}-${Math.floor(Math.random() * 1000)}-${p.id.slice(-4)}`,
+            targetUserId: p.userId,
+            targetUserEmail: p.userEmail,
+            type: 'post_expiry_reminder',
+            sourcePostId: p.id,
+            matchedPostId: p.id,
+            sourcePostTitle: p.title,
+            matchedPostTitle: 'เตือนความจำ: โพสต์ของคุณยังตามหาอยู่หรือไม่? ⏳',
+            matchScore: 100,
+            category: p.category,
+            color: p.color,
+            location: p.location,
+            matchedWithUserName: 'ระบบ SUT Lost & Found',
+            matchedWithContact: `โพสต์นี้เผยแพร่มาเกิน ${olderThanDays} วันแล้ว หากพบของแล้วโปรดอัปเดตสถานะ`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          };
+          newReminders.push(reminder);
+          db.notifications.unshift(reminder);
+        }
+      }
+    });
+
+    if (newReminders.length > 0) {
+      this.writeDb(db);
+    }
+    return newReminders;
   }
 
   // ==========================================
