@@ -12,7 +12,7 @@ export default function AdminPage() {
   const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'approval' | 'reports' | 'quarterly' | 'stats' | 'users'>('reports');
-  const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'rejected' | 'hidden' | 'all'>('pending');
   const [reportFilter, setReportFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
 
@@ -126,12 +126,13 @@ export default function AdminPage() {
     }
   };
 
-  // ดำเนินการกับรายงาน (Report Management Action: ซ่อน, ลบ, หรือยกเลิก)
-  const handleReportAction = async (reportId: string, action: 'hide' | 'delete' | 'dismiss') => {
+  // ดำเนินการกับรายงาน (Report Management Action: ซ่อน, ลบ, ยกเลิก, หรือปลดการซ่อน)
+  const handleReportAction = async (reportId: string, action: 'hide' | 'delete' | 'dismiss' | 'unhide') => {
     const actionNames: { [key: string]: string } = {
       hide: 'ซ่อนโพสต์นี้ไม่ให้แสดงบนฟีดสาธารณะ',
       delete: 'ลบโพสต์นี้ออกจากระบบอย่างถาวร',
       dismiss: 'ยกเลิกรายงานนี้ (โพสต์ปลอดภัย)',
+      unhide: 'ปลดการซ่อนโพสต์นี้และนำกลับสู่ฟีดสาธารณะ',
     };
     if (!confirm(`คุณต้องการ${actionNames[action]} หรือไม่?`)) return;
 
@@ -150,6 +151,23 @@ export default function AdminPage() {
       }
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
+  // ปลดการซ่อนโพสต์ (Admin Unhide Post)
+  const handleUnhidePost = async (id: string) => {
+    if (!confirm('คุณต้องการปลดการซ่อนโพสต์นี้และนำกลับสู่ฟีดสาธารณะหรือไม่?')) return;
+    try {
+      const res = await fetch(`/api/posts/${id}/unhide`, { method: 'PUT' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('🔓 ปลดการซ่อนโพสต์เรียบร้อยแล้ว โพสต์จะแสดงบนฟีดสาธารณะตามปกติ');
+        loadData();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการปลดการซ่อนโพสต์');
     }
   };
 
@@ -190,14 +208,16 @@ export default function AdminPage() {
   );
   const approvedPosts = posts.filter((p) => p.isApproved === true || p.moderationStatus === 'approved');
   const rejectedPosts = posts.filter((p) => p.moderationStatus === 'rejected');
+  const hiddenPosts = posts.filter((p) => p.moderationStatus === 'hidden');
 
-  // โพสต์ที่กรองตามสถานะหลัก (รออนุมัติ / อนุมัติแล้ว / ปฏิเสธแล้ว / ทั้งหมด)
+  // โพสต์ที่กรองตามสถานะหลัก (รออนุมัติ / อนุมัติแล้ว / ปฏิเสธแล้ว / ถูกระงับ-ซ่อน / ทั้งหมด)
   const postsInCurrentStatus = posts.filter((p) => {
     if (postFilter === 'pending') {
       return p.moderationStatus === 'pending' || (p.isApproved === false && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden');
     }
     if (postFilter === 'approved') return p.isApproved === true || p.moderationStatus === 'approved';
     if (postFilter === 'rejected') return p.moderationStatus === 'rejected';
+    if (postFilter === 'hidden') return p.moderationStatus === 'hidden';
     return true;
   });
 
@@ -776,6 +796,21 @@ export default function AdminPage() {
                       ❌ ปฏิเสธแล้ว ({rejectedPosts.length})
                     </button>
                     <button
+                      onClick={() => setPostFilter('hidden')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: postFilter === 'hidden' ? '2px solid #F59E0B' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: postFilter === 'hidden' ? 'rgba(245, 158, 11, 0.15)' : theme.cardAlt,
+                        color: postFilter === 'hidden' ? '#F59E0B' : theme.textMuted,
+                      }}
+                    >
+                      ⏸️ ถูกระงับ/ซ่อน ({hiddenPosts.length})
+                    </button>
+                    <button
                       onClick={() => setPostFilter('all')}
                       style={{
                         padding: '8px 14px',
@@ -1153,6 +1188,20 @@ export default function AdminPage() {
                                 >
                                   ⏸️ ถูกซ่อน (รายงานปัญหา)
                                 </span>
+                              ) : post.moderationNotes?.includes('แก้ไขแล้ว') ? (
+                                <span
+                                  style={{
+                                    backgroundColor: '#E0F2FE',
+                                    color: '#0284C7',
+                                    border: '1px solid #0284C7',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  ✏️ เจ้าของแก้ไขแล้ว - รอปลดระงับ
+                                </span>
                               ) : (
                                 <span
                                   style={{
@@ -1245,6 +1294,29 @@ export default function AdminPage() {
                                   }}
                                 >
                                   ❌ ปฏิเสธ (Reject)
+                                </button>
+                              </>
+                            ) : isHidden ? (
+                              <>
+                                <button
+                                  onClick={() => handleUnhidePost(post.id)}
+                                  style={{
+                                    backgroundColor: '#10B981',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    fontWeight: 800,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                  }}
+                                >
+                                  🔓 ปลดการซ่อน / อนุมัติ
                                 </button>
                               </>
                             ) : isRejected ? (
@@ -1751,30 +1823,52 @@ export default function AdminPage() {
                               )}
                             </div>
 
-                            {/* Action Buttons: ซ่อนโพสต์, ลบโพสต์ถาวร, หรือยกเลิกรายงาน */}
+                            {/* Action Buttons: ซ่อนโพสต์, ลบโพสต์ถาวร, ปลดการซ่อน, หรือยกเลิกรายงาน */}
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                              {/* 1. ดำเนินการซ่อนโพสต์ที่มีปัญหา */}
-                              <button
-                                onClick={() => handleReportAction(rep.id, 'hide')}
-                                disabled={isPostHidden}
-                                style={{
-                                  backgroundColor: isPostHidden ? theme.cardAlt : '#F59E0B',
-                                  color: isPostHidden ? theme.textMuted : '#FFFFFF',
-                                  border: isPostHidden ? `1px solid ${theme.border}` : 'none',
-                                  padding: '9px 14px',
-                                  borderRadius: '10px',
-                                  fontWeight: 800,
-                                  fontSize: '0.8rem',
-                                  cursor: isPostHidden ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  boxShadow: isPostHidden ? 'none' : '0 4px 12px rgba(245, 158, 11, 0.3)',
-                                }}
-                                title="ซ่อนโพสต์ไม่ให้แสดงบนฟีดสาธารณะ"
-                              >
-                                ⏸️ {isPostHidden ? 'ซ่อนอยู่แล้ว' : 'ซ่อนโพสต์ (Hide)'}
-                              </button>
+                              {/* 1. ดำเนินการซ่อน หรือ ปลดการซ่อนโพสต์ที่มีปัญหา */}
+                              {isPostHidden ? (
+                                <button
+                                  onClick={() => handleReportAction(rep.id, 'unhide')}
+                                  style={{
+                                    backgroundColor: '#10B981',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    padding: '9px 14px',
+                                    borderRadius: '10px',
+                                    fontWeight: 800,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                  }}
+                                  title="ปลดการซ่อนโพสต์และนำกลับสู่ฟีดสาธารณะ"
+                                >
+                                  🔓 ปลดการซ่อน (Unhide)
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleReportAction(rep.id, 'hide')}
+                                  style={{
+                                    backgroundColor: '#F59E0B',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    padding: '9px 14px',
+                                    borderRadius: '10px',
+                                    fontWeight: 800,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                                  }}
+                                  title="ซ่อนโพสต์ไม่ให้แสดงบนฟีดสาธารณะ"
+                                >
+                                  ⏸️ ซ่อนโพสต์ (Hide)
+                                </button>
+                              )}
 
                               {/* 2. ดำเนินการลบโพสต์ที่มีปัญหา */}
                               <button

@@ -125,7 +125,7 @@ export interface PostReport {
   reasonText: string;
   details?: string;
   status: 'pending' | 'resolved' | 'dismissed';
-  actionTaken?: 'hidden' | 'deleted' | 'dismissed';
+  actionTaken?: 'hidden' | 'deleted' | 'dismissed' | 'unhidden' | 'approved';
   createdAt: string;
 }
 

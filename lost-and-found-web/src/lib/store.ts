@@ -60,6 +60,14 @@ class BackendDataStore {
     return persistentDb.deletePost(id);
   }
 
+  unhidePost(id: string): PostItem | undefined {
+    return persistentDb.unhidePost(id);
+  }
+
+  handleReportAction(reportId: string, action: 'hide' | 'delete' | 'dismiss' | 'unhide') {
+    return persistentDb.handleReportAction(reportId, action);
+  }
+
   getFavorites(userId?: string): FavoriteItem[] {
     return persistentDb.getFavorites(userId);
   }

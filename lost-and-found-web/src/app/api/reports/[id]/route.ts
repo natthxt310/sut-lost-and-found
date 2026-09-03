@@ -9,10 +9,10 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { action } = body; // 'hide' | 'delete' | 'dismiss'
+    const { action } = body; // 'hide' | 'delete' | 'dismiss' | 'unhide'
 
-    if (!['hide', 'delete', 'dismiss'].includes(action)) {
-      return NextResponse.json({ success: false, error: 'Invalid action. Must be hide, delete, or dismiss' }, { status: 400 });
+    if (!['hide', 'delete', 'dismiss', 'unhide'].includes(action)) {
+      return NextResponse.json({ success: false, error: 'Invalid action. Must be hide, delete, dismiss, or unhide' }, { status: 400 });
     }
 
     const result = persistentDb.handleReportAction(id, action);

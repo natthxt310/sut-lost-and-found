@@ -167,6 +167,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     setIsSubmitting(true);
     try {
       if (isEditing && editingPost) {
+        const wasHidden = editingPost.moderationStatus === 'hidden';
         await updatePost(editingPost.id, {
           type,
           title: title.trim(),
@@ -179,7 +180,14 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         });
 
         onSuccess();
-        Alert.alert('บันทึกสำเร็จ! 🎉', 'ข้อมูลโพสต์ของคุณได้รับการอัปเดตเรียบร้อยแล้ว');
+        if (wasHidden) {
+          Alert.alert(
+            'บันทึกสำเร็จ! 🎉',
+            'ข้อมูลโพสต์ที่แก้ไขถูกส่งไปยังผู้ดูแลระบบเพื่อตรวจสอบและปลดระงับเรียบร้อยแล้ว'
+          );
+        } else {
+          Alert.alert('บันทึกสำเร็จ! 🎉', 'ข้อมูลโพสต์ของคุณได้รับการอัปเดตเรียบร้อยแล้ว');
+        }
       } else {
         await createPost({
           type,

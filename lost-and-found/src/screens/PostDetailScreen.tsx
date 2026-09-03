@@ -220,6 +220,7 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
                 </Text>
                 <Text style={{ fontSize: 12, color: colors.text, marginTop: 3, lineHeight: 18 }}>
                   {post.moderationNotes || 'มีการรายงานความไม่เหมาะสม อยู่ระหว่างรอการตรวจสอบ'}
+                  {isOwner ? '\n\n💡 คำแนะนำ: คุณสามารถกดปุ่ม "แก้ไข" ด้านล่างเพื่อปรับปรุงข้อมูลให้ถูกต้อง แล้วระบบจะส่งให้ผู้ดูแลระบบตรวจสอบเพื่อปลดระงับ' : ''}
                 </Text>
               </View>
             </View>

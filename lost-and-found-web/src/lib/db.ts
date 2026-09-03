@@ -401,6 +401,22 @@ export class PersistentDatabase {
       };
       const db = this.readDb();
 
+      // ปลดเครื่องหมายรายงานที่ค้างอยู่เมื่อแอดมินอนุมัติโพสต์
+      if (isApproved) {
+        const pIdx = db.posts.findIndex((p) => p.id === id);
+        if (pIdx !== -1) {
+          db.posts[pIdx].isReported = false;
+        }
+        if (db.reports) {
+          db.reports.forEach((r) => {
+            if (r.postId === id && r.status === 'pending') {
+              r.status = 'resolved';
+              r.actionTaken = 'approved';
+            }
+          });
+        }
+      }
+
       // 🔔 บันทึกแจ้งเตือนผลอนุมัติ (เกิดก่อน)
       db.notifications.unshift(notif);
 
@@ -436,11 +452,20 @@ export class PersistentDatabase {
     if (idx === -1) return undefined;
 
     const prevStatus = db.posts[idx].status;
+    const prevModStatus = db.posts[idx].moderationStatus;
+
     db.posts[idx] = {
       ...db.posts[idx],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+
+    // ✏️ ถ้าโพสต์เดิมถูกซ่อนอยู่ (hidden) และผู้ใช้ทำการแก้ไขข้อมูล ให้เปลี่ยนสถานะกลับมารอแอดมินตรวจสอบเพื่อปลดระงับ
+    if (prevModStatus === 'hidden' && !updates.moderationStatus && updates.status !== 'returned') {
+      db.posts[idx].moderationStatus = 'pending';
+      db.posts[idx].isApproved = false;
+      db.posts[idx].moderationNotes = '✏️ เจ้าของแก้ไขข้อมูลแล้ว รอผู้ดูแลระบบตรวจสอบเพื่อปลดระงับ';
+    }
 
     // 🎁 ถ้าเปลี่ยนสถานะเป็น 'returned' (ส่งคืนสำเร็จ) ให้ส่ง Notification ขอบคุณไปยังเจ้าของโพสต์ทันที
     if (updates.status === 'returned' && prevStatus !== 'returned') {
@@ -765,7 +790,7 @@ export class PersistentDatabase {
     return newReport;
   }
 
-  handleReportAction(reportId: string, action: 'hide' | 'delete' | 'dismiss'): { success: boolean; message: string; report?: PostReport } {
+  handleReportAction(reportId: string, action: 'hide' | 'delete' | 'dismiss' | 'unhide'): { success: boolean; message: string; report?: PostReport } {
     const db = this.readDb();
     if (!db.reports) db.reports = [];
 
@@ -780,19 +805,111 @@ export class PersistentDatabase {
       if (post) {
         post.isApproved = false;
         post.moderationStatus = 'hidden';
-        post.moderationNotes = `⏸️ โพสต์ถูกซ่อนโดยแอดมิน เนื่องจากถูกรายงาน: ${report.reasonText}`;
+        post.moderationNotes = `⏸️ โพสต์ถูกระงับชั่วคราวเนื่องจากได้รับการรายงาน: "${report.reasonText}" (คุณสามารถแก้ไขข้อมูลเพื่อส่งให้ตรวจสอบและปลดระงับได้)`;
+
+        // 🔔 ส่งแจ้งเตือนหาเจ้าของโพสต์ (ไม่เปิดเผยตัวตนผู้รายงาน)
+        const notif: MatchNotification = {
+          id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          targetUserId: post.userId,
+          targetUserEmail: post.userEmail,
+          type: 'approval_rejected',
+          sourcePostId: post.id,
+          matchedPostId: post.id,
+          sourcePostTitle: post.title,
+          matchedPostTitle: 'โพสต์ถูกระงับการแสดงผลชั่วคราว ⏸️',
+          matchScore: 0,
+          category: post.category,
+          color: post.color,
+          location: post.location,
+          matchedWithUserName: 'ผู้ดูแลระบบ (Admin)',
+          matchedWithContact: `โพสต์ของคุณถูกระงับชั่วคราวเนื่องจากได้รับการรายงานว่า: "${report.reasonText}" คุณสามารถกดแก้ไขข้อมูลเพื่อให้ผู้ดูแลระบบตรวจสอบและปลดการระงับได้`,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        };
+        if (!db.notifications) db.notifications = [];
+        db.notifications.unshift(notif);
       }
       report.status = 'resolved';
       report.actionTaken = 'hidden';
       this.writeDb(db);
-      return { success: true, message: 'ซ่อนโพสต์ที่มีปัญหาเรียบร้อยแล้ว (ไม่แสดงบนฟีดสาธารณะ)', report };
+      return { success: true, message: 'ซ่อนโพสต์เรียบร้อยแล้ว (ไม่แสดงบนฟีดสาธารณะ) พร้อมส่งแจ้งเตือนให้เจ้าของโพสต์ทราบ', report };
     } else if (action === 'delete') {
-      // ลบโพสต์ถาวร
-      db.posts = db.posts.filter((p) => p.id !== report.postId);
+      // ลบโพสต์ถาวร: ดึงข้อมูลโพสต์เพื่อส่งแจ้งเตือนให้ผู้โพสต์ทราบก่อนลบ
+      const postToDelete = db.posts.find((p) => p.id === report.postId);
+      if (postToDelete) {
+        const notif: MatchNotification = {
+          id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          targetUserId: postToDelete.userId,
+          targetUserEmail: postToDelete.userEmail,
+          type: 'approval_rejected',
+          sourcePostId: postToDelete.id,
+          matchedPostId: postToDelete.id,
+          sourcePostTitle: postToDelete.title,
+          matchedPostTitle: 'โพสต์ถูกลบออกจากระบบ 🗑️',
+          matchScore: 0,
+          category: postToDelete.category,
+          color: postToDelete.color,
+          location: postToDelete.location,
+          matchedWithUserName: 'ผู้ดูแลระบบ (Admin)',
+          matchedWithContact: `โพสต์ของคุณถูกลบออกจากระบบอย่างถาวรเนื่องจากได้รับการรายงานว่า: "${report.reasonText}"`,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        // ลบโพสต์และรูปภาพจริงใน /uploads/ ออกจากระบบ
+        this.deletePost(report.postId);
+
+        const updatedDb = this.readDb();
+        if (!updatedDb.notifications) updatedDb.notifications = [];
+        updatedDb.notifications.unshift(notif);
+
+        const updatedReport = updatedDb.reports?.find((r) => r.id === reportId);
+        if (updatedReport) {
+          updatedReport.status = 'resolved';
+          updatedReport.actionTaken = 'deleted';
+        }
+        this.writeDb(updatedDb);
+        return { success: true, message: 'ลบโพสต์และรูปภาพออกจากระบบอย่างถาวรเรียบร้อยแล้ว พร้อมแจ้งเตือนผู้โพสต์', report: updatedReport || report };
+      } else {
+        report.status = 'resolved';
+        report.actionTaken = 'deleted';
+        this.writeDb(db);
+        return { success: true, message: 'ลบโพสต์เรียบร้อยแล้ว', report };
+      }
+    } else if (action === 'unhide') {
+      // ปลดการซ่อน / อนุมัติใหม่
+      const post = db.posts.find((p) => p.id === report.postId);
+      if (post) {
+        post.isApproved = true;
+        post.moderationStatus = 'approved';
+        post.moderationNotes = '✅ ได้รับการตรวจสอบและปลดระงับเรียบร้อยแล้ว (Admin Unhidden)';
+        post.isReported = false;
+
+        const notif: MatchNotification = {
+          id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          targetUserId: post.userId,
+          targetUserEmail: post.userEmail,
+          type: 'approval_approved',
+          sourcePostId: post.id,
+          matchedPostId: post.id,
+          sourcePostTitle: post.title,
+          matchedPostTitle: 'โพสต์ได้รับการปลดระงับแล้ว ✅',
+          matchScore: 100,
+          category: post.category,
+          color: post.color,
+          location: post.location,
+          matchedWithUserName: 'ผู้ดูแลระบบ (Admin)',
+          matchedWithContact: 'โพสต์ของคุณได้รับการปลดระงับการซ่อนเรียบร้อยแล้ว และกำลังแสดงบนฟีดสาธารณะตามปกติ',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        };
+        if (!db.notifications) db.notifications = [];
+        db.notifications.unshift(notif);
+      }
       report.status = 'resolved';
-      report.actionTaken = 'deleted';
+      report.actionTaken = 'unhidden';
       this.writeDb(db);
-      return { success: true, message: 'ลบโพสต์ที่มีปัญหาออกจากระบบอย่างถาวรเรียบร้อยแล้ว', report };
+      return { success: true, message: 'ปลดการซ่อนโพสต์เรียบร้อยแล้ว โพสต์กลับมาแสดงบนฟีดสาธารณะตามปกติ', report };
     } else if (action === 'dismiss') {
       // ยกเลิกรายงาน / ปล่อยผ่าน
       report.status = 'dismissed';
@@ -806,6 +923,50 @@ export class PersistentDatabase {
     }
 
     return { success: false, message: 'การดำเนินการไม่ถูกต้อง' };
+  }
+
+  unhidePost(postId: string): PostItem | undefined {
+    const db = this.readDb();
+    const post = db.posts.find((p) => p.id === postId);
+    if (!post) return undefined;
+
+    post.isApproved = true;
+    post.moderationStatus = 'approved';
+    post.moderationNotes = '✅ ได้รับการตรวจสอบและปลดระงับเรียบร้อยแล้ว (Admin Unhidden)';
+    post.isReported = false;
+
+    if (db.reports) {
+      db.reports.forEach((r) => {
+        if (r.postId === postId && r.status === 'pending') {
+          r.status = 'resolved';
+          r.actionTaken = 'unhidden';
+        }
+      });
+    }
+
+    const notif: MatchNotification = {
+      id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      targetUserId: post.userId,
+      targetUserEmail: post.userEmail,
+      type: 'approval_approved',
+      sourcePostId: post.id,
+      matchedPostId: post.id,
+      sourcePostTitle: post.title,
+      matchedPostTitle: 'โพสต์ได้รับการปลดระงับแล้ว ✅',
+      matchScore: 100,
+      category: post.category,
+      color: post.color,
+      location: post.location,
+      matchedWithUserName: 'ผู้ดูแลระบบ (Admin)',
+      matchedWithContact: 'โพสต์ของคุณได้รับการปลดระงับการซ่อนเรียบร้อยแล้ว และกำลังแสดงบนฟีดสาธารณะตามปกติ',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    if (!db.notifications) db.notifications = [];
+    db.notifications.unshift(notif);
+
+    this.writeDb(db);
+    return post;
   }
 
   // ==========================================

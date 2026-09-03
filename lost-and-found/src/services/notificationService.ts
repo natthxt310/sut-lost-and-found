@@ -96,27 +96,36 @@ export function formatNotification(n: MatchNotification): FormattedNotification 
   const type = n.type || 'match';
 
   switch (type) {
-    case 'approval_approved':
+    case 'approval_approved': {
+      const isUnhidden = n.matchedPostTitle?.includes('ปลดระงับ');
       return {
-        title: '✅ โพสต์ของคุณผ่านการอนุมัติแล้ว',
-        subtitle: `โพสต์ "${n.sourcePostTitle}" ได้รับการอนุมัติแล้ว และกำลังแสดงบนฟีดสาธารณะ`,
-        iconName: 'checkmark-done-circle',
+        title: isUnhidden ? '🔓 โพสต์ของคุณได้รับการปลดระงับแล้ว' : '✅ โพสต์ของคุณผ่านการอนุมัติแล้ว',
+        subtitle: n.matchedWithContact || `โพสต์ "${n.sourcePostTitle}" ได้รับการอนุมัติแล้ว และกำลังแสดงบนฟีดสาธารณะ`,
+        iconName: isUnhidden ? 'lock-open' : 'checkmark-done-circle',
         iconColor: '#10B981',
-        badgeText: 'อนุมัติแล้ว',
+        badgeText: isUnhidden ? 'ปลดระงับแล้ว' : 'อนุมัติแล้ว',
         badgeBg: '#DCFCE7',
         badgeColor: '#16A34A',
       };
+    }
 
-    case 'approval_rejected':
+    case 'approval_rejected': {
+      const isDeletedByAdmin = n.matchedPostTitle?.includes('ลบออกจากระบบ');
+      const isSuspended = n.matchedPostTitle?.includes('ระงับ');
       return {
-        title: '❌ โพสต์ของคุณถูกปฏิเสธโดยแอดมิน',
-        subtitle: `โพสต์ "${n.sourcePostTitle}" ไม่ผ่านเกณฑ์ (${n.matchedWithContact || 'กรุณาตรวจสอบข้อมูล'})`,
-        iconName: 'close-circle',
-        iconColor: '#EF4444',
-        badgeText: 'ถูกปฏิเสธ',
-        badgeBg: '#FEE2E2',
-        badgeColor: '#DC2626',
+        title: isDeletedByAdmin
+          ? '🗑️ โพสต์ของคุณถูกลบโดยผู้ดูแลระบบ'
+          : isSuspended
+          ? '⏸️ โพสต์ของคุณถูกระงับการแสดงผลชั่วคราว'
+          : '❌ โพสต์ของคุณถูกปฏิเสธโดยแอดมิน',
+        subtitle: n.matchedWithContact || `โพสต์ "${n.sourcePostTitle}" (${n.matchedPostTitle || 'กรุณาตรวจสอบข้อมูล'})`,
+        iconName: isDeletedByAdmin ? 'trash-outline' : isSuspended ? 'alert-circle-outline' : 'close-circle',
+        iconColor: isSuspended ? '#F59E0B' : '#EF4444',
+        badgeText: isDeletedByAdmin ? 'ถูกลบโดยแอดมิน' : isSuspended ? 'ถูกระงับชั่วคราว' : 'ถูกปฏิเสธ',
+        badgeBg: isSuspended ? '#FEF3C7' : '#FEE2E2',
+        badgeColor: isSuspended ? '#D97706' : '#DC2626',
       };
+    }
 
     case 'returned_thankyou':
       return {
