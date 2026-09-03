@@ -16,6 +16,26 @@ export default function AdminPage() {
   const [reportFilter, setReportFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
 
+  // Tab 1: Approval Queue (Posts) Filters, Search & Sort
+  const [postSearch, setPostSearch] = useState<string>('');
+  const [postSort, setPostSort] = useState<'newest' | 'oldest' | 'title_asc' | 'title_desc' | 'category' | 'location'>('newest');
+  const [postTypeFilter, setPostTypeFilter] = useState<'all' | 'lost' | 'found'>('all');
+  const [postCategoryFilter, setPostCategoryFilter] = useState<string>('all');
+
+  // Tab 2: Report Management Filters, Search & Sort
+  const [reportSearch, setReportSearch] = useState<string>('');
+  const [reportSort, setReportSort] = useState<'newest' | 'oldest' | 'reason' | 'title_asc'>('newest');
+  const [reportReasonFilter, setReportReasonFilter] = useState<string>('all');
+
+  // Tab 4: Monthly Trend Table Sort
+  const [monthlySortField, setMonthlySortField] = useState<'month' | 'lost' | 'found' | 'returned' | 'unfound' | 'rate'>('month');
+  const [monthlySortAsc, setMonthlySortAsc] = useState<boolean>(true);
+
+  // Tab 5: User Management Filters, Search & Sort
+  const [userSearch, setUserSearch] = useState<string>('');
+  const [userSort, setUserSort] = useState<'studentId_asc' | 'studentId_desc' | 'name_asc' | 'name_desc' | 'role'>('studentId_asc');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'admin' | 'student' | 'staff'>('all');
+
   // Dark / Light Theme State (สลับโหมดมืด / โหมดสว่าง)
   const [isDark, setIsDark] = useState<boolean>(true);
 
@@ -161,27 +181,189 @@ export default function AdminPage() {
     }
   };
 
+  // ดึงหมวดหมู่ทั้งหมดที่มีในโพสต์สำหรับตัวเลือก Dropdown
+  const postCategories = Array.from(new Set(posts.map((p) => p.category).filter(Boolean))).sort();
+
   // ตัวนับโพสต์รออนุมัติ
   const pendingPosts = posts.filter((p) => p.isApproved === false);
   const approvedPosts = posts.filter((p) => p.isApproved === true);
 
-  // คัดกรองโพสต์ในแท็บ Approval
-  const displayedPosts = posts.filter((p) => {
+  // โพสต์ที่กรองตามสถานะหลัก (รออนุมัติ / อนุมัติแล้ว / ทั้งหมด)
+  const postsInCurrentStatus = posts.filter((p) => {
     if (postFilter === 'pending') return p.isApproved === false;
     if (postFilter === 'approved') return p.isApproved === true;
     return true;
   });
 
+  // คัดกรองและจัดเรียงโพสต์ในแท็บ Approval
+  const displayedPosts = postsInCurrentStatus
+    .filter((p) => {
+      // Type filter (all, lost, found)
+      if (postTypeFilter !== 'all' && p.type !== postTypeFilter) return false;
+
+      // Category filter
+      if (postCategoryFilter !== 'all' && p.category !== postCategoryFilter) return false;
+
+      // Search query
+      if (postSearch.trim()) {
+        const q = postSearch.trim().toLowerCase();
+        const matchTitle = (p.title || '').toLowerCase().includes(q);
+        const matchDesc = (p.description || '').toLowerCase().includes(q);
+        const matchCat = (p.category || '').toLowerCase().includes(q);
+        const matchLoc = (p.location || '').toLowerCase().includes(q);
+        const matchColor = (p.color || '').toLowerCase().includes(q);
+        const matchUser = (p.userName || '').toLowerCase().includes(q);
+        const matchContact = (p.userContact || '').toLowerCase().includes(q);
+        const matchEmail = (p.userEmail || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchCat && !matchLoc && !matchColor && !matchUser && !matchContact && !matchEmail) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (postSort === 'newest') {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      if (postSort === 'oldest') {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+      if (postSort === 'title_asc') {
+        return (a.title || '').localeCompare(b.title || '', 'th');
+      }
+      if (postSort === 'title_desc') {
+        return (b.title || '').localeCompare(a.title || '', 'th');
+      }
+      if (postSort === 'category') {
+        return (a.category || '').localeCompare(b.category || '', 'th');
+      }
+      if (postSort === 'location') {
+        return (a.location || '').localeCompare(b.location || '', 'th');
+      }
+      return 0;
+    });
+
   // ตัวนับรายงานโพสต์ไม่เหมาะสม
   const pendingReports = reports.filter((r) => r.status === 'pending');
   const resolvedReports = reports.filter((r) => r.status === 'resolved' || r.status === 'dismissed');
 
-  // คัดกรองรายงานในแท็บ Reports
-  const displayedReports = reports.filter((r) => {
+  // รายงานที่กรองตามสถานะหลัก (รอตรวจสอบ / ดำเนินการแล้ว / ทั้งหมด)
+  const reportsInCurrentStatus = reports.filter((r) => {
     if (reportFilter === 'pending') return r.status === 'pending';
     if (reportFilter === 'resolved') return r.status === 'resolved' || r.status === 'dismissed';
     return true;
   });
+
+  // คัดกรองและจัดเรียงรายงานในแท็บ Reports
+  const displayedReports = reportsInCurrentStatus
+    .filter((r) => {
+      // Reason filter
+      if (reportReasonFilter !== 'all' && r.reason !== reportReasonFilter) return false;
+
+      // Search query
+      if (reportSearch.trim()) {
+        const q = reportSearch.trim().toLowerCase();
+        const matchTitle = (r.postTitle || '').toLowerCase().includes(q);
+        const matchReporter = (r.reporterName || '').toLowerCase().includes(q);
+        const matchReason = (r.reasonText || '').toLowerCase().includes(q);
+        const matchDetails = (r.details || '').toLowerCase().includes(q);
+        const matchAuthor = (r.postAuthorName || '').toLowerCase().includes(q);
+        const matchCat = (r.postCategory || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchReporter && !matchReason && !matchDetails && !matchAuthor && !matchCat) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (reportSort === 'newest') {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      if (reportSort === 'oldest') {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+      if (reportSort === 'reason') {
+        return (a.reasonText || '').localeCompare(b.reasonText || '', 'th');
+      }
+      if (reportSort === 'title_asc') {
+        return (a.postTitle || '').localeCompare(b.postTitle || '', 'th');
+      }
+      return 0;
+    });
+
+  // คัดกรองและจัดเรียงสมาชิกในแท็บ Users
+  const displayedUsers = users
+    .filter((u) => {
+      // Role filter
+      if (userRoleFilter !== 'all' && u.role !== userRoleFilter) return false;
+
+      // Search query
+      if (userSearch.trim()) {
+        const q = userSearch.trim().toLowerCase();
+        const matchName = (u.fullName || '').toLowerCase().includes(q);
+        const matchStudentId = (u.studentId || '').toLowerCase().includes(q);
+        const matchEmail = (u.email || '').toLowerCase().includes(q);
+        const matchPhone = (u.phone || '').toLowerCase().includes(q);
+        const matchRole = (u.role || '').toLowerCase().includes(q);
+        if (!matchName && !matchStudentId && !matchEmail && !matchPhone && !matchRole) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (userSort === 'studentId_asc') {
+        return (a.studentId || '').localeCompare(b.studentId || '', undefined, { numeric: true });
+      }
+      if (userSort === 'studentId_desc') {
+        return (b.studentId || '').localeCompare(a.studentId || '', undefined, { numeric: true });
+      }
+      if (userSort === 'name_asc') {
+        return (a.fullName || '').localeCompare(b.fullName || '', 'th');
+      }
+      if (userSort === 'name_desc') {
+        return (b.fullName || '').localeCompare(a.fullName || '', 'th');
+      }
+      if (userSort === 'role') {
+        const score = (r: string) => (r === 'admin' ? 3 : r === 'staff' ? 2 : 1);
+        return score(b.role) - score(a.role);
+      }
+      return 0;
+    });
+
+  // ฟังก์ชันจัดเรียงตารางสถิติเปรียบเทียบรายเดือน
+  const handleMonthlySort = (field: 'month' | 'lost' | 'found' | 'returned' | 'unfound' | 'rate') => {
+    if (monthlySortField === field) {
+      setMonthlySortAsc(!monthlySortAsc);
+    } else {
+      setMonthlySortField(field);
+      setMonthlySortAsc(false); // default descending for numeric fields
+    }
+  };
+
+  const sortedMonthlyTrend = stats?.monthlyTrend
+    ? [...stats.monthlyTrend].sort((a, b) => {
+        let diff = 0;
+        if (monthlySortField === 'month') {
+          diff = a.month.localeCompare(b.month, 'th');
+        } else if (monthlySortField === 'lost') {
+          diff = a.lost - b.lost;
+        } else if (monthlySortField === 'found') {
+          diff = a.found - b.found;
+        } else if (monthlySortField === 'returned') {
+          diff = a.returned - b.returned;
+        } else if (monthlySortField === 'unfound') {
+          const unfoundA = a.unfound ?? (a.lost - a.returned > 0 ? a.lost - a.returned : 0);
+          const unfoundB = b.unfound ?? (b.lost - b.returned > 0 ? b.lost - b.returned : 0);
+          diff = unfoundA - unfoundB;
+        } else if (monthlySortField === 'rate') {
+          const rateA = a.lost + a.found > 0 ? a.returned / (a.lost + a.found) : 0;
+          const rateB = b.lost + b.found > 0 ? b.returned / (b.lost + b.found) : 0;
+          diff = rateA - rateB;
+        }
+        return monthlySortAsc ? diff : -diff;
+      })
+    : [];
 
   // Dynamic Theme Colors
   const theme = {
@@ -590,6 +772,205 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* Tab 1: Search, Filter & Sort Control Bar */}
+                <div
+                  style={{
+                    backgroundColor: theme.card,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '16px',
+                    padding: '1.1rem 1.4rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* Search Input */}
+                    <div style={{ flex: '1 1 300px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '12px', fontSize: '0.95rem', color: theme.textMuted }}>
+                        🔍
+                      </span>
+                      <input
+                        type="text"
+                        value={postSearch}
+                        onChange={(e) => setPostSearch(e.target.value)}
+                        placeholder="ค้นหาชื่อโพสต์, รายละเอียด, หมวดหมู่, สถานที่, สี, หรือผู้โพสต์..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 36px 10px 38px',
+                          borderRadius: '12px',
+                          border: `1px solid ${theme.border}`,
+                          backgroundColor: theme.cardAlt,
+                          color: theme.text,
+                          fontSize: '0.85rem',
+                          outline: 'none',
+                        }}
+                      />
+                      {postSearch && (
+                        <button
+                          onClick={() => setPostSearch('')}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            background: 'none',
+                            border: 'none',
+                            color: theme.textMuted,
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                          }}
+                          title="ล้างคำค้นหา"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Post Type Selector */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '4px',
+                        backgroundColor: theme.cardAlt,
+                        padding: '4px',
+                        borderRadius: '10px',
+                        border: `1px solid ${theme.border}`,
+                      }}
+                    >
+                      <button
+                        onClick={() => setPostTypeFilter('all')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backgroundColor: postTypeFilter === 'all' ? '#FF7A00' : 'transparent',
+                          color: postTypeFilter === 'all' ? '#FFFFFF' : theme.textMuted,
+                        }}
+                      >
+                        ทุกประเภท
+                      </button>
+                      <button
+                        onClick={() => setPostTypeFilter('lost')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backgroundColor: postTypeFilter === 'lost' ? '#EF4444' : 'transparent',
+                          color: postTypeFilter === 'lost' ? '#FFFFFF' : theme.textMuted,
+                        }}
+                      >
+                        🔍 ของหาย
+                      </button>
+                      <button
+                        onClick={() => setPostTypeFilter('found')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backgroundColor: postTypeFilter === 'found' ? '#10B981' : 'transparent',
+                          color: postTypeFilter === 'found' ? '#FFFFFF' : theme.textMuted,
+                        }}
+                      >
+                        🎁 พบของ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {/* Category Filter Dropdown */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>📦 หมวดหมู่:</span>
+                        <select
+                          value={postCategoryFilter}
+                          onChange={(e) => setPostCategoryFilter(e.target.value)}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.cardAlt,
+                            color: theme.text,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="all">ทุกหมวดหมู่ ({postsInCurrentStatus.length})</option>
+                          {postCategories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Sort Dropdown */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>🔃 จัดเรียง:</span>
+                        <select
+                          value={postSort}
+                          onChange={(e) => setPostSort(e.target.value as any)}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.cardAlt,
+                            color: theme.text,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="newest">🕒 วันที่: ล่าสุด → เก่าสุด</option>
+                          <option value="oldest">⏳ วันที่: เก่าสุด → ล่าสุด</option>
+                          <option value="title_asc">🔤 ชื่อโพสต์: ก - ฮ (A-Z)</option>
+                          <option value="title_desc">🔤 ชื่อโพสต์: ฮ - ก (Z-A)</option>
+                          <option value="category">📦 ตามหมวดหมู่</option>
+                          <option value="location">📍 ตามสถานที่</option>
+                        </select>
+                      </div>
+
+                      {/* Clear Filters Button */}
+                      {(postSearch || postTypeFilter !== 'all' || postCategoryFilter !== 'all' || postSort !== 'newest') && (
+                        <button
+                          onClick={() => {
+                            setPostSearch('');
+                            setPostTypeFilter('all');
+                            setPostCategoryFilter('all');
+                            setPostSort('newest');
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: `1px solid ${theme.borderAlt}`,
+                            backgroundColor: theme.cardAlt,
+                            color: '#EF4444',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🔄 ล้างตัวกรอง
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Result Counter Badge */}
+                    <div style={{ fontSize: '0.8rem', color: theme.textMuted }}>
+                      แสดง <strong style={{ color: '#FF7A00' }}>{displayedPosts.length}</strong> จาก {postsInCurrentStatus.length} โพสต์
+                    </div>
+                  </div>
+                </div>
+
                 {/* Posts Cards Grid */}
                 {displayedPosts.length === 0 ? (
                   <div
@@ -602,13 +983,44 @@ export default function AdminPage() {
                       color: theme.textMuted,
                     }}
                   >
-                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎉</div>
-                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>ไม่มีโพสต์ที่อยู่ในหมวดหมู่นี้</h4>
+                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>
+                      {postSearch || postTypeFilter !== 'all' || postCategoryFilter !== 'all' ? '🔍' : '🎉'}
+                    </div>
+                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>
+                      {postSearch || postTypeFilter !== 'all' || postCategoryFilter !== 'all'
+                        ? 'ไม่พบโพสต์ที่ตรงกับคำค้นหาหรือตัวกรอง'
+                        : 'ไม่มีโพสต์ที่อยู่ในหมวดหมู่นี้'}
+                    </h4>
                     <p style={{ fontSize: '0.85rem', marginTop: '6px' }}>
-                      {postFilter === 'pending'
+                      {postSearch || postTypeFilter !== 'all' || postCategoryFilter !== 'all'
+                        ? 'ลองตรวจสอบคำสะกด หรือล้างคำค้นหาเพื่อแสดงรายการทั้งหมด'
+                        : postFilter === 'pending'
                         ? 'ยอดเยี่ยม! ไม่มีโพสต์ที่ค้างรอการอนุมัติในขณะนี้'
                         : 'ไม่พบรายการโพสต์ตามตัวกรองที่เลือก'}
                     </p>
+                    {(postSearch || postTypeFilter !== 'all' || postCategoryFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setPostSearch('');
+                          setPostTypeFilter('all');
+                          setPostCategoryFilter('all');
+                          setPostSort('newest');
+                        }}
+                        style={{
+                          marginTop: '12px',
+                          padding: '8px 16px',
+                          backgroundColor: '#FF7A00',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔄 ล้างการค้นหาและตัวกรอง
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: '1.25rem' }}>
@@ -892,6 +1304,140 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* Tab 2: Search, Reason Filter & Sort Control Bar */}
+                <div
+                  style={{
+                    backgroundColor: theme.card,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '16px',
+                    padding: '1.1rem 1.4rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* Search Input */}
+                    <div style={{ flex: '1 1 300px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '12px', fontSize: '0.95rem', color: theme.textMuted }}>
+                        🔍
+                      </span>
+                      <input
+                        type="text"
+                        value={reportSearch}
+                        onChange={(e) => setReportSearch(e.target.value)}
+                        placeholder="ค้นหาชื่อโพสต์ที่ถูกรายงาน, ผู้ร้องเรียน, ข้อความร้องเรียน, ผู้โพสต์..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 36px 10px 38px',
+                          borderRadius: '12px',
+                          border: `1px solid ${theme.border}`,
+                          backgroundColor: theme.cardAlt,
+                          color: theme.text,
+                          fontSize: '0.85rem',
+                          outline: 'none',
+                        }}
+                      />
+                      {reportSearch && (
+                        <button
+                          onClick={() => setReportSearch('')}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            background: 'none',
+                            border: 'none',
+                            color: theme.textMuted,
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                          }}
+                          title="ล้างคำค้นหา"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Reason Filter Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>⚠️ สาเหตุ:</span>
+                      <select
+                        value={reportReasonFilter}
+                        onChange={(e) => setReportReasonFilter(e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: `1px solid ${theme.border}`,
+                          backgroundColor: theme.cardAlt,
+                          color: theme.text,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="all">ทุกสาเหตุที่รายงาน</option>
+                        <option value="spam">📢 สแปม / การพนัน</option>
+                        <option value="scam">⚠️ หลอกลวง / มิจฉาชีพ</option>
+                        <option value="inappropriate">🚫 เนื้อหาไม่เหมาะสม</option>
+                        <option value="fake">❌ ข้อมูลเท็จ</option>
+                        <option value="other">❓ อื่นๆ</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>🔃 จัดเรียง:</span>
+                      <select
+                        value={reportSort}
+                        onChange={(e) => setReportSort(e.target.value as any)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: `1px solid ${theme.border}`,
+                          backgroundColor: theme.cardAlt,
+                          color: theme.text,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="newest">🕒 รายงานล่าสุด → เก่าสุด</option>
+                        <option value="oldest">⏳ รายงานเก่าสุด → ล่าสุด</option>
+                        <option value="reason">⚠️ ประเภทเหตุผล</option>
+                        <option value="title_asc">🔤 ชื่อโพสต์: ก - ฮ (A-Z)</option>
+                      </select>
+                    </div>
+
+                    {/* Clear Filter Button */}
+                    {(reportSearch || reportReasonFilter !== 'all' || reportSort !== 'newest') && (
+                      <button
+                        onClick={() => {
+                          setReportSearch('');
+                          setReportReasonFilter('all');
+                          setReportSort('newest');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: `1px solid ${theme.borderAlt}`,
+                          backgroundColor: theme.cardAlt,
+                          color: '#EF4444',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔄 ล้างตัวกรอง
+                      </button>
+                    )}
+
+                    {/* Result Counter */}
+                    <div style={{ fontSize: '0.8rem', color: theme.textMuted, marginLeft: 'auto' }}>
+                      แสดง <strong style={{ color: '#EF4444' }}>{displayedReports.length}</strong> จาก {reportsInCurrentStatus.length} รายงาน
+                    </div>
+                  </div>
+                </div>
+
                 {/* Reports List */}
                 {displayedReports.length === 0 ? (
                   <div
@@ -904,13 +1450,43 @@ export default function AdminPage() {
                       color: theme.textMuted,
                     }}
                   >
-                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🛡️</div>
-                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>ไม่มีรายงานโพสต์ในหมวดหมู่นี้</h4>
+                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>
+                      {reportSearch || reportReasonFilter !== 'all' ? '🔍' : '🛡️'}
+                    </div>
+                    <h4 style={{ fontSize: '1.2rem', color: theme.text, margin: 0 }}>
+                      {reportSearch || reportReasonFilter !== 'all'
+                        ? 'ไม่พบรายงานที่ตรงกับคำค้นหาหรือตัวกรอง'
+                        : 'ไม่มีรายงานโพสต์ในหมวดหมู่นี้'}
+                    </h4>
                     <p style={{ fontSize: '0.85rem', marginTop: '6px' }}>
-                      {reportFilter === 'pending'
+                      {reportSearch || reportReasonFilter !== 'all'
+                        ? 'ลองตรวจสอบคำสะกด หรือล้างคำค้นหาเพื่อแสดงรายการรายงานทั้งหมด'
+                        : reportFilter === 'pending'
                         ? 'ยอดเยี่ยม! ไม่มีรายงานโพสต์ไม่เหมาะสมที่ค้างรอตรวจสอบในขณะนี้'
                         : 'ไม่พบรายการรายงานตามตัวกรองที่เลือก'}
                     </p>
+                    {(reportSearch || reportReasonFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setReportSearch('');
+                          setReportReasonFilter('all');
+                          setReportSort('newest');
+                        }}
+                        style={{
+                          marginTop: '12px',
+                          padding: '8px 16px',
+                          backgroundColor: '#EF4444',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔄 ล้างการค้นหาและตัวกรอง
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: '1.25rem' }}>
@@ -1372,21 +1948,64 @@ export default function AdminPage() {
 
                 {/* Monthly Trend Table */}
                 <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: theme.text }}>สถิติเปรียบเทียบรายเดือน</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: theme.text }}>
+                      📊 สถิติเปรียบเทียบรายเดือน (คลิกหัวตารางเพื่อจัดเรียง)
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>
+                      เรียงตาม: <strong>{monthlySortField === 'month' ? 'ประจำเดือน' : monthlySortField === 'lost' ? 'ของหาย' : monthlySortField === 'found' ? 'พบของ' : monthlySortField === 'returned' ? 'ส่งคืน' : monthlySortField === 'unfound' ? 'ยังหาไม่เจอ' : 'อัตราสำเร็จ'}</strong> ({monthlySortAsc ? 'น้อยไปมาก 🔼' : 'มากไปน้อย 🔽'})
+                    </span>
+                  </div>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px' }}>ประจำเดือน</th>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ของหาย (ชิ้น)</th>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>พบของ (ชิ้น)</th>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ส่งคืนสำเร็จ (ชิ้น)</th>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ยังหาไม่เจอ (ชิ้น)</th>
-                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>อัตราสำเร็จ (%)</th>
+                          <th
+                            onClick={() => handleMonthlySort('month')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px', cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามเดือน"
+                          >
+                            ประจำเดือน {monthlySortField === 'month' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => handleMonthlySort('lost')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามจำนวนของหาย"
+                          >
+                            ของหาย (ชิ้น) {monthlySortField === 'lost' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => handleMonthlySort('found')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามจำนวนที่พบ"
+                          >
+                            พบของ (ชิ้น) {monthlySortField === 'found' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => handleMonthlySort('returned')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามจำนวนที่ส่งคืนสำเร็จ"
+                          >
+                            ส่งคืนสำเร็จ (ชิ้น) {monthlySortField === 'returned' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => handleMonthlySort('unfound')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามจำนวนที่ยังหาไม่เจอ"
+                          >
+                            ยังหาไม่เจอ (ชิ้น) {monthlySortField === 'unfound' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => handleMonthlySort('rate')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0', cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อจัดเรียงตามอัตราสำเร็จ"
+                          >
+                            อัตราสำเร็จ (%) {monthlySortField === 'rate' ? (monthlySortAsc ? '🔼' : '🔽') : '↕️'}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {stats.monthlyTrend.map((t, idx) => (
+                        {sortedMonthlyTrend.map((t, idx) => (
                           <tr key={idx} style={{ borderBottom: `1px solid ${theme.border}` }}>
                             <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{t.month}</td>
                             <td style={{ padding: '12px', color: '#EF4444' }}>{t.lost}</td>
@@ -1410,66 +2029,262 @@ export default function AdminPage() {
             {/* ============================================================== */}
             {activeTab === 'users' && (
               <div style={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '16px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: theme.text }}>
-                  👥 รายชื่อสมาชิกและนักศึกษา ({users.length})
-                </h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px' }}>รหัสนักศึกษา</th>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>ชื่อ-นามสกุล</th>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>อีเมล</th>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>เบอร์โทร</th>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>บทบาท (Role)</th>
-                        <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>การจัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map((u) => (
-                        <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                          <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>{u.studentId}</td>
-                          <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{u.fullName}</td>
-                          <td style={{ padding: '12px', color: theme.textMuted }}>{u.email}</td>
-                          <td style={{ padding: '12px', color: theme.textMuted }}>{u.phone || '-'}</td>
-                          <td style={{ padding: '12px' }}>
-                            <span
-                              style={{
-                                backgroundColor: u.role === 'admin' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(56, 189, 248, 0.2)',
-                                color: u.role === 'admin' ? '#F59E0B' : '#38BDF8',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                fontSize: '0.75rem',
-                                fontWeight: 800,
-                              }}
-                            >
-                              {u.role}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            {u.role !== 'admin' && (
-                              <button
-                                onClick={() => handleDeleteUser(u.id)}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: theme.text, fontWeight: 800 }}>
+                      👥 รายชื่อสมาชิกและนักศึกษา
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', color: theme.textMuted, fontSize: '0.85rem' }}>
+                      จัดการรายชื่อ ค้นหา และระงับบัญชีผู้ใช้งานในระบบ มทส.
+                    </p>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: theme.textMuted }}>
+                    แสดง <strong style={{ color: '#FF7A00' }}>{displayedUsers.length}</strong> จาก {users.length} คน
+                  </div>
+                </div>
+
+                {/* Tab 5: Search, Role Filter & Sort Bar */}
+                <div
+                  style={{
+                    backgroundColor: theme.cardAlt,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '14px',
+                    padding: '1rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                  }}
+                >
+                  {/* Search Input */}
+                  <div style={{ flex: '1 1 260px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ position: 'absolute', left: '12px', fontSize: '0.95rem', color: theme.textMuted }}>
+                      🔍
+                    </span>
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="ค้นหาชื่อ-นามสกุล, รหัสนักศึกษา, อีเมล, หรือเบอร์โทร..."
+                      style={{
+                        width: '100%',
+                        padding: '9px 36px 9px 36px',
+                        borderRadius: '10px',
+                        border: `1px solid ${theme.border}`,
+                        backgroundColor: theme.card,
+                        color: theme.text,
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                      }}
+                    />
+                    {userSearch && (
+                      <button
+                        onClick={() => setUserSearch('')}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          background: 'none',
+                          border: 'none',
+                          color: theme.textMuted,
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                        }}
+                        title="ล้างคำค้นหา"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Role Filter */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>บทบาท:</span>
+                    <select
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value as any)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: `1px solid ${theme.border}`,
+                        backgroundColor: theme.card,
+                        color: theme.text,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="all">ทุกบทบาท ({users.length})</option>
+                      <option value="admin">🛡️ Admin</option>
+                      <option value="student">🎓 นักศึกษา (Student)</option>
+                      <option value="staff">💼 เจ้าหน้าที่ (Staff)</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Dropdown */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 700 }}>🔃 จัดเรียง:</span>
+                    <select
+                      value={userSort}
+                      onChange={(e) => setUserSort(e.target.value as any)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: `1px solid ${theme.border}`,
+                        backgroundColor: theme.card,
+                        color: theme.text,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="studentId_asc">🔤 รหัสนักศึกษา: น้อย → มาก</option>
+                      <option value="studentId_desc">🔤 รหัสนักศึกษา: มาก → น้อย</option>
+                      <option value="name_asc">👤 ชื่อ: ก - ฮ (A-Z)</option>
+                      <option value="name_desc">👤 ชื่อ: ฮ - ก (Z-A)</option>
+                      <option value="role">🛡️ สิทธิ์ Admin ขึ้นก่อน</option>
+                    </select>
+                  </div>
+
+                  {/* Clear Filter Button */}
+                  {(userSearch || userRoleFilter !== 'all' || userSort !== 'studentId_asc') && (
+                    <button
+                      onClick={() => {
+                        setUserSearch('');
+                        setUserRoleFilter('all');
+                        setUserSort('studentId_asc');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${theme.borderAlt}`,
+                        backgroundColor: theme.card,
+                        color: '#EF4444',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🔄 ล้างตัวกรอง
+                    </button>
+                  )}
+                </div>
+
+                {displayedUsers.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '3rem 2rem',
+                      textAlign: 'center',
+                      color: theme.textMuted,
+                      backgroundColor: theme.cardAlt,
+                      borderRadius: '12px',
+                      border: `1px dashed ${theme.border}`,
+                    }}
+                  >
+                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🔍</div>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: theme.text }}>
+                      ไม่พบสมาชิกที่ตรงกับเงื่อนไขการค้นหา
+                    </h4>
+                    <p style={{ margin: '6px 0 12px 0', fontSize: '0.85rem' }}>
+                      ลองค้นหาด้วยคำอื่น หรือกดล้างตัวกรองเพื่อแสดงข้อมูลทั้งหมด
+                    </p>
+                    <button
+                      onClick={() => {
+                        setUserSearch('');
+                        setUserRoleFilter('all');
+                        setUserSort('studentId_asc');
+                      }}
+                      style={{
+                        padding: '6px 14px',
+                        backgroundColor: '#FF7A00',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🔄 ล้างตัวกรอง
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: theme.tableHeader, borderBottom: `1px solid ${theme.border}` }}>
+                          <th
+                            onClick={() => setUserSort(userSort === 'studentId_asc' ? 'studentId_desc' : 'studentId_asc')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '8px 0 0 8px', cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อสลับเรียงตามรหัสนักศึกษา"
+                          >
+                            รหัสนักศึกษา {userSort === 'studentId_asc' ? '🔼' : userSort === 'studentId_desc' ? '🔽' : '↕️'}
+                          </th>
+                          <th
+                            onClick={() => setUserSort(userSort === 'name_asc' ? 'name_desc' : 'name_asc')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อสลับเรียงตามชื่อ-นามสกุล"
+                          >
+                            ชื่อ-นามสกุล {userSort === 'name_asc' ? '🔼' : userSort === 'name_desc' ? '🔽' : '↕️'}
+                          </th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>อีเมล</th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader }}>เบอร์โทร</th>
+                          <th
+                            onClick={() => setUserSort('role')}
+                            style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, cursor: 'pointer', userSelect: 'none' }}
+                            title="คลิกเพื่อเรียง Admin ขึ้นก่อน"
+                          >
+                            บทบาท (Role) {userSort === 'role' ? '⭐' : '↕️'}
+                          </th>
+                          <th style={{ padding: '12px', color: theme.textMuted, backgroundColor: theme.tableHeader, borderRadius: '0 8px 8px 0' }}>การจัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedUsers.map((u) => (
+                          <tr key={u.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                            <td style={{ padding: '12px', fontWeight: 800, color: '#FF7A00' }}>{u.studentId}</td>
+                            <td style={{ padding: '12px', fontWeight: 700, color: theme.text }}>{u.fullName}</td>
+                            <td style={{ padding: '12px', color: theme.textMuted }}>{u.email}</td>
+                            <td style={{ padding: '12px', color: theme.textMuted }}>{u.phone || '-'}</td>
+                            <td style={{ padding: '12px' }}>
+                              <span
                                 style={{
-                                  backgroundColor: theme.cardAlt,
-                                  color: '#EF4444',
-                                  border: '1px solid #EF4444',
-                                  padding: '4px 10px',
-                                  borderRadius: '8px',
+                                  backgroundColor: u.role === 'admin' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                                  color: u.role === 'admin' ? '#F59E0B' : '#38BDF8',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
                                   fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
+                                  fontWeight: 800,
                                 }}
                               >
-                                ระงับบัญชี
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              {u.role !== 'admin' && (
+                                <button
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  style={{
+                                    backgroundColor: theme.cardAlt,
+                                    color: '#EF4444',
+                                    border: '1px solid #EF4444',
+                                    padding: '4px 10px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  ระงับบัญชี
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </>

@@ -45,12 +45,13 @@
       "userName": "นายหน้า บาคาร่า",
       "userContact": "Line: @bkk888",
       "userEmail": "spambot@fake.com",
-      "isApproved": true,
-      "moderationStatus": "flagged",
+      "isApproved": false,
+      "moderationStatus": "hidden",
       "isReported": true,
       "reportCount": 3,
       "reportReason": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
-      "createdAt": "2026-09-02T15:15:00.000Z"
+      "createdAt": "2026-09-02T15:15:00.000Z",
+      "moderationNotes": "⏸️ โพสต์ถูกซ่อนโดยแอดมิน เนื่องจากถูกรายงาน: 📢 สแปม / การพนันและโฆษณาผิดกฎหมาย"
     },
     {
       "id": "post-scam-02",
@@ -66,12 +67,13 @@
       "userName": "ผู้ไม่ประสงค์ออกนาม",
       "userContact": "080-999-8888",
       "userEmail": "scam@fake.com",
-      "isApproved": true,
-      "moderationStatus": "flagged",
+      "isApproved": false,
+      "moderationStatus": "hidden",
       "isReported": true,
       "reportCount": 2,
       "reportReason": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน",
-      "createdAt": "2026-09-02T16:05:00.000Z"
+      "createdAt": "2026-09-02T16:05:00.000Z",
+      "moderationNotes": "⏸️ โพสต์ถูกซ่อนโดยแอดมิน เนื่องจากถูกรายงาน: ⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน"
     },
     {
       "id": "q1-jan-l1",
@@ -87,9 +89,13 @@
       "userName": "จิรวัฒน์ มั่นคง",
       "userContact": "081-234-5671",
       "userEmail": "jirawat@sut.ac.th",
-      "isApproved": true,
-      "moderationStatus": "approved",
-      "createdAt": "2026-01-12T10:15:00.000Z"
+      "isApproved": false,
+      "moderationStatus": "hidden",
+      "createdAt": "2026-01-12T10:15:00.000Z",
+      "isReported": true,
+      "reportCount": 1,
+      "reportReason": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน",
+      "moderationNotes": "⏸️ โพสต์ถูกซ่อนโดยแอดมิน เนื่องจากถูกรายงาน: ⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน"
     },
     {
       "id": "q1-jan-l2",
@@ -1513,10 +1519,98 @@
       "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
       "id": "msg-1788371556763-786",
       "createdAt": "2026-09-02T17:52:36.763Z"
+    },
+    {
+      "postId": "post-001",
+      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
+      "senderId": "usr-001",
+      "senderName": "ศิวะพร ภูดินทราย",
+      "receiverId": "usr-002",
+      "receiverName": "นัฐภัทร์ กตัญวิญญู",
+      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
+      "id": "msg-1788404012850-71",
+      "createdAt": "2026-09-03T02:53:32.850Z"
+    },
+    {
+      "postId": "post-001",
+      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
+      "senderId": "usr-001",
+      "senderName": "ศิวะพร ภูดินทราย",
+      "receiverId": "usr-002",
+      "receiverName": "นัฐภัทร์ กตัญวิญญู",
+      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
+      "id": "msg-1788404089836-77",
+      "createdAt": "2026-09-03T02:54:49.836Z"
+    },
+    {
+      "postId": "post-001",
+      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
+      "senderId": "usr-001",
+      "senderName": "ศิวะพร ภูดินทราย",
+      "receiverId": "usr-002",
+      "receiverName": "นัฐภัทร์ กตัญวิญญู",
+      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
+      "id": "msg-1788404100977-638",
+      "createdAt": "2026-09-03T02:55:00.977Z"
     }
   ],
-  "lastUpdated": "2026-09-02T17:55:55.799Z",
+  "lastUpdated": "2026-09-03T02:55:00.988Z",
   "reports": [
+    {
+      "postId": "post-1788404100980-286",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788404100982-64",
+      "status": "resolved",
+      "createdAt": "2026-09-03T02:55:00.982Z",
+      "actionTaken": "deleted"
+    },
+    {
+      "postId": "post-1788404089838-229",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788404089840-22",
+      "status": "resolved",
+      "createdAt": "2026-09-03T02:54:49.840Z",
+      "actionTaken": "deleted"
+    },
+    {
+      "postId": "post-1788404012852-61",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788404012853-104",
+      "status": "resolved",
+      "createdAt": "2026-09-03T02:53:32.853Z",
+      "actionTaken": "deleted"
+    },
+    {
+      "postId": "q1-jan-l1",
+      "postTitle": "กุญแจรถจักรยานยนต์ Honda Wave 110i",
+      "postImageUrl": "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80",
+      "postCategory": "กุญแจรถ / พวงกุญแจ",
+      "postAuthorName": "จิรวัฒน์ มั่นคง",
+      "reporterId": "usr-1788359333623-174",
+      "reporterName": "Siwaphon",
+      "reason": "scam",
+      "reasonText": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน",
+      "details": "รายงานผ่านแอปพลิเคชันมือถือ",
+      "id": "rep-1788371863248-834",
+      "status": "resolved",
+      "createdAt": "2026-09-02T17:57:43.248Z",
+      "actionTaken": "hidden"
+    },
     {
       "id": "rep-001",
       "postId": "post-spam-01",
@@ -1529,8 +1623,9 @@
       "reason": "spam",
       "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
       "details": "โพสต์ชวนเล่นการพนันและโปรโมทเว็บ ไม่เกี่ยวข้องกับของหายใน มทส. เลย รบกวนแอดมินลบหรือซ่อนด้วยครับ",
-      "status": "pending",
-      "createdAt": "2026-09-02T16:30:00.000Z"
+      "status": "resolved",
+      "createdAt": "2026-09-02T16:30:00.000Z",
+      "actionTaken": "hidden"
     },
     {
       "id": "rep-002",
@@ -1544,8 +1639,9 @@
       "reason": "scam",
       "reasonText": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน",
       "details": "มีพฤติกรรมเข้าข่ายมิจฉาชีพชัดเจน บังคับให้ผู้เสียหายโอนเงินมัดจำค่าส่งมอบ 500 บาทก่อนถึงจะนัดคืนของ",
-      "status": "pending",
-      "createdAt": "2026-09-02T16:45:00.000Z"
+      "status": "resolved",
+      "createdAt": "2026-09-02T16:45:00.000Z",
+      "actionTaken": "hidden"
     }
   ]
 }

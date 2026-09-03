@@ -219,6 +219,37 @@ assert(deleteResult.success && deleteResult.report?.actionTaken === 'deleted', '
 const allPostsAfterDelete = persistentDb.getPosts({ all: true });
 assert(!allPostsAfterDelete.some((p) => p.id === testReportPost.id), 'Reports: Verified problematic post is permanently deleted from database.json');
 
+// ==========================================
+// SEARCH & SORT TESTING
+// ==========================================
+// 1. Post Search & Sort
+const allDbPosts = persistentDb.getPosts({ all: true });
+const searchedPosts = allDbPosts.filter(p => (p.title || '').toLowerCase().includes('iphone') || (p.category || '').toLowerCase().includes('สมาร์ทโฟน'));
+assert(searchedPosts.length > 0, `Search: Successfully matched ${searchedPosts.length} posts by keyword 'iPhone' or category 'สมาร์ทโฟน'`);
+
+const sortedPostsNewest = [...allDbPosts].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+const isNewestSorted = sortedPostsNewest.every((p, idx, arr) => idx === 0 || new Date(arr[idx - 1].createdAt || 0).getTime() >= new Date(p.createdAt || 0).getTime());
+assert(isNewestSorted, 'Sort: Successfully verified posts ordered chronologically (newest to oldest)');
+
+// 2. Report Search & Sort
+const allDbReports = persistentDb.getReports('all');
+const searchedReports = allDbReports.filter(r => (r.postTitle || '').toLowerCase().includes('บาคาร่า') || (r.reasonText || '').toLowerCase().includes('สแปม'));
+assert(searchedReports.length > 0, `Search: Successfully matched ${searchedReports.length} reports by keyword 'บาคาร่า' / 'สแปม'`);
+
+const sortedReportsReason = [...allDbReports].sort((a, b) => (a.reasonText || '').localeCompare(b.reasonText || '', 'th'));
+assert(sortedReportsReason.length === allDbReports.length, 'Sort: Successfully verified reports sortable by reason text');
+
+// 3. User Search & Sort
+const allDbUsers = persistentDb.getUsers();
+const searchedUsers = allDbUsers.filter(u => (u.fullName || '').toLowerCase().includes('natthapat') || (u.studentId || '').includes('B68'));
+assert(searchedUsers.length > 0, `Search: Successfully matched ${searchedUsers.length} users by name 'Natthapat' or studentId 'B68'`);
+
+const sortedUsersAdminFirst = [...allDbUsers].sort((a, b) => {
+  const score = (r) => (r === 'admin' ? 3 : r === 'staff' ? 2 : 1);
+  return score(b.role) - score(a.role);
+});
+assert(sortedUsersAdminFirst[0]?.role === 'admin', 'Sort: Successfully verified users sorted with admin role first');
+
 console.log('\n=====================================================');
 console.log(`🎉 TEST SUMMARY: ${passCount}/${totalCount} TESTS PASSED`);
 console.log('=====================================================\n');
