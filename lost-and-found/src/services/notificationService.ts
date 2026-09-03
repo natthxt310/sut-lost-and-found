@@ -1,6 +1,12 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, LogBox } from 'react-native';
 import { MatchNotification } from '../types';
+
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  'Android Push notifications (remote notifications)',
+  'expo-notifications',
+]);
 
 /**
  * =========================================================================
