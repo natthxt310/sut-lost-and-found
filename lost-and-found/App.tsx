@@ -29,7 +29,8 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { FavoritesScreen } from './src/screens/FavoritesScreen';
 import { AuthModal } from './src/screens/AuthModal';
 import { InAppNotificationBanner } from './src/components/InAppNotificationBanner';
-import { PostItem, PostType } from './src/types';
+import { PostItem, PostType, MatchNotification } from './src/types';
+import { api } from './src/services/api';
 
 const Tab = createBottomTabNavigator();
 
@@ -86,18 +87,35 @@ function MainAppContent() {
     />
   ), [searchCategory, searchViewMode]);
 
+  const handleSelectNotification = async (n: MatchNotification) => {
+    // 💡 สำหรับการแจ้งเตือนประเภทจับคู่ของหาย (match / found):
+    // ต้องเปิดโพสต์ของอีกฝ่าย / ผู้ที่พบของ (matchedPostId) เพื่อดูรายละเอียดของที่แมตช์ ไม่ใช่เปิดโพสต์เดิมของตนเอง
+    // สำหรับผลการตรวจสอบ (approval), ส่งคืนสำเร็จ (returned_thankyou), ต่ออายุ (post_expiry_reminder): เปิดโพสต์ของตนเอง (sourcePostId)
+    const isMatching = n.type === 'match' || n.type === 'found';
+    const primaryId = isMatching
+      ? (n.matchedPostId || n.sourcePostId)
+      : (n.sourcePostId || n.matchedPostId);
+    const fallbackId = isMatching ? n.sourcePostId : n.matchedPostId;
+
+    let targetPost = posts.find((p) => p.id === primaryId) || posts.find((p) => p.id === fallbackId);
+
+    // หากไม่พบในรายการปัจจุบัน ให้ดึงจาก Backend โดยตรง
+    if (!targetPost && primaryId) {
+      targetPost = await api.getPostById(primaryId);
+    }
+
+    if (targetPost) {
+      if (n.type === 'message') {
+        setSelectedChatPost(targetPost);
+      } else {
+        setSelectedPost(targetPost);
+      }
+    }
+  };
+
   const renderNotificationScreen = useCallback(() => (
     <NotificationScreen
-      onSelectNotification={(n) => {
-        const targetPost = posts.find((p) => p.id === n.sourcePostId || p.id === n.matchedPostId);
-        if (targetPost) {
-          if (n.type === 'message') {
-            setSelectedChatPost(targetPost);
-          } else {
-            setSelectedPost(targetPost);
-          }
-        }
-      }}
+      onSelectNotification={handleSelectNotification}
     />
   ), [posts]);
 
@@ -331,14 +349,7 @@ function MainAppContent() {
         onDismiss={dismissInAppBanner}
         onPress={(notif) => {
           dismissInAppBanner();
-          const targetPost = posts.find((p) => p.id === notif.sourcePostId || p.id === notif.matchedPostId);
-          if (targetPost) {
-            if (notif.type === 'message') {
-              setSelectedChatPost(targetPost);
-            } else {
-              setSelectedPost(targetPost);
-            }
-          }
+          handleSelectNotification(notif);
         }}
       />
     </View>

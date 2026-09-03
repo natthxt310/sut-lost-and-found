@@ -343,7 +343,21 @@ class PersistentApiService {
 
   async getPostById(id: string): Promise<PostItem | undefined> {
     await this.ensureInitialized();
-    return this.posts.find((p) => p.id === id);
+    let found = this.posts.find((p) => p.id === id);
+    if (!found) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/posts/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            found = data.data;
+          }
+        }
+      } catch {
+        // offline fallback
+      }
+    }
+    return found;
   }
 
   async createPost(postData: Omit<PostItem, 'id' | 'createdAt'>): Promise<{ post: PostItem; matches: MatchNotification[] }> {
