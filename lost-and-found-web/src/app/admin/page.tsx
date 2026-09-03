@@ -12,7 +12,7 @@ export default function AdminPage() {
   const [selectedQuarter, setSelectedQuarter] = useState<number>(3);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'approval' | 'reports' | 'quarterly' | 'stats' | 'users'>('reports');
-  const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'all'>('pending');
+  const [postFilter, setPostFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [reportFilter, setReportFilter] = useState<'pending' | 'resolved' | 'all'>('pending');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
 
@@ -184,14 +184,20 @@ export default function AdminPage() {
   // ดึงหมวดหมู่ทั้งหมดที่มีในโพสต์สำหรับตัวเลือก Dropdown
   const postCategories = Array.from(new Set(posts.map((p) => p.category).filter(Boolean))).sort();
 
-  // ตัวนับโพสต์รออนุมัติ
-  const pendingPosts = posts.filter((p) => p.isApproved === false);
-  const approvedPosts = posts.filter((p) => p.isApproved === true);
+  // ตัวนับโพสต์ตามสถานะ
+  const pendingPosts = posts.filter(
+    (p) => p.moderationStatus === 'pending' || (p.isApproved === false && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden')
+  );
+  const approvedPosts = posts.filter((p) => p.isApproved === true || p.moderationStatus === 'approved');
+  const rejectedPosts = posts.filter((p) => p.moderationStatus === 'rejected');
 
-  // โพสต์ที่กรองตามสถานะหลัก (รออนุมัติ / อนุมัติแล้ว / ทั้งหมด)
+  // โพสต์ที่กรองตามสถานะหลัก (รออนุมัติ / อนุมัติแล้ว / ปฏิเสธแล้ว / ทั้งหมด)
   const postsInCurrentStatus = posts.filter((p) => {
-    if (postFilter === 'pending') return p.isApproved === false;
-    if (postFilter === 'approved') return p.isApproved === true;
+    if (postFilter === 'pending') {
+      return p.moderationStatus === 'pending' || (p.isApproved === false && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden');
+    }
+    if (postFilter === 'approved') return p.isApproved === true || p.moderationStatus === 'approved';
+    if (postFilter === 'rejected') return p.moderationStatus === 'rejected';
     return true;
   });
 
@@ -755,6 +761,21 @@ export default function AdminPage() {
                       ✅ อนุมัติแล้ว ({approvedPosts.length})
                     </button>
                     <button
+                      onClick={() => setPostFilter('rejected')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        border: postFilter === 'rejected' ? '2px solid #EF4444' : `1px solid ${theme.borderAlt}`,
+                        backgroundColor: postFilter === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : theme.cardAlt,
+                        color: postFilter === 'rejected' ? '#EF4444' : theme.textMuted,
+                      }}
+                    >
+                      ❌ ปฏิเสธแล้ว ({rejectedPosts.length})
+                    </button>
+                    <button
                       onClick={() => setPostFilter('all')}
                       style={{
                         padding: '8px 14px',
@@ -1025,7 +1046,11 @@ export default function AdminPage() {
                 ) : (
                   <div style={{ display: 'grid', gap: '1.25rem' }}>
                     {displayedPosts.map((post) => {
-                      const isPending = post.isApproved === false;
+                      const isApproved = post.isApproved === true || post.moderationStatus === 'approved';
+                      const isRejected = post.moderationStatus === 'rejected';
+                      const isHidden = post.moderationStatus === 'hidden';
+                      const isPending = !isApproved && !isRejected && !isHidden;
+
                       return (
                         <div
                           key={post.id}
@@ -1034,7 +1059,13 @@ export default function AdminPage() {
                             borderTop: `1px solid ${theme.border}`,
                             borderRight: `1px solid ${theme.border}`,
                             borderBottom: `1px solid ${theme.border}`,
-                            borderLeft: isPending ? '4px solid #F59E0B' : '4px solid #10B981',
+                            borderLeft: isRejected
+                              ? '4px solid #EF4444'
+                              : isHidden
+                              ? '4px solid #F59E0B'
+                              : isApproved
+                              ? '4px solid #10B981'
+                              : '4px solid #F59E0B',
                             borderRadius: '16px',
                             padding: '1.25rem 1.5rem',
                             display: 'flex',
@@ -1081,18 +1112,61 @@ export default function AdminPage() {
                               </span>
 
                               {/* Approval Status Badge */}
-                              <span
-                                style={{
-                                  backgroundColor: isPending ? '#FEF3C7' : '#DCFCE7',
-                                  color: isPending ? '#B45309' : '#16A34A',
-                                  padding: '2px 8px',
-                                  borderRadius: '6px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 800,
-                                }}
-                              >
-                                {isPending ? '⏳ รอแอดมินอนุมัติ' : '✅ อนุมัติแล้ว (แสดงบนฟีด)'}
-                              </span>
+                              {isApproved ? (
+                                <span
+                                  style={{
+                                    backgroundColor: '#DCFCE7',
+                                    color: '#16A34A',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  ✅ อนุมัติแล้ว (แสดงบนฟีด)
+                                </span>
+                              ) : isRejected ? (
+                                <span
+                                  style={{
+                                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                    color: '#EF4444',
+                                    border: '1px solid #EF4444',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  ❌ ปฏิเสธแล้ว (ไม่อนุมัติ)
+                                </span>
+                              ) : isHidden ? (
+                                <span
+                                  style={{
+                                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                    color: '#F59E0B',
+                                    border: '1px solid #F59E0B',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  ⏸️ ถูกซ่อน (รายงานปัญหา)
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    backgroundColor: '#FEF3C7',
+                                    color: '#B45309',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  ⏳ รอแอดมินอนุมัติ
+                                </span>
+                              )}
 
                               {/* AI Content Safety Shield */}
                               <span
@@ -1112,6 +1186,12 @@ export default function AdminPage() {
                             <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: theme.text, margin: '0 0 4px 0' }}>
                               {post.title}
                             </h4>
+
+                            {post.moderationNotes && (
+                              <div style={{ fontSize: '0.8rem', color: isRejected ? '#EF4444' : isHidden ? '#F59E0B' : '#10B981', marginBottom: '6px', fontWeight: 600 }}>
+                                {post.moderationNotes}
+                              </div>
+                            )}
 
                             <div style={{ fontSize: '0.85rem', color: theme.textMuted, display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }}>
                               <span>📦 {post.category}</span>
@@ -1167,6 +1247,29 @@ export default function AdminPage() {
                                   ❌ ปฏิเสธ (Reject)
                                 </button>
                               </>
+                            ) : isRejected ? (
+                              <>
+                                <button
+                                  onClick={() => handleApprovePost(post.id, true)}
+                                  style={{
+                                    backgroundColor: '#10B981',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    fontWeight: 800,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                  }}
+                                >
+                                  🔄 เปลี่ยนเป็นอนุมัติ
+                                </button>
+                              </>
                             ) : (
                               <>
                                 <button
@@ -1182,7 +1285,7 @@ export default function AdminPage() {
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  ⏸️ ระงับการแสดงผล
+                                  ⏸️ ระงับ / ปฏิเสธ
                                 </button>
                               </>
                             )}

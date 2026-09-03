@@ -61,7 +61,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onBack }) => {
   }
 
   // รายการโพสต์ที่รอ Admin ตรวจสอบอนุมัติ
-  const pendingPosts = posts.filter((p) => p.isApproved === false);
+  const pendingPosts = posts.filter(
+    (p) => p.moderationStatus === 'pending' || (p.isApproved === false && p.moderationStatus !== 'rejected' && p.moderationStatus !== 'hidden')
+  );
 
   const handleApprove = async (id: string, isApproved: boolean) => {
     try {
