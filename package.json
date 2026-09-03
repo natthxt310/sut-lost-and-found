@@ -8,7 +8,7 @@
     "dev:tunnel": "concurrently -i -n \"SERVER-API,EXPO-APP\" -c \"cyan,green\" \"npm run web\" \"cd lost-and-found && npx expo start --tunnel\"",
     "dev:android": "concurrently -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
     "open:emulators": "node scripts/open_all_emulators.js",
-    "mobile": "cd lost-and-found && npx expo start",
+    "mobile": "cd lost-and-found && npx expo start --localhost",
     "android": "cd lost-and-found && npx expo start --android",
     "web": "cd lost-and-found-web && npm run dev",
     "test": "npx tsx scripts/test_matching_and_crud.mjs"

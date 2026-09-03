@@ -39,5 +39,6 @@ function launchAll() {
   }
 }
 
-// รอให้ Metro Bundler พร้อมแล้วเปิดทุกเครื่อง
-setTimeout(launchAll, 3000);
+// เปิดรอบแรกที่ 4 วินาที และเปิดซ้ำอีกครั้งที่ 8 วินาทีเพื่อความชัวร์เมื่อ Metro พร้อม
+setTimeout(launchAll, 4000);
+setTimeout(launchAll, 8000);
