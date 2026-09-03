@@ -49,7 +49,13 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   // ตัวกรองหมวดหมู่
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'moderation' | 'chat'>('all');
 
-  const filteredNotifications = notifications.filter((n) => {
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
+
+  const filteredNotifications = sortedNotifications.filter((n) => {
     if (filterType === 'unread') return !n.isRead;
     if (filterType === 'moderation') {
       return n.type === 'approval_approved' || n.type === 'approval_rejected';

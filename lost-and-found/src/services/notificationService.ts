@@ -165,13 +165,13 @@ export function formatNotification(n: MatchNotification): FormattedNotification 
     case 'match':
     default:
       return {
-        title: '✨ พบสิ่งของที่ตรงกับที่คุณแจ้ง!',
+        title: '🔍 มีผู้แจ้งของหายที่ตรงกับของที่คุณพบ!',
         subtitle: `"${n.sourcePostTitle}" ตรงกับโพสต์ของ ${n.matchedWithUserName || 'นักศึกษา มทส.'} (${n.matchScore || 80}%)`,
-        iconName: 'checkmark-circle',
-        iconColor: '#10B981',
-        badgeText: 'จับคู่ตรงกัน',
-        badgeBg: '#DCFCE7',
-        badgeColor: '#16A34A',
+        iconName: 'search-circle',
+        iconColor: '#0284C7',
+        badgeText: 'ตรงกับของที่พบ',
+        badgeBg: '#E0F2FE',
+        badgeColor: '#0284C7',
       };
   }
 }

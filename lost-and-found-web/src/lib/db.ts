@@ -378,9 +378,9 @@ export class PersistentDatabase {
     });
 
     if (updated) {
-      // ส่งแจ้งเตือน (In-App Notification) ไปยังเจ้าของโพสต์ทันที
+      const nowMs = Date.now();
       const notif: MatchNotification = {
-        id: `notif-mod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        id: `notif-mod-${nowMs}-${Math.floor(Math.random() * 1000)}`,
         targetUserId: updated.userId,
         targetUserEmail: updated.userEmail,
         type: isApproved ? ('approval_approved' as any) : ('approval_rejected' as any),
@@ -397,10 +397,14 @@ export class PersistentDatabase {
           ? 'โพสต์ของคุณแสดงบนฟีดสาธารณะเรียบร้อยแล้ว'
           : updated.moderationNotes || '❌ ไม่อนุมัติการเผยแพร่',
         isRead: false,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(nowMs).toISOString(),
       };
       const db = this.readDb();
-      // ✨ ทำการคำนวณและแจ้งเตือนการจับคู่ (Auto-Matching) เฉพาะเมื่อแอดมินอนุมัติโพสต์แล้วเท่านั้น!
+
+      // 🔔 บันทึกแจ้งเตือนผลอนุมัติ (เกิดก่อน)
+      db.notifications.unshift(notif);
+
+      // ✨ คำนวณและแจ้งเตือนการจับคู่ (Auto-Matching) เกิดขึ้นหลังจากโพสต์ได้รับการอนุมัติแล้ว
       if (isApproved) {
         const approvedPosts = db.posts.filter(
           (p) =>
@@ -411,12 +415,14 @@ export class PersistentDatabase {
         );
         const matches = findMatchesForPost(updated, approvedPosts);
         if (matches.length > 0) {
+          // กำหนดเวลา matching ให้อยู่หลังจากเวลาอนุมัติอย่างชัดเจน (nowMs + 2000ms)
+          matches.forEach((m, idx) => {
+            m.createdAt = new Date(nowMs + 2000 + idx * 100).toISOString();
+          });
+          // วางไว้ด้านบนสุดเพื่อให้เรียงตามลำดับเวลา: โพสต์อนุมัติก่อน (เกิดก่อน) -> แล้วระบบจึงค้นหาของที่ตรงกัน (เกิดตามมา)
           db.notifications.unshift(...matches);
         }
       }
-
-      // 🔔 วางแจ้งเตือนผลอนุมัติ (Approval) ไว้ด้านบนสุด เพื่อให้เจ้าของโพสต์เห็นผลอนุมัติก่อน
-      db.notifications.unshift(notif);
 
       this.writeDb(db);
     }

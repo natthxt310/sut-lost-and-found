@@ -82,34 +82,6 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
     ]);
   };
 
-  const handleClaimOrReportFound = async () => {
-    if (isLost) {
-      Alert.alert(
-        'แจ้งพบสิ่งของ 🔍',
-        `คุณได้พบสิ่งของ "${post.title}" ใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อนัดส่งคืนเจ้าของทันที`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'ส่งข้อความนัดส่งมอบ',
-            onPress: () => onOpenChat(post),
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        'ขอรับสิ่งของคืน 🎁',
-        `สิ่งของ "${post.title}" ชิ้นนี้เป็นของคุณใช่หรือไม่? ระบบจะเปิดห้องแชทเพื่อติดต่อขอนัดรับของคืนจากผู้พบทันที`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'ส่งข้อความขอรับคืน',
-            onPress: () => onOpenChat(post),
-          },
-        ]
-      );
-    }
-  };
-
   const handleReportInappropriate = () => {
     Alert.alert(
       '🚨 รายงานโพสต์ไม่เหมาะสม',
@@ -448,34 +420,28 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
           </>
         ) : (
           <>
+            {/* ปุ่มติดต่อ (ส่งข้อความแชท) */}
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#0055D4', flex: 1 }]}
+              style={[styles.actionBtn, { backgroundColor: '#0055D4', flex: 2 }]}
               onPress={() => onOpenChat(post)}
               activeOpacity={0.88}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.actionBtnText}>ติดต่อ</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="chatbubbles-outline" size={20} color="#FFFFFF" />
+                <Text style={[styles.actionBtnText, { fontSize: 16 }]}>ติดต่อ</Text>
               </View>
             </TouchableOpacity>
 
+            {/* ปุ่มรายงานโพสต์ไม่เหมาะสม */}
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#10B981', flex: 1.2 }]}
-              onPress={handleClaimOrReportFound}
-              activeOpacity={0.88}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={isLost ? 'search-outline' : 'gift-outline'} size={18} color="#FFFFFF" />
-                <Text style={styles.actionBtnText}>{isLost ? 'พบของ' : 'ขอรับของคืน'}</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#EF4444', flex: 0.45, paddingHorizontal: 0 }]}
+              style={[styles.actionBtn, { backgroundColor: '#EF4444', flex: 1 }]}
               onPress={handleReportInappropriate}
               activeOpacity={0.88}
             >
-              <Ionicons name="flag-outline" size={20} color="#FFFFFF" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="flag-outline" size={18} color="#FFFFFF" />
+                <Text style={[styles.actionBtnText, { fontSize: 15 }]}>รายงาน</Text>
+              </View>
             </TouchableOpacity>
           </>
         )}
