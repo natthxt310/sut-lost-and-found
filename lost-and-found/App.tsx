@@ -8,7 +8,10 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  LogBox,
 } from 'react-native';
+
+LogBox.ignoreLogs(['Cannot connect to Expo CLI']);
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';

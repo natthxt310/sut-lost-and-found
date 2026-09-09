@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "SUT Lost & Found System (Integrated Next.js Web/API + React Native Mobile App for DGT01 1130 & DGT01 1230)",
   "scripts": {
-    "dev": "concurrently -i -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
-    "start": "concurrently -i -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
+    "dev": "concurrently -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
+    "start": "concurrently -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
     "dev:tunnel": "concurrently -i -n \"SERVER-API,EXPO-APP\" -c \"cyan,green\" \"npm run web\" \"cd lost-and-found && npx expo start --tunnel\"",
     "dev:android": "concurrently -n \"SERVER-API,EXPO-APP,EMULATORS\" -c \"cyan,green,yellow\" \"npm run web\" \"npm run mobile\" \"node scripts/open_all_emulators.js\"",
     "open:emulators": "node scripts/open_all_emulators.js",
-    "mobile": "node scripts/silence_expo_warnings.js && cd lost-and-found && npx expo start --localhost",
-    "android": "node scripts/silence_expo_warnings.js && cd lost-and-found && npx expo start --android",
+    "mobile": "node scripts/silence_expo_warnings.js && cd lost-and-found && node --dns-result-order=ipv4first ./node_modules/expo/bin/cli start --localhost",
+    "android": "node scripts/silence_expo_warnings.js && cd lost-and-found && node --dns-result-order=ipv4first ./node_modules/expo/bin/cli start --android",
     "web": "cd lost-and-found-web && npm run dev",
     "postinstall": "node scripts/silence_expo_warnings.js",
     "test": "npx tsx scripts/test_matching_and_crud.mjs"
