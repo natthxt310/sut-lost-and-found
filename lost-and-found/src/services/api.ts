@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import { PostItem, User, FavoriteItem, MatchNotification, ChatMessage, ChatConversation } from '../types';
 import { INITIAL_POSTS, INITIAL_USER, INITIAL_FAVORITES, INITIAL_NOTIFICATIONS } from '../data/mockData';
 import { findMatchesForPost } from './matching';
@@ -12,17 +12,46 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: '@sut_lost_found_notifications_v2',
 };
 
-// Base URL ของ Next.js Backend API ตาม Platform (รองรับทั้งมือถือจริง และ Emulator)
-const getApiBaseUrl = () => {
+// Base URL ของ Next.js Backend API ตาม Platform (รองรับทั้งมือถือจริงผ่าน USB adb reverse, Wi-Fi และ Android Emulator)
+export const getApiBaseUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  try {
+    const scriptURL = NativeModules?.SourceCode?.scriptURL;
+    if (scriptURL) {
+      const match = scriptURL.match(/^https?:\/\/([^:/]+)/);
+      if (match && match[1]) {
+        return `http://${match[1]}:3000/api`;
+      }
+    }
+  } catch {}
   if (Platform.OS === 'android') {
-    // 10.0.2.2 เข้าถึง Backend localhost ของคอมพิวเตอร์จาก Android Emulator ได้ 100%
-    return 'http://10.0.2.2:3000/api';
+    // 127.0.0.1 ทำงานร่วมกับ adb reverse tcp:3000 tcp:3000 ได้ทั้งมือถือจริงและ Emulator
+    return 'http://127.0.0.1:3000/api';
   }
   return 'http://10.1.165.152:3000/api';
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Dynamic API Base URL ที่เรียกคำนวณ Host อัตโนมัติทุกครั้ง
+const API_BASE_URL = {
+  toString: () => getApiBaseUrl(),
+  valueOf: () => getApiBaseUrl(),
+  replace: (pattern: string | RegExp, replacement: string) => getApiBaseUrl().replace(pattern, replacement),
+};
+
+// Helper fetch พร้อม timeout เพื่อป้องกันแอปหมุนค้างเมื่อต่อเครือข่ายไม่ได้
+export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutMs: number = 2500): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 /**
  * แปลง URL ของรูปภาพให้แสดงผลได้ถูกต้องทุกอุปกรณ์ (รวมถึงไฟล์จาก /uploads)
@@ -33,7 +62,7 @@ export const getMediaUrl = (url?: string): string => {
     return url;
   }
   if (url.startsWith('/uploads/')) {
-    const serverHost = API_BASE_URL.replace(/\/api$/, '');
+    const serverHost = getApiBaseUrl().replace(/\/api$/, '');
     return `${serverHost}${url}`;
   }
   return url;
@@ -132,7 +161,7 @@ class PersistentApiService {
   // ซิงก์ข้อมูลกับ Next.js REST API เมื่อเชื่อมต่อได้
   private async syncWithBackend() {
     try {
-      const res = await fetch(`${API_BASE_URL}/posts`, { method: 'GET' });
+      const res = await fetchWithTimeout(`${API_BASE_URL}/posts`, { method: 'GET' }, 2500);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -208,11 +237,11 @@ class PersistentApiService {
 
     // 1. ลองตรวจสอบกับ Next.js Backend API ก่อน
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: sId, password }),
-      });
+      }, 3000);
       const data = await res.json();
       if (data.success && data.data) {
         this.user = data.data;
@@ -278,11 +307,11 @@ class PersistentApiService {
 
     // ส่งต่อไปยัง Next.js Backend API
     try {
-      await fetch(`${API_BASE_URL}/users`, {
+      await fetchWithTimeout(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser),
-      });
+      }, 3000);
     } catch (e) {
       // offline fallback
     }
@@ -297,11 +326,11 @@ class PersistentApiService {
 
     // 1. ส่งคำขอรีเซ็ตไปยัง Next.js Backend API
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: sId, email: userEmail, newPassword }),
-      });
+      }, 3000);
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'ไม่สามารถรีเซ็ตรหัสผ่านได้');
@@ -355,7 +384,7 @@ class PersistentApiService {
       if (this.user?.role === 'admin') qParams.append('all', 'true');
       const fetchUrl = `${API_BASE_URL}/posts?${qParams.toString()}`;
       
-      const res = await fetch(fetchUrl, { method: 'GET' });
+      const res = await fetchWithTimeout(fetchUrl, { method: 'GET' }, 2500);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {

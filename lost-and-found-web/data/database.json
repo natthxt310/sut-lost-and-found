@@ -1309,8 +1309,47 @@
   "favorites": [],
   "notifications": [],
   "messages": [],
-  "lastUpdated": "2026-09-09T02:14:35.015Z",
+  "lastUpdated": "2026-09-09T03:45:47.006Z",
   "reports": [
+    {
+      "postId": "post-1788925187285-6",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788925187287-652",
+      "status": "resolved",
+      "createdAt": "2026-09-09T03:39:47.287Z",
+      "actionTaken": "deleted"
+    },
+    {
+      "postId": "post-1788922462804-616",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788922462806-20",
+      "status": "resolved",
+      "createdAt": "2026-09-09T02:54:22.806Z",
+      "actionTaken": "deleted"
+    },
+    {
+      "postId": "post-1788921719524-942",
+      "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
+      "reporterId": "usr-001",
+      "reporterName": "ศิวะพร ภูดินทราย",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / การพนันและโฆษณาผิดกฎหมาย",
+      "details": "โพสต์โฆษณาไม่เหมาะสมใน มทส.",
+      "id": "rep-1788921719525-596",
+      "status": "resolved",
+      "createdAt": "2026-09-09T02:41:59.525Z",
+      "actionTaken": "deleted"
+    },
     {
       "postId": "post-1788919577409-506",
       "postTitle": "โพสต์ทดสอบสำหรับรายงานสแปม",
