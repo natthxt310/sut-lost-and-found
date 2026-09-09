@@ -30,6 +30,16 @@ try {
       console.log('✅ Patched TopicSubscriptionModule for Expo Go compatibility');
     }
   }
+
+  const targetTsconfig = path.join(__dirname, '..', 'lost-and-found', 'node_modules', 'expo-notifications', 'tsconfig.json');
+  if (fs.existsSync(targetTsconfig)) {
+    let content = fs.readFileSync(targetTsconfig, 'utf8');
+    if (content.includes('expo-module-scripts/tsconfig.base')) {
+      content = content.replace('expo-module-scripts/tsconfig.base', 'expo/tsconfig.base');
+      fs.writeFileSync(targetTsconfig, content, 'utf8');
+      console.log('✅ Fixed expo-notifications tsconfig.json extends error');
+    }
+  }
 } catch (err) {
   console.warn('⚠️ Could not patch expo-notifications warnings:', err.message);
 }
