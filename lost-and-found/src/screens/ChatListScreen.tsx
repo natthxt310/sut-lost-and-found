@@ -30,7 +30,7 @@ import { PostItem, ChatConversation } from '../types';
  */
 
 interface ChatListScreenProps {
-  onOpenChat: (post: PostItem) => void;
+  onOpenChat: (post: PostItem, partner?: { id?: string; name?: string }) => void;
   onNavigateToExplore: () => void;
 }
 
@@ -70,7 +70,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         createdAt: conv.lastMessageAt,
       };
     }
-    onOpenChat(targetPost);
+    onOpenChat(targetPost, { id: conv.otherUserId, name: conv.otherUserName });
   };
 
   const formatRelativeTime = (dateString: string) => {

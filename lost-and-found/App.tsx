@@ -52,6 +52,7 @@ function MainAppContent() {
   // Navigation Overlay States
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [selectedChatPost, setSelectedChatPost] = useState<PostItem | null>(null);
+  const [selectedChatPartner, setSelectedChatPartner] = useState<{ id?: string; name?: string } | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [createInitialType, setCreateInitialType] = useState<PostType>('lost');
   const [editingPost, setEditingPost] = useState<PostItem | null>(null);
@@ -106,6 +107,9 @@ function MainAppContent() {
 
     if (targetPost) {
       if (n.type === 'message') {
+        setSelectedChatPartner(
+          n.matchedWithUserName ? { name: n.matchedWithUserName } : null
+        );
         setSelectedChatPost(targetPost);
       } else {
         setSelectedPost(targetPost);
@@ -268,8 +272,11 @@ function MainAppContent() {
           <PostDetailScreen
             post={selectedPost}
             onBack={() => setSelectedPost(null)}
-            onOpenChat={(p) => {
+            onOpenChat={(p, partner) => {
               setSelectedPost(null);
+              setSelectedChatPartner(
+                partner || (p.userId !== user?.id ? { id: p.userId, name: p.userName } : null)
+              );
               setSelectedChatPost(p);
             }}
             onEditPost={(p) => {
@@ -285,7 +292,11 @@ function MainAppContent() {
         {selectedChatPost && (
           <ChatScreen
             post={selectedChatPost}
-            onBack={() => setSelectedChatPost(null)}
+            partner={selectedChatPartner || undefined}
+            onBack={() => {
+              setSelectedChatPost(null);
+              setSelectedChatPartner(null);
+            }}
           />
         )}
       </Modal>

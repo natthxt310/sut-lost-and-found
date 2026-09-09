@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,7 +23,7 @@ import { moderateChatMessage } from '../services/moderation';
  * 💬 หน้าต่างห้องแชท (Chat Room Screen - ตามแบบ แชท.png)
  * =========================================================================
  * 💡 อธิบายการทำงาน:
- * 1. ส่วนหัว: ปุ่มย้อนกลับสีดำ, ชื่อผู้ใช้งาน + สถานะ 'ออนไลน์' สีเขียว
+ * 1. ส่วนหัว: ปุ่มย้อนกลับสีดำ, ชื่อคู่สนทนาตัวจริง + สถานะ 'ออนไลน์' สีเขียว
  * 2. บับเบิ้ลข้อความ: ฝั่งซ้ายสีเทาอ่อน (คนอื่น) vs ฝั่งขวาสีน้ำเงิน (เรา) พร้อมเวลาด้านล่าง
  * 3. กล่องพิมพ์ข้อความขอบมน พร้อมไอคอนยิ้ม และปุ่มส่งวงกลมสีดำไอคอนเครื่องบินกระดาษ
  * =========================================================================
@@ -31,10 +31,14 @@ import { moderateChatMessage } from '../services/moderation';
 
 interface ChatScreenProps {
   post: PostItem;
+  partner?: {
+    id?: string;
+    name?: string;
+  };
   onBack: () => void;
 }
 
-export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
+export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack }) => {
   const { user, markChatAsRead, toggleLikeMessage } = useApp();
   const { colors, isDark } = useTheme();
 
@@ -56,6 +60,53 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
     const interval = setInterval(loadChat, 3000);
     return () => clearInterval(interval);
   }, [post.id]);
+
+  // 💡 คำนวณชื่อคู่สนทนาแบบ Dynamic:
+  // ไม่ใช้ post.userName แบบตายตัว เพราะถ้าเราเป็นเจ้าของโพสต์ post.userName จะกลายเป็นชื่อเราเอง
+  const displayPartnerName = useMemo(() => {
+    // 1. ถ้ามี partner.name ส่งเข้ามา และไม่ใช่ชื่อเราเอง
+    if (partner?.name && partner.name.trim() !== user?.fullName?.trim()) {
+      return partner.name.trim();
+    }
+
+    // 2. หาข้อความที่อีกฝ่ายส่งมาหาเรา (คนอื่นในห้องแชท)
+    const incomingMsg = messages.find(
+      (m) =>
+        (m.senderId && m.senderId !== user?.id) ||
+        (m.senderName && m.senderName.trim() !== user?.fullName?.trim())
+    );
+    if (incomingMsg?.senderName && incomingMsg.senderName.trim() !== user?.fullName?.trim()) {
+      return incomingMsg.senderName.trim();
+    }
+
+    // 3. หาข้อความที่เราส่งไปหาอีกฝ่าย (ดูจาก receiverName)
+    const outgoingMsg = messages.find(
+      (m) =>
+        (m.senderId === user?.id || m.senderName === user?.fullName) &&
+        m.receiverName &&
+        m.receiverName.trim() !== user?.fullName?.trim()
+    );
+    if (outgoingMsg?.receiverName) {
+      return outgoingMsg.receiverName.trim();
+    }
+
+    // 4. ตรวจสอบว่าเราเป็นเจ้าของโพสต์หรือไม่
+    const isOwner =
+      (user?.id && user.id === post.userId) ||
+      (user?.fullName && user.fullName.trim() === post.userName?.trim());
+
+    // ถ้าเราไม่ใช่เจ้าของโพสต์ -> คู่สนทนาคือเจ้าของโพสต์
+    if (!isOwner && post.userName) {
+      return post.userName;
+    }
+
+    // ถ้าเราเป็นเจ้าของโพสต์ แต่ยังไม่มีข้อความอื่น
+    if (isOwner) {
+      return partner?.name || 'คู่สนทนา';
+    }
+
+    return post.userName || 'ผู้ใช้ มทส.';
+  }, [partner, messages, user, post]);
 
   const handleSend = async () => {
     const textToSend = inputText.trim();
@@ -81,11 +132,35 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
     setInputText('');
 
     // ระบุผู้รับข้อความ:
-    // ถ้าเราเป็นเจ้าของโพสต์ ให้ส่งหาคนที่ทักเรามา (คนอื่นในห้องแชท)
-    // ถ้าเราไม่ใช่เจ้าของโพสต์ ให้ส่งหาเจ้าของโพสต์
-    const otherMsg = messages.find((m) => m.senderId !== user?.id);
-    const targetReceiverId = (user?.id === post.userId && otherMsg) ? otherMsg.senderId : (post.userId || 'usr-receiver');
-    const targetReceiverName = (user?.id === post.userId && otherMsg) ? otherMsg.senderName : (post.userName || 'ผู้ใช้ มทส.');
+    // 1. หาข้อความจากอีกฝ่ายในห้องแชท
+    const otherMsg = messages.find(
+      (m) =>
+        (m.senderId && m.senderId !== user?.id) ||
+        (m.senderName && m.senderName.trim() !== user?.fullName?.trim())
+    );
+
+    const isOwner =
+      (user?.id && user.id === post.userId) ||
+      (user?.fullName && user.fullName.trim() === post.userName?.trim());
+
+    let targetReceiverId = post.userId || 'usr-receiver';
+    let targetReceiverName = post.userName || 'ผู้ใช้ มทส.';
+
+    if (isOwner) {
+      if (partner?.id && partner.id !== user?.id) {
+        targetReceiverId = partner.id;
+        targetReceiverName = partner.name || displayPartnerName;
+      } else if (otherMsg) {
+        targetReceiverId = otherMsg.senderId;
+        targetReceiverName = otherMsg.senderName;
+      } else {
+        targetReceiverId = partner?.id || 'usr-guest';
+        targetReceiverName = displayPartnerName;
+      }
+    } else {
+      targetReceiverId = post.userId || partner?.id || 'usr-receiver';
+      targetReceiverName = post.userName || partner?.name || 'ผู้ใช้ มทส.';
+    }
 
     const newMsg = await api.sendMessage(
       post.id,
@@ -132,7 +207,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, onBack }) => {
         <View style={styles.headerRightInfo}>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={[styles.headerUserName, { color: colors.text }]}>
-              {post.userName || 'ชื่อผู้ใช้งาน'}
+              {displayPartnerName}
             </Text>
             <Text style={styles.onlineStatusText}>ออนไลน์</Text>
           </View>

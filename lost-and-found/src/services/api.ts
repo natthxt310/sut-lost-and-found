@@ -54,6 +54,13 @@ const safeStorage = {
       // fallback silently
     }
   },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {
+      // fallback silently
+    }
+  },
 };
 
 class PersistentApiService {
@@ -283,11 +290,56 @@ class PersistentApiService {
     return newUser;
   }
 
-  async resetPassword(studentId: string): Promise<{ success: boolean; message: string }> {
-    return {
-      success: true,
-      message: `ระบบได้ทำการส่งคำขอรีเซ็ตรหัสผ่านสำหรับรหัสนักศึกษา ${studentId.toUpperCase()} เรียบร้อยแล้ว`,
-    };
+  async resetPassword(studentId: string, email: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    await this.ensureInitialized();
+    const sId = studentId.trim().toUpperCase();
+    const userEmail = email.trim();
+
+    // 1. ส่งคำขอรีเซ็ตไปยัง Next.js Backend API
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: sId, email: userEmail, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'ไม่สามารถรีเซ็ตรหัสผ่านได้');
+      }
+
+      // อัปเดตใน Local Storage Registered Users ด้วย
+      try {
+        const storedUsersRaw = await safeStorage.getItem('@sut_registered_users_v1');
+        if (storedUsersRaw) {
+          const registeredUsers: User[] = JSON.parse(storedUsersRaw);
+          const found = registeredUsers.find((u) => u.studentId.toUpperCase() === sId);
+          if (found) {
+            found.password = newPassword;
+            await safeStorage.setItem('@sut_registered_users_v1', JSON.stringify(registeredUsers));
+          }
+        }
+      } catch {}
+
+      return { success: true, message: data.message || 'รีเซ็ตรหัสผ่านสำเร็จเรียบร้อยแล้ว' };
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Network request failed') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+
+      // 2. Offline Fallback: อัปเดตใน Local Storage
+      const storedUsersRaw = await safeStorage.getItem('@sut_registered_users_v1');
+      let registeredUsers: User[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [INITIAL_USER];
+      const found = registeredUsers.find((u) => u.studentId.toUpperCase() === sId);
+      if (!found) {
+        throw new Error(`ไม่พบรหัสนักศึกษา ${sId} ในระบบ`);
+      }
+      if (found.email && userEmail && found.email.trim().toLowerCase() !== userEmail.trim().toLowerCase()) {
+        throw new Error('อีเมลไม่ตรงกับข้อมูลที่ลงทะเบียนไว้');
+      }
+      found.password = newPassword;
+      await safeStorage.setItem('@sut_registered_users_v1', JSON.stringify(registeredUsers));
+      return { success: true, message: 'รีเซ็ตรหัสผ่านสำเร็จเรียบร้อยแล้ว' };
+    }
   }
 
   // ==========================================
@@ -456,6 +508,19 @@ class PersistentApiService {
     this.notifications = this.notifications.filter(
       (n) => n.sourcePostId !== id && n.matchedPostId !== id
     );
+
+    // 💬 ลบแชทในเครื่องที่ผูกกับโพสต์นี้
+    try {
+      await safeStorage.removeItem(`@sut_chat_${id}`);
+      const chatIndexRaw = await safeStorage.getItem('@sut_chat_post_index');
+      if (chatIndexRaw) {
+        const chatIndex: string[] = JSON.parse(chatIndexRaw);
+        const filteredIndex = chatIndex.filter((pid) => pid !== id);
+        await safeStorage.setItem('@sut_chat_post_index', JSON.stringify(filteredIndex));
+      }
+    } catch (e) {
+      // ignore
+    }
 
     await this.savePostsToStorage();
     await this.saveFavoritesToStorage();

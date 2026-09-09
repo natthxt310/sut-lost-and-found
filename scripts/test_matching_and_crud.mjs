@@ -321,6 +321,42 @@ assert(userNotifsAfterRead.every(n => n.isRead === true), `Notification: Success
 // Clean up test post
 persistentDb.deletePost(testReturnPost.id);
 
+// ==========================================
+// 6. Test Password Reset System (Real Disk Persistence)
+// ==========================================
+const pwdTestUser = persistentDb.createUser({
+  studentId: 'B6499999',
+  fullName: 'ทดสอบ รีเซ็ตรหัสผ่าน',
+  email: 'b6499999@g.sut.ac.th',
+  phone: '081-999-8888',
+  password: 'OldPassword123',
+  role: 'student',
+});
+
+// Test non-existent student ID
+const resNonExistent = persistentDb.resetPassword('B9999999', 'b6499999@g.sut.ac.th', 'NewPassword456');
+assert(!resNonExistent.success && resNonExistent.message.includes('ไม่พบ'), 'ResetPassword: Rejects non-existent student ID');
+
+// Test mismatched email
+const resMismatchedEmail = persistentDb.resetPassword('B6499999', 'wrongemail@g.sut.ac.th', 'NewPassword456');
+assert(!resMismatchedEmail.success && resMismatchedEmail.message.includes('ไม่ตรง'), 'ResetPassword: Rejects mismatched email');
+
+// Test short password (< 4 chars)
+const resShortPwd = persistentDb.resetPassword('B6499999', 'b6499999@g.sut.ac.th', '12');
+assert(!resShortPwd.success && resShortPwd.message.includes('อย่างน้อย 4'), 'ResetPassword: Enforces minimum password length >= 4');
+
+// Test successful reset (case-insensitive studentId and email)
+const resSuccess = persistentDb.resetPassword('b6499999', 'B6499999@G.SUT.AC.TH', 'NewSecretPwd789');
+assert(resSuccess.success && resSuccess.user?.password === 'NewSecretPwd789', 'ResetPassword: Successfully resets password for matching studentId and email');
+
+// Verify physical file on disk contains new password
+const diskContentPwd = JSON.parse(fs.readFileSync(dbFilePath, 'utf-8'));
+const diskUser = diskContentPwd.users.find(u => u.studentId === 'B6499999');
+assert(diskUser && diskUser.password === 'NewSecretPwd789', 'Disk Check: Verified new password physically saved to database.json on disk');
+
+// Clean up test user
+persistentDb.deleteUser(pwdTestUser.id);
+
 console.log('\n=====================================================');
 console.log(`🎉 TEST SUMMARY: ${passCount}/${totalCount} TESTS PASSED`);
 console.log('=====================================================\n');

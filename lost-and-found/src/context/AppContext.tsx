@@ -48,6 +48,7 @@ interface AppContextType {
   clearAllNotifications: () => Promise<void>;
   login: (studentId: string, password?: string) => Promise<void>;
   register: (studentId: string, email?: string, password?: string, fullName?: string, phone?: string) => Promise<void>;
+  resetPassword: (studentId: string, email: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   logout: () => void;
 }
@@ -260,6 +261,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshData();
   };
 
+  const resetPassword = async (studentId: string, email: string, newPassword: string) => {
+    return await api.resetPassword(studentId, email, newPassword);
+  };
+
   const updateProfile = async (data: Partial<User>) => {
     const updated = await api.updateUserProfile(data);
     setUser(updated);
@@ -308,6 +313,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         clearAllNotifications,
         login,
         register,
+        resetPassword,
         updateProfile,
         logout,
       }}

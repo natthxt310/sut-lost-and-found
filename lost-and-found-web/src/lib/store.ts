@@ -25,6 +25,10 @@ class BackendDataStore {
     return persistentDb.updateUser(id, updates);
   }
 
+  resetPassword(studentId: string, email: string, newPassword: string) {
+    return persistentDb.resetPassword(studentId, email, newPassword);
+  }
+
   deleteUser(id: string): boolean {
     return persistentDb.deleteUser(id);
   }

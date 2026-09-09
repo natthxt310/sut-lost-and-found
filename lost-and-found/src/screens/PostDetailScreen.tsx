@@ -31,7 +31,7 @@ const { width } = Dimensions.get('window');
 interface PostDetailScreenProps {
   post: PostItem;
   onBack: () => void;
-  onOpenChat: (post: PostItem) => void;
+  onOpenChat: (post: PostItem, partner?: { id?: string; name?: string }) => void;
   onEditPost?: (post: PostItem) => void;
 }
 
@@ -424,7 +424,7 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
             {/* ปุ่มติดต่อ (ส่งข้อความแชท) */}
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: '#0055D4', flex: 2 }]}
-              onPress={() => onOpenChat(post)}
+              onPress={() => onOpenChat(post, { id: post.userId, name: post.userName })}
               activeOpacity={0.88}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

@@ -287,6 +287,41 @@ export class PersistentDatabase {
     return db.users[idx];
   }
 
+  resetPassword(
+    studentId: string,
+    email: string,
+    newPassword: string
+  ): { success: boolean; message: string; user?: User } {
+    if (!studentId?.trim()) {
+      return { success: false, message: 'กรุณาระบุรหัสนักศึกษา' };
+    }
+    if (!email?.trim()) {
+      return { success: false, message: 'กรุณาระบุอีเมลที่ลงทะเบียนไว้' };
+    }
+    if (!newPassword || newPassword.length < 4) {
+      return { success: false, message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 4 ตัวอักษร' };
+    }
+
+    const db = this.readDb();
+    const user = db.users.find(
+      (u) => u.studentId.trim().toUpperCase() === studentId.trim().toUpperCase()
+    );
+    if (!user) {
+      return { success: false, message: `ไม่พบรหัสนักศึกษา ${studentId.trim().toUpperCase()} ในระบบ` };
+    }
+
+    // ตรวจสอบอีเมล (case-insensitive)
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const inputEmail = email.trim().toLowerCase();
+    if (userEmail && userEmail !== inputEmail) {
+      return { success: false, message: 'อีเมลไม่ตรงกับข้อมูลที่ลงทะเบียนไว้ในระบบ' };
+    }
+
+    user.password = newPassword;
+    this.writeDb(db);
+    return { success: true, message: 'รีเซ็ตรหัสผ่านสำเร็จเรียบร้อยแล้ว', user };
+  }
+
   deleteUser(id: string): boolean {
     const db = this.readDb();
     const initLen = db.users.length;
@@ -519,13 +554,26 @@ export class PersistentDatabase {
   deletePost(id: string): boolean {
     const db = this.readDb();
     const postToDelete = db.posts.find((p) => p.id === id);
-    const initLen = db.posts.length;
+    const initPostsLen = db.posts.length;
+    const initNotifsLen = (db.notifications || []).length;
+    const initFavsLen = (db.favorites || []).length;
+    const initMsgsLen = (db.messages || []).length;
+
     db.posts = db.posts.filter((p) => p.id !== id);
-    db.favorites = db.favorites.filter((f) => f.postId !== id);
-    db.notifications = db.notifications.filter(
+    db.favorites = (db.favorites || []).filter((f) => f.postId !== id);
+    db.notifications = (db.notifications || []).filter(
       (n) => n.sourcePostId !== id && n.matchedPostId !== id
     );
-    if (db.posts.length < initLen) {
+    // 💬 CASCADE DELETE: ลบข้อความแชททั้งหมดที่เกี่ยวข้องกับโพสต์นี้
+    db.messages = (db.messages || []).filter((m) => m.postId !== id);
+
+    const hasChanges =
+      db.posts.length < initPostsLen ||
+      (db.notifications || []).length < initNotifsLen ||
+      (db.favorites || []).length < initFavsLen ||
+      (db.messages || []).length < initMsgsLen;
+
+    if (hasChanges) {
       // 🗑️ ลบไฟล์รูปภาพที่เกี่ยวข้องออกจากดิสก์
       if (postToDelete?.imageUrl) {
         this.deleteUploadedImageFile(postToDelete.imageUrl);
