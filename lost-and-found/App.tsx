@@ -13,7 +13,7 @@ import {
 
 LogBox.ignoreLogs(['Cannot connect to Expo CLI']);
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,6 +51,11 @@ function MainAppContent() {
     dismissInAppBanner,
   } = useApp();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // ปรับความสูงและระยะเว้นขอบล่างตามการตั้งค่าของมือถืออัตโนมัติ (รองรับทั้งแบบปุ่ม 3 ปุ่ม และแบบเลื่อน/ปัด)
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 14 : 8);
+  const tabBarHeight = 58 + bottomInset;
 
   // Navigation Overlay States
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
@@ -177,9 +182,9 @@ function MainAppContent() {
             tabBarActiveTintColor: '#FF7A00',
             tabBarInactiveTintColor: colors.text,
             tabBarStyle: {
-              height: Platform.OS === 'ios' ? 94 : 84,
+              height: tabBarHeight,
               paddingTop: 8,
-              paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+              paddingBottom: bottomInset,
               backgroundColor: colors.tabBarBg,
               borderTopWidth: 1,
               borderTopColor: colors.tabBarBorder,
@@ -202,7 +207,7 @@ function MainAppContent() {
               // 1. Center Plus Button
               if (route.name === 'สร้างโพสต์') {
                 return (
-                  <View style={styles.floatingPlusCircle}>
+                  <View style={[styles.floatingPlusCircle, insets.bottom > 20 && { marginTop: -26 }]}>
                     <Ionicons name="add" size={32} color="#FFFFFF" />
                   </View>
                 );

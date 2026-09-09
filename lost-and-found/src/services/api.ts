@@ -28,7 +28,7 @@ export const getApiBaseUrl = (): string => {
     // 127.0.0.1 ทำงานร่วมกับ adb reverse tcp:3000 tcp:3000 ได้ทั้งมือถือจริงและ Emulator
     return 'http://127.0.0.1:3000/api';
   }
-  return 'http://10.1.165.152:3000/api';
+  return 'http://10.0.122.211:3000/api';
 };
 
 // Dynamic API Base URL ที่เรียกคำนวณ Host อัตโนมัติทุกครั้ง

@@ -7,7 +7,9 @@ function getAdbPath() {
   return path.join(localAppData, 'Android', 'Sdk', 'platform-tools', 'adb.exe');
 }
 
-function launchAll() {
+const launchedDevices = new Set();
+
+function launchAll(silent = false) {
   const adb = getAdbPath();
   try {
     const devicesOutput = execSync(`"${adb}" devices`, { encoding: 'utf8' });
@@ -15,28 +17,28 @@ function launchAll() {
     const devices = lines.map((l) => l.split('\t')[0].trim());
 
     if (devices.length === 0) {
-      console.log('⏳ ยังไม่พบ Android Emulator หรืออุปกรณ์ที่เสียบสาย USB (กำลังรอการเชื่อมต่อ...)');
+      if (!silent) console.log('⏳ กำลังรอการเชื่อมต่อ Android Emulator หรือมือถือผ่านสาย USB...');
       return false;
     }
-
-    console.log(`📱 กำลังเปิด Expo Go บนอุปกรณ์ทั้งหมด ${devices.length} เครื่อง: ${devices.join(', ')}`);
 
     for (const device of devices) {
       try {
         execSync(`"${adb}" -s ${device} reverse tcp:8081 tcp:8081`, { stdio: 'ignore' });
         execSync(`"${adb}" -s ${device} reverse tcp:3000 tcp:3000`, { stdio: 'ignore' });
-        execSync(
-          `"${adb}" -s ${device} shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent`,
-          { stdio: 'ignore' }
-        );
-        console.log(`✅ เปิดแอปบน ${device} เรียบร้อยแล้ว`);
+        if (!launchedDevices.has(device)) {
+          launchedDevices.add(device);
+          execSync(
+            `"${adb}" -s ${device} shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent`,
+            { stdio: 'ignore' }
+          );
+          console.log(`📱 เปิดแอปและเชื่อมต่อพอร์ตบน ${device} เรียบร้อยแล้ว`);
+        }
       } catch (err) {
-        console.warn(`❌ ไม่สามารถเปิดบน ${device}:`, err.message);
+        if (!silent) console.warn(`❌ ข้อผิดพลาดบน ${device}:`, err.message);
       }
     }
     return true;
   } catch (err) {
-    console.error('Error running adb:', err.message);
     return false;
   }
 }
@@ -69,20 +71,12 @@ async function startEmulators() {
     console.log('✨ Metro Bundler พร้อมรับการเชื่อมต่อแล้ว!');
   }
 
-  // พยายามตรวจหาอุปกรณ์และเปิดแอป (ถ้าเสียบสายทีหลังจะตรวจพบอัตโนมัติ)
-  let detected = false;
-  for (let attempt = 1; attempt <= 6; attempt++) {
-    const found = launchAll();
-    if (found) {
-      detected = true;
-      break;
-    }
-    await new Promise((r) => setTimeout(r, 3000));
-  }
+  launchAll();
 
-  if (!detected) {
-    console.log('ℹ️ คุณสามารถเปิดแอป Expo Go บนมือถือและสแกนหรือเข้าใช้งานได้ตลอดเวลาครับ');
-  }
+  // เฝ้าดูอุปกรณ์ตลอดเวลา ไม่ให้โปรเซสดับ (ป้องกัน Terminate batch job)
+  setInterval(() => {
+    launchAll(true);
+  }, 3000);
 }
 
 startEmulators();
