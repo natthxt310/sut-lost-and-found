@@ -72,6 +72,14 @@ class BackendDataStore {
     return persistentDb.handleReportAction(reportId, action);
   }
 
+  deleteReport(reportId: string) {
+    return persistentDb.deleteReport(reportId);
+  }
+
+  clearReports(status?: 'all' | 'resolved') {
+    return persistentDb.clearReports(status);
+  }
+
   getFavorites(userId?: string): FavoriteItem[] {
     return persistentDb.getFavorites(userId);
   }

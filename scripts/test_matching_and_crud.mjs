@@ -239,6 +239,9 @@ assert(deleteResult.success && deleteResult.report?.actionTaken === 'deleted', '
 const allPostsAfterDelete = persistentDb.getPosts({ all: true });
 assert(!allPostsAfterDelete.some((p) => p.id === testReportPost.id), 'Reports: Verified problematic post is permanently deleted from database.json');
 
+const deleteRepResult = persistentDb.deleteReport(report.id);
+assert(deleteRepResult, 'Reports: Verified report record was permanently removed from database.json');
+
 // ==========================================
 // SEARCH & SORT TESTING
 // ==========================================

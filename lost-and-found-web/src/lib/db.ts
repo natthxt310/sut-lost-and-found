@@ -973,6 +973,34 @@ export class PersistentDatabase {
     return { success: false, message: 'การดำเนินการไม่ถูกต้อง' };
   }
 
+  deleteReport(reportId: string): boolean {
+    const db = this.readDb();
+    if (!db.reports) return false;
+    const initialLen = db.reports.length;
+    db.reports = db.reports.filter((r) => r.id !== reportId);
+    if (db.reports.length !== initialLen) {
+      this.writeDb(db);
+      return true;
+    }
+    return false;
+  }
+
+  clearReports(status?: 'all' | 'resolved'): number {
+    const db = this.readDb();
+    if (!db.reports) return 0;
+    const initialLen = db.reports.length;
+    if (status === 'resolved') {
+      db.reports = db.reports.filter((r) => r.status === 'pending');
+    } else {
+      db.reports = [];
+    }
+    const removedCount = initialLen - db.reports.length;
+    if (removedCount > 0) {
+      this.writeDb(db);
+    }
+    return removedCount;
+  }
+
   unhidePost(postId: string): PostItem | undefined {
     const db = this.readDb();
     const post = db.posts.find((p) => p.id === postId);

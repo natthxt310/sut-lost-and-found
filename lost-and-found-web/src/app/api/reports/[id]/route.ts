@@ -26,3 +26,21 @@ export async function PUT(
     return NextResponse.json({ success: false, error: error?.message || 'Failed to process report action' }, { status: 500 });
   }
 }
+
+// DELETE /api/reports/[id] - ลบประวัติการรายงานออกจากระบบ
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const success = persistentDb.deleteReport(id);
+    if (!success) {
+      return NextResponse.json({ success: false, error: 'ไม่พบรายงานนี้ในระบบ' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, message: 'ลบประวัติการรายงานออกจากระบบเรียบร้อยแล้ว' });
+  } catch (error: any) {
+    console.error('Failed to delete report error:', error);
+    return NextResponse.json({ success: false, error: error?.message || 'Failed to delete report' }, { status: 500 });
+  }
+}

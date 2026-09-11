@@ -154,6 +154,44 @@ export default function AdminPage() {
     }
   };
 
+  // ลบประวัติรายการรายงานออกจากระบบ (Delete Report Record)
+  const handleDeleteReport = async (reportId: string) => {
+    if (!confirm('คุณต้องการลบประวัติรายการรายงานนี้ออกจากระบบ หรือไม่?')) return;
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'ลบประวัติรายการรายงานสำเร็จ');
+        loadData();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการลบประวัติการรายงาน');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
+  // ล้างประวัติรายงานที่ดำเนินการแล้วทั้งหมด (Clear All Handled Reports)
+  const handleClearResolvedReports = async () => {
+    if (!confirm(`คุณต้องการล้างประวัติรายงานที่ดำเนินการแล้วทั้งหมด (${resolvedReports.length} รายการ) ออกจากระบบ หรือไม่?`)) return;
+    try {
+      const res = await fetch('/api/reports?status=resolved', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'ล้างประวัติการรายงานเรียบร้อยแล้ว');
+        loadData();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการล้างประวัติ');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
   // ปลดการซ่อนโพสต์ (Admin Unhide Post)
   const handleUnhidePost = async (id: string) => {
     if (!confirm('คุณต้องการปลดการซ่อนโพสต์นี้และนำกลับสู่ฟีดสาธารณะหรือไม่?')) return;
@@ -1476,6 +1514,28 @@ export default function AdminPage() {
                     >
                       📋 ทั้งหมด ({reports.length})
                     </button>
+                    {resolvedReports.length > 0 && (
+                      <button
+                        onClick={handleClearResolvedReports}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                          color: '#EF4444',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s ease',
+                        }}
+                        title="ล้างประวัติรายงานที่ดำเนินการแล้วทั้งหมดออกจากระบบ"
+                      >
+                        🧹 ล้างประวัติที่ดำเนินการแล้ว ({resolvedReports.length})
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1823,94 +1883,140 @@ export default function AdminPage() {
                               )}
                             </div>
 
-                            {/* Action Buttons: ซ่อนโพสต์, ลบโพสต์ถาวร, ปลดการซ่อน, หรือยกเลิกรายงาน */}
+                            {/* Action Buttons: ซ่อนโพสต์, ลบโพสต์ถาวร, ปลดการซ่อน, ลบประวัติรายงาน หรือยกเลิกรายงาน */}
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                              {/* 1. ดำเนินการซ่อน หรือ ปลดการซ่อนโพสต์ที่มีปัญหา */}
-                              {isPostHidden ? (
-                                <button
-                                  onClick={() => handleReportAction(rep.id, 'unhide')}
-                                  style={{
-                                    backgroundColor: '#10B981',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    padding: '9px 14px',
-                                    borderRadius: '10px',
-                                    fontWeight: 800,
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                                  }}
-                                  title="ปลดการซ่อนโพสต์และนำกลับสู่ฟีดสาธารณะ"
-                                >
-                                  🔓 ปลดการซ่อน (Unhide)
-                                </button>
+                              {/* กรณีโพสต์ยังคงอยู่ในระบบ: แสดงปุ่มจัดการโพสต์ */}
+                              {reportedPost && rep.actionTaken !== 'deleted' ? (
+                                <>
+                                  {/* 1. ดำเนินการซ่อน หรือ ปลดการซ่อนโพสต์ที่มีปัญหา */}
+                                  {isPostHidden ? (
+                                    <button
+                                      onClick={() => handleReportAction(rep.id, 'unhide')}
+                                      style={{
+                                        backgroundColor: '#10B981',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        padding: '9px 14px',
+                                        borderRadius: '10px',
+                                        fontWeight: 800,
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                      }}
+                                      title="ปลดการซ่อนโพสต์และนำกลับสู่ฟีดสาธารณะ"
+                                    >
+                                      🔓 ปลดการซ่อน (Unhide)
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleReportAction(rep.id, 'hide')}
+                                      style={{
+                                        backgroundColor: '#F59E0B',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        padding: '9px 14px',
+                                        borderRadius: '10px',
+                                        fontWeight: 800,
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                                      }}
+                                      title="ซ่อนโพสต์ไม่ให้แสดงบนฟีดสาธารณะ"
+                                    >
+                                      ⏸️ ซ่อนโพสต์ (Hide)
+                                    </button>
+                                  )}
+
+                                  {/* 2. ดำเนินการลบโพสต์ที่มีปัญหา */}
+                                  <button
+                                    onClick={() => handleReportAction(rep.id, 'delete')}
+                                    style={{
+                                      backgroundColor: '#EF4444',
+                                      color: '#FFFFFF',
+                                      border: 'none',
+                                      padding: '9px 14px',
+                                      borderRadius: '10px',
+                                      fontWeight: 800,
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                                    }}
+                                    title="ลบโพสต์ที่มีปัญหาออกจากระบบอย่างถาวร"
+                                  >
+                                    🗑️ ลบโพสต์ถาวร (Delete)
+                                  </button>
+
+                                  {/* 3. ปุ่มยกเลิกรายงาน / โพสต์ปลอดภัย */}
+                                  {isPending && (
+                                    <button
+                                      onClick={() => handleReportAction(rep.id, 'dismiss')}
+                                      style={{
+                                        backgroundColor: theme.cardAlt,
+                                        color: theme.textMuted,
+                                        border: `1px solid ${theme.border}`,
+                                        padding: '8px 12px',
+                                        borderRadius: '10px',
+                                        fontWeight: 700,
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                      }}
+                                      title="ตรวจสอบแล้วไม่มีปัญหา ยกเลิกการรายงาน"
+                                    >
+                                      🛡️ ปล่อยผ่าน (Dismiss)
+                                    </button>
+                                  )}
+                                </>
                               ) : (
-                                <button
-                                  onClick={() => handleReportAction(rep.id, 'hide')}
-                                  style={{
-                                    backgroundColor: '#F59E0B',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    padding: '9px 14px',
-                                    borderRadius: '10px',
-                                    fontWeight: 800,
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
-                                  }}
-                                  title="ซ่อนโพสต์ไม่ให้แสดงบนฟีดสาธารณะ"
-                                >
-                                  ⏸️ ซ่อนโพสต์ (Hide)
-                                </button>
+                                /* กรณีโพสต์ถูกลบออกจากระบบแล้ว */
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span
+                                    style={{
+                                      fontSize: '0.8rem',
+                                      color: theme.textMuted,
+                                      padding: '6px 10px',
+                                      backgroundColor: theme.cardAlt,
+                                      borderRadius: '8px',
+                                      border: `1px solid ${theme.border}`,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                    }}
+                                  >
+                                    🗑️ โพสต์นี้ถูกลบออกจากระบบแล้ว
+                                  </span>
+                                </div>
                               )}
 
-                              {/* 2. ดำเนินการลบโพสต์ที่มีปัญหา */}
+                              {/* ปุ่มลบประวัติรายการรายงานนี้ออกจากหน้ารายงาน */}
                               <button
-                                onClick={() => handleReportAction(rep.id, 'delete')}
+                                onClick={() => handleDeleteReport(rep.id)}
                                 style={{
-                                  backgroundColor: '#EF4444',
-                                  color: '#FFFFFF',
-                                  border: 'none',
-                                  padding: '9px 14px',
+                                  backgroundColor: (!reportedPost || rep.actionTaken === 'deleted') ? '#EF4444' : theme.cardAlt,
+                                  color: (!reportedPost || rep.actionTaken === 'deleted') ? '#FFFFFF' : theme.textMuted,
+                                  border: (!reportedPost || rep.actionTaken === 'deleted') ? 'none' : `1px solid ${theme.border}`,
+                                  padding: '8px 12px',
                                   borderRadius: '10px',
-                                  fontWeight: 800,
+                                  fontWeight: 700,
                                   fontSize: '0.8rem',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '6px',
-                                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                                  gap: '5px',
+                                  boxShadow: (!reportedPost || rep.actionTaken === 'deleted') ? '0 4px 12px rgba(239, 68, 68, 0.3)' : 'none',
                                 }}
-                                title="ลบโพสต์ที่มีปัญหาออกจากระบบอย่างถาวร"
+                                title="ลบประวัติรายการรายงานนี้ออกจากระบบ"
                               >
-                                🗑️ ลบโพสต์ถาวร (Delete)
+                                🗑️ ลบประวัติรายงาน
                               </button>
-
-                              {/* 3. ปุ่มยกเลิกรายงาน / โพสต์ปลอดภัย */}
-                              {isPending && (
-                                <button
-                                  onClick={() => handleReportAction(rep.id, 'dismiss')}
-                                  style={{
-                                    backgroundColor: theme.cardAlt,
-                                    color: theme.textMuted,
-                                    border: `1px solid ${theme.border}`,
-                                    padding: '8px 12px',
-                                    borderRadius: '10px',
-                                    fontWeight: 700,
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer',
-                                  }}
-                                  title="ตรวจสอบแล้วไม่มีปัญหา ยกเลิกการรายงาน"
-                                >
-                                  🛡️ ปล่อยผ่าน (Dismiss)
-                                </button>
-                              )}
                             </div>
                           </div>
                         </div>

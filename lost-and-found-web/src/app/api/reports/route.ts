@@ -42,3 +42,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Failed to submit report' }, { status: 500 });
   }
 }
+
+// DELETE /api/reports - ล้างประวัติการรายงาน (ทั้งหมด หรือ เฉพาะที่ดำเนินการแล้ว)
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') as 'all' | 'resolved' | null;
+    const count = persistentDb.clearReports(status === 'resolved' ? 'resolved' : 'all');
+    return NextResponse.json({
+      success: true,
+      message: `ล้างประวัติการรายงานเรียบร้อยแล้ว (${count} รายการ)`,
+      count,
+    });
+  } catch (error: any) {
+    console.error('Failed to clear reports:', error);
+    return NextResponse.json({ success: false, error: error?.message || 'Failed to clear reports' }, { status: 500 });
+  }
+}
