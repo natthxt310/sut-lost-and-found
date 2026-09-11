@@ -255,12 +255,27 @@ const isNewestSorted = sortedPostsNewest.every((p, idx, arr) => idx === 0 || new
 assert(isNewestSorted, 'Sort: Successfully verified posts ordered chronologically (newest to oldest)');
 
 // 2. Report Search & Sort
-const allDbReports = persistentDb.getReports('all');
+let allDbReports = persistentDb.getReports('all');
+let tempSearchReport = null;
+if (allDbReports.length === 0) {
+  tempSearchReport = persistentDb.createReport({
+    postId: 'post-test-search',
+    postTitle: 'สแปมเว็บบาคาร่าผิดกฎหมาย',
+    reporterId: 'usr-001',
+    reporterName: 'ผู้ใช้ทดสอบ',
+    reason: 'spam',
+    reasonText: '📢 สแปม / การพนันและโฆษณาผิดกฎหมาย',
+  });
+  allDbReports = persistentDb.getReports('all');
+}
 const searchedReports = allDbReports.filter(r => (r.postTitle || '').toLowerCase().includes('บาคาร่า') || (r.reasonText || '').toLowerCase().includes('สแปม'));
 assert(searchedReports.length > 0, `Search: Successfully matched ${searchedReports.length} reports by keyword 'บาคาร่า' / 'สแปม'`);
 
 const sortedReportsReason = [...allDbReports].sort((a, b) => (a.reasonText || '').localeCompare(b.reasonText || '', 'th'));
 assert(sortedReportsReason.length === allDbReports.length, 'Sort: Successfully verified reports sortable by reason text');
+if (tempSearchReport) {
+  persistentDb.deleteReport(tempSearchReport.id);
+}
 
 // 3. User Search & Sort
 const allDbUsers = persistentDb.getUsers();

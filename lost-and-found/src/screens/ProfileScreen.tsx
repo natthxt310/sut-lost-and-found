@@ -272,13 +272,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
 
           <ScrollView contentContainerStyle={styles.editFormContent} showsVerticalScrollIndicator={false}>
-            {/* Big Avatar with Pencil in Edit Screen */}
+            {/* Big Avatar in Edit Screen */}
             <View style={styles.editAvatarCenter}>
               <View style={styles.editLargeAvatarCircle}>
                 <Ionicons name="person" size={54} color="#FFFFFF" />
-              </View>
-              <View style={styles.editPencilBadge}>
-                <Ionicons name="pencil" size={14} color="#000000" />
               </View>
             </View>
 

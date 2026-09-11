@@ -39,7 +39,7 @@ interface ChatScreenProps {
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack }) => {
-  const { user, markChatAsRead, toggleLikeMessage } = useApp();
+  const { user, markChatAsRead } = useApp();
   const { colors, isDark } = useTheme();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -178,16 +178,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack })
     }, 100);
   };
 
-  const handleLike = async (msgId: string) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const updated = await api.toggleLikeMessage(post.id, msgId);
-      setMessages(updated);
-    } catch {
-      // Ignore
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -239,15 +229,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack })
                 isMine ? styles.myMessageRow : styles.otherMessageRow,
               ]}
             >
-              <TouchableOpacity
+              <View
                 style={[
                   styles.messageBubble,
                   isMine
                     ? [styles.myBubble, { backgroundColor: '#0055D4' }]
                     : [styles.otherBubble, { backgroundColor: isDark ? '#334155' : '#E2E8F0' }],
                 ]}
-                onLongPress={() => handleLike(msg.id)}
-                activeOpacity={0.9}
               >
                 <Text
                   style={[
@@ -257,12 +245,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack })
                 >
                   {msg.text}
                 </Text>
-                {msg.liked && (
-                  <View style={styles.heartBadge}>
-                    <Text style={{ fontSize: 12 }}>❤️</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+              </View>
 
               <Text style={[styles.timestampText, { color: colors.textMuted }]}>
                 {timeStr}
@@ -288,9 +271,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ post, partner, onBack })
             onChangeText={setInputText}
             onSubmitEditing={handleSend}
           />
-          <TouchableOpacity activeOpacity={0.7} style={{ padding: 4 }}>
-            <Ionicons name="happy-outline" size={22} color="#64748B" />
-          </TouchableOpacity>
         </View>
 
         {/* Black Circular Send Button with Blue Paper Plane */}

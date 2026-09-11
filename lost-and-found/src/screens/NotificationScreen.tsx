@@ -29,7 +29,6 @@ import { formatNotification } from '../services/notificationService';
 
 interface NotificationScreenProps {
   onSelectNotification?: (notification: MatchNotification) => void;
-  onOpenChatList?: () => void;
 }
 
 export const NotificationScreen: React.FC<NotificationScreenProps> = ({
