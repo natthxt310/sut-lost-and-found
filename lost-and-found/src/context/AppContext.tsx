@@ -35,7 +35,6 @@ interface AppContextType {
   refreshData: () => Promise<void>;
   refreshConversations: () => Promise<void>;
   markChatAsRead: (postId: string) => Promise<void>;
-  toggleLikeMessage: (postId: string, messageId: string) => Promise<ChatMessage[]>;
   createPost: (data: Omit<PostItem, 'id' | 'createdAt'>) => Promise<{ post: PostItem; matches: MatchNotification[] }>;
   updatePost: (id: string, updates: Partial<PostItem>) => Promise<PostItem>;
   approvePost: (id: string, isApproved?: boolean) => Promise<PostItem | undefined>;
@@ -104,9 +103,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  const toggleLikeMessage = async (postId: string, messageId: string) => {
-    return await api.toggleLikeMessage(postId, messageId);
-  };
 
   const refreshData = async () => {
     try {
@@ -300,7 +296,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         refreshData,
         refreshConversations,
         markChatAsRead,
-        toggleLikeMessage,
         createPost,
         updatePost,
         approvePost,

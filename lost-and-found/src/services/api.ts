@@ -870,26 +870,7 @@ class PersistentApiService {
     }
   }
 
-  async toggleLikeMessage(postId: string, messageId: string): Promise<ChatMessage[]> {
-    await this.ensureInitialized();
-    try {
-      const stored = await safeStorage.getItem(`@sut_chat_${postId}`);
-      if (stored) {
-        const msgs: ChatMessage[] = JSON.parse(stored);
-        const updated = msgs.map((m) => {
-          if (m.id === messageId) {
-            return { ...m, liked: !m.liked };
-          }
-          return m;
-        });
-        await safeStorage.setItem(`@sut_chat_${postId}`, JSON.stringify(updated));
-        return updated;
-      }
-    } catch (e) {
-      // ignore
-    }
-    return [];
-  }
+
 
   async getConversations(): Promise<ChatConversation[]> {
     await this.ensureInitialized();

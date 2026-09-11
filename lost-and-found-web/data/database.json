@@ -32,6 +32,29 @@
   ],
   "posts": [
     {
+      "type": "found",
+      "title": "Airpods Pro 2",
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "อาคารรัฐสีมาคุณากร",
+      "dateTime": "11/9/2569 21:35",
+      "description": "",
+      "imageUrl": "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80",
+      "status": "found",
+      "userId": "usr-1788359333623-174",
+      "userName": "Siwaphon",
+      "userContact": "089-123-4567",
+      "userEmail": "Siwaphon@gmail.com",
+      "isApproved": true,
+      "moderationStatus": "approved",
+      "moderationScore": 0.98,
+      "moderationNotes": "✅ ผ่านการตรวจสอบและอนุมัติโดยผู้ดูแลระบบ (Admin Approved)",
+      "id": "post-1789137506375-80",
+      "createdAt": "2026-09-11T14:38:26.375Z",
+      "updatedAt": "2026-09-11T14:39:17.998Z",
+      "isReported": false
+    },
+    {
       "id": "post-spam-01",
       "type": "lost",
       "title": "รับปั่นบาคาร่า รายได้วันละ 3,000 ทักไลน์ @bkk888",
@@ -1140,7 +1163,10 @@
       "userEmail": "theera@sut.ac.th",
       "isApproved": true,
       "moderationStatus": "approved",
-      "createdAt": "2026-08-30T15:10:00.000Z"
+      "createdAt": "2026-08-30T15:10:00.000Z",
+      "isReported": false,
+      "reportCount": 1,
+      "reportReason": "📢 สแปม / โฆษณาผิดกฎหมาย"
     },
     {
       "id": "q3-aug-f1",
@@ -1194,7 +1220,10 @@
       "userEmail": "athlete@sut.ac.th",
       "isApproved": true,
       "moderationStatus": "approved",
-      "createdAt": "2026-08-16T19:15:00.000Z"
+      "createdAt": "2026-08-16T19:15:00.000Z",
+      "isReported": true,
+      "reportCount": 1,
+      "reportReason": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน"
     },
     {
       "id": "q3-aug-f4",
@@ -1306,8 +1335,146 @@
       "createdAt": "2026-09-02T14:00:00.000Z"
     }
   ],
-  "favorites": [],
+  "favorites": [
+    {
+      "id": "fav-1789138434443-359",
+      "userId": "usr-1788359331354-965",
+      "postId": "q3-aug-l5",
+      "createdAt": "2026-09-11T14:53:54.443Z"
+    },
+    {
+      "id": "fav-1789111650982-491",
+      "userId": "usr-1788359333623-174",
+      "postId": "q1-feb-l2",
+      "createdAt": "2026-09-11T07:27:30.982Z"
+    }
+  ],
   "notifications": [
+    {
+      "id": "notif-chat-1789137791352-768",
+      "targetUserId": "usr-1788359333623-174",
+      "type": "message",
+      "sourcePostId": "post-1789137506375-80",
+      "matchedPostId": "post-1789137506375-80",
+      "sourcePostTitle": "Airpods Pro 2",
+      "matchedPostTitle": "HI",
+      "matchScore": 100,
+      "category": "แชทข้อความ",
+      "color": "",
+      "location": "",
+      "matchedWithUserName": "Natthapat",
+      "matchedWithContact": "",
+      "isRead": true,
+      "createdAt": "2026-09-11T14:43:11.352Z"
+    },
+    {
+      "id": "notif-lost-1789137558001-603",
+      "targetUserId": "usr-q1-3",
+      "targetUserEmail": "panudet@sut.ac.th",
+      "type": "found",
+      "sourcePostId": "q1-jan-l3",
+      "matchedPostId": "post-1789137506375-80",
+      "sourcePostTitle": "หูฟังบลูทูธ AirPods Pro รุ่นที่ 1",
+      "matchedPostTitle": "Airpods Pro 2",
+      "matchScore": 80,
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "อาคารรัฐสีมาคุณากร",
+      "matchedWithUserName": "Siwaphon",
+      "matchedWithContact": "089-123-4567",
+      "isRead": false,
+      "createdAt": "2026-09-11T14:39:20.000Z"
+    },
+    {
+      "id": "notif-found-1789137558001-0",
+      "targetUserId": "usr-1788359333623-174",
+      "targetUserEmail": "Siwaphon@gmail.com",
+      "type": "match",
+      "sourcePostId": "post-1789137506375-80",
+      "matchedPostId": "q1-jan-l3",
+      "sourcePostTitle": "Airpods Pro 2",
+      "matchedPostTitle": "หูฟังบลูทูธ AirPods Pro รุ่นที่ 1",
+      "matchScore": 80,
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "โรงอาหารกาสะลอง",
+      "matchedWithUserName": "ภาณุเดช มีสุข",
+      "matchedWithContact": "083-456-7891",
+      "isRead": false,
+      "createdAt": "2026-09-11T14:39:20.100Z"
+    },
+    {
+      "id": "notif-lost-1789137558001-952",
+      "targetUserId": "usr-q1-18",
+      "targetUserEmail": "weerachai@sut.ac.th",
+      "type": "found",
+      "sourcePostId": "q1-mar-l5",
+      "matchedPostId": "post-1789137506375-80",
+      "sourcePostTitle": "หูฟังไร้สาย Samsung Galaxy Buds 2",
+      "matchedPostTitle": "Airpods Pro 2",
+      "matchScore": 80,
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "อาคารรัฐสีมาคุณากร",
+      "matchedWithUserName": "Siwaphon",
+      "matchedWithContact": "089-123-4567",
+      "isRead": false,
+      "createdAt": "2026-09-11T14:39:20.200Z"
+    },
+    {
+      "id": "notif-found-1789137558001-389",
+      "targetUserId": "usr-1788359333623-174",
+      "targetUserEmail": "Siwaphon@gmail.com",
+      "type": "match",
+      "sourcePostId": "post-1789137506375-80",
+      "matchedPostId": "q1-mar-l5",
+      "sourcePostTitle": "Airpods Pro 2",
+      "matchedPostTitle": "หูฟังไร้สาย Samsung Galaxy Buds 2",
+      "matchScore": 80,
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "อาคารกิจกรรมนักศึกษา (SAC)",
+      "matchedWithUserName": "วีระชัย มีโชค",
+      "matchedWithContact": "087-777-8888",
+      "isRead": false,
+      "createdAt": "2026-09-11T14:39:20.300Z"
+    },
+    {
+      "id": "notif-mod-1789137558000-133",
+      "targetUserId": "usr-1788359333623-174",
+      "targetUserEmail": "Siwaphon@gmail.com",
+      "type": "approval_approved",
+      "sourcePostId": "post-1789137506375-80",
+      "matchedPostId": "post-1789137506375-80",
+      "sourcePostTitle": "Airpods Pro 2",
+      "matchedPostTitle": "ผ่านการอนุมัติแล้ว ✅",
+      "matchScore": 100,
+      "category": "หูฟัง & AirPods",
+      "color": "ขาว",
+      "location": "อาคารรัฐสีมาคุณากร",
+      "matchedWithUserName": "ผู้ดูแลระบบ (Admin)",
+      "matchedWithContact": "โพสต์ของคุณแสดงบนฟีดสาธารณะเรียบร้อยแล้ว",
+      "isRead": false,
+      "createdAt": "2026-09-11T14:39:18.000Z"
+    },
+    {
+      "id": "notif-mod-1789110607144-38",
+      "targetUserId": "usr-spammer-1789110607131",
+      "targetUserEmail": "spam@test.com",
+      "type": "approval_rejected",
+      "sourcePostId": "post-1789110607131-449",
+      "matchedPostId": "post-1789110607131-449",
+      "sourcePostTitle": "เว็บทดสอบถูกแก้ไขแล้ว (ปลอดภัย 100%)",
+      "matchedPostTitle": "โพสต์ถูกลบออกจากระบบ 🗑️",
+      "matchScore": 0,
+      "category": "ของใช้ส่วนตัว & อื่นๆ",
+      "color": "ขาว",
+      "location": "อาคารเรียนรวม 1 (B1)",
+      "matchedWithUserName": "ผู้ดูแลระบบ (Admin)",
+      "matchedWithContact": "โพสต์ของคุณถูกลบออกจากระบบอย่างถาวรเนื่องจากได้รับการรายงานว่า: \"📢 สแปม / การพนันและโฆษณาผิดกฎหมาย\"",
+      "isRead": false,
+      "createdAt": "2026-09-11T07:10:07.144Z"
+    },
     {
       "id": "notif-exp-1789108092446-649-g-l6",
       "targetUserId": "usr-q3-14",
@@ -1698,8 +1865,62 @@
       "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
       "id": "msg-1789108092408-902",
       "createdAt": "2026-09-11T06:28:12.408Z"
+    },
+    {
+      "postId": "post-001",
+      "postTitle": "กุญแจรถมอเตอร์ไซค์ Honda Wave",
+      "senderId": "usr-001",
+      "senderName": "ศิวะพร ภูดินทราย",
+      "receiverId": "usr-002",
+      "receiverName": "นัฐภัทร์ กตัญวิญญู",
+      "text": "สวัสดีครับ สะดวกนัดรับที่อาคารเรียนรวม 1 (B1) มั๊ยครับ?",
+      "id": "msg-1789110607129-589",
+      "createdAt": "2026-09-11T07:10:07.129Z"
+    },
+    {
+      "postId": "post-1789137506375-80",
+      "postTitle": "Airpods Pro 2",
+      "senderId": "usr-1788359331354-965",
+      "senderName": "Natthapat",
+      "receiverId": "usr-1788359333623-174",
+      "receiverName": "Siwaphon",
+      "text": "HI",
+      "id": "msg-1789137791350-437",
+      "createdAt": "2026-09-11T14:43:11.350Z"
     }
   ],
-  "lastUpdated": "2026-09-11T06:31:50.334Z",
-  "reports": []
+  "lastUpdated": "2026-09-11T14:54:07.920Z",
+  "reports": [
+    {
+      "postId": "q3-aug-l6",
+      "postTitle": "ร่มพับอัตโนมัติ ลายทางสีฟ้า",
+      "postImageUrl": "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&auto=format&fit=crop&q=80",
+      "postCategory": "ของใช้ส่วนตัว & อื่นๆ",
+      "postAuthorName": "ธีระ วงศ์ประดิษฐ์",
+      "reporterId": "usr-1788359331354-965",
+      "reporterName": "Natthapat",
+      "reason": "spam",
+      "reasonText": "📢 สแปม / โฆษณาผิดกฎหมาย",
+      "details": "รายงานผ่านแอปพลิเคชันมือถือ",
+      "id": "rep-1789138430852-335",
+      "status": "dismissed",
+      "createdAt": "2026-09-11T14:53:50.852Z",
+      "actionTaken": "dismissed"
+    },
+    {
+      "postId": "q3-aug-f3",
+      "postTitle": "หูฟัง Marshall สีดำ พบที่อัฒจันทร์สนามกีฬา",
+      "postImageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
+      "postCategory": "หูฟัง & AirPods",
+      "postAuthorName": "นักกรีฑา มทส.",
+      "reporterId": "usr-1788359331354-965",
+      "reporterName": "Natthapat",
+      "reason": "scam",
+      "reasonText": "⚠️ หลอกลวง / มิจฉาชีพเรียกเก็บเงิน",
+      "details": "รายงานผ่านแอปพลิเคชันมือถือ",
+      "id": "rep-1789138422094-683",
+      "status": "pending",
+      "createdAt": "2026-09-11T14:53:42.094Z"
+    }
+  ]
 }

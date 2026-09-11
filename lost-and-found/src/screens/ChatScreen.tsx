@@ -372,16 +372,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
-  heartBadge: {
-    position: 'absolute',
-    bottom: -8,
-    right: -4,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    elevation: 2,
-  },
+
   inputBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
